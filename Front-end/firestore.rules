@@ -323,6 +323,9 @@ service cloud.firestore {
         (data.severity in ['LOW', 'GUARDED', 'MODERATE', 'HIGH', 'CRITICAL']) &&
         isNonEmptyString(data.source, 200) &&
         (data.sourceType in ['official', 'automatic', 'manual-admin']) &&
+        // Statutory Provenance Invariant: isOfficialAlert is true iff sourceType is 'official'
+        ((data.sourceType == 'official' && data.isOfficialAlert == true) ||
+         (data.sourceType != 'official' && (!('isOfficialAlert' in data) || data.isOfficialAlert == false))) &&
         isOptionalString(data, 'region', 200) &&
         (!('latitude' in data) || data.latitude is number) &&
         (!('longitude' in data) || data.longitude is number) &&
@@ -330,21 +333,33 @@ service cloud.firestore {
         (data.targetMode in ['all', 'state', 'city', 'region', 'radius']) &&
         (data.instructions is list && data.instructions.size() <= 20) &&
         isValidTimeValue(data.createdAt) &&
+        isOptionalTimeValue(data, 'updatedAt') &&
         isValidTimeValue(data.expiresAt) &&
         isNonEmptyString(data.createdBy, 100) &&
         (data.status in ['draft', 'active', 'expired', 'cancelled', 'superseded']) &&
         (!('eventIds' in data) || (data.eventIds is list && data.eventIds.size() <= 50)) &&
-        isNonEmptyString(data.dedupeKey, 256);
+        (isNonEmptyString(data.deduplicationKey, 256) || isNonEmptyString(data.dedupeKey, 256)) &&
+        isOptionalString(data, 'relatedDisasterEventId', 200) &&
+        (!('riskScoreSnapshot' in data) || (data.riskScoreSnapshot is number && data.riskScoreSnapshot >= 0 && data.riskScoreSnapshot <= 100)) &&
+        isOptionalString(data, 'supersededById', 100) &&
+        isOptionalString(data, 'supersedesAlertId', 100) &&
+        isOptionalString(data, 'cancellationReason', 500) &&
+        (!('metadata' in data) || data.metadata is map);
     }
 
     // Validates DeliveryAttempt schema (`alerts/{alertId}/deliveryAttempts/{attemptId}`)
     function isValidDeliveryAttempt(data) {
-      return isOptionalString(data, 'userId', 100) &&
-        isNonEmptyString(data.channel, 50) &&
-        isNonEmptyString(data.status, 50) &&
+      return isNonEmptyString(data.channel, 50) &&
+        (data.channel in ['in-site', 'fcm', 'sms']) &&
+        (data.targetRecipientCount is int || data.targetRecipientCount is number) &&
+        (data.status in ['pending', 'in-progress', 'completed', 'failed']) &&
+        isOptionalString(data, 'userId', 100) &&
         isOptionalString(data, 'providerReference', 256) &&
+        isOptionalTimeValue(data, 'createdAt') &&
+        isOptionalTimeValue(data, 'updatedAt') &&
         isOptionalTimeValue(data, 'attemptedAt') &&
-        isOptionalString(data, 'safeErrorCode', 100);
+        isOptionalString(data, 'safeErrorCode', 100) &&
+        isOptionalString(data, 'errorDetails', 1000);
     }
 
     // Validates SmsDeliveryLog schema (`smsDeliveryLogs/{logId}`)
@@ -466,12 +481,14 @@ service cloud.firestore {
     // 4. Alerts Collection (`alerts/{alertId}`)
     // ---------------------------------------------------------------
     match /alerts/{alertId} {
-      // Publicly readable for critical emergency warning broadcast
-      allow read: if true;
+      // Non-draft alerts are publicly readable for critical emergency broadcast; drafts are admin-only
+      allow read: if (resource.data.status in ['active', 'expired', 'cancelled', 'superseded']) || isAdmin();
 
-      // Write operations restricted to authorized backend / admin
+      // Write operations restricted to authorized backend / admin with schema validation
       allow create: if isAdmin() && isValidAlert(request.resource.data);
-      allow update: if isAdmin() && isValidAlert(request.resource.data);
+      allow update: if isAdmin()
+                    && isValidAlert(request.resource.data)
+                    && areImmutableFieldsUnchanged(['id', 'createdAt', 'createdBy', 'sourceType', 'isOfficialAlert', 'deduplicationKey', 'dedupeKey']);
       allow delete: if isAdmin();
 
       // -------------------------------------------------------------
