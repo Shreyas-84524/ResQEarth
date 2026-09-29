@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 1.4 Firebase Core Setup complete (PASS); safe singleton initialization, Zod config validation, Auth, Firestore, Storage, Cloud Messaging, and Analytics foundation services created in `Front-end/`.  
+**Current factual state:** Phase 1.5 Citizen Signup & Profile Creation complete (PASS); React Hook Form + Zod validation, password strength indicators, Firebase Auth registration, Firestore profile & preferences creation, and safe error recovery implemented in `Front-end/`.  
 **Last context update:** 2026-09-29  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 1 — Foundation, UI, Firebase & Authentication
-Current Sub-Phase: Phase 1.4 Firebase Core Setup
+Current Sub-Phase: Phase 1.5 Citizen Signup & Profile Creation
 Current Status: PASS
-Last Completed Sub-Phase: Phase 1.4 Firebase Core Setup
-Next Intended Sub-Phase: Phase 1.5 Signup and Profile Creation (or Auth State / Login / Logout)
+Last Completed Sub-Phase: Phase 1.5 Citizen Signup & Profile Creation
+Next Intended Sub-Phase: Phase 1.6 Login, Logout and Auth State
 ```
 
 ## 29. Implementation Status Table
@@ -555,7 +555,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 1 | 1.2 Design System and Global Layout | PASS | Global tokens, HSL palette, dark/light theme, typography, responsive utilities, UI primitives (Button, Input, Textarea, Label, Card, Badge, Alert, Dialog, Select, Skeleton, EmptyState, ErrorState, PageHeader), accessible Severity components (Low to Critical with dual text+icon), and domain cards (WeatherCard, DisasterCard, RiskIndicator, MapOverlay, AdminDashboardCard, NotificationBanner). |
 | 1 | 1.3 Shared Website Shell & Navigation | PASS | Desktop navbar, mobile navigation drawer with touch gestures/keyboard escape support, 4-column footer with official disclaimer, PageShell wrapper, RouteContainer, global loading shell, global error/root error boundaries, accessible 404 page, and authenticated/admin navigation placeholders. |
 | 1 | 1.4 Firebase Core Setup | PASS | Typed config loading with Zod validation, safe singleton initialization (`initializeApp`), Auth service foundation, Firestore service foundation with collection/subcollection constants & converters, Firebase Storage foundation, FCM foundation with browser/SSR support checks, and updated `.env.example`. |
-| 1 | 1.5 Signup and Profile Creation | NOT STARTED | Email/password Auth; citizen profile and consent fields. |
+| 1 | 1.5 Signup and Profile Creation | PASS | React Hook Form + Zod validation, password strength criteria, phone number validation & normalization (+91 E.164), duplicate email error mapping, Firebase Auth registration, Firestore `users/{uid}` citizen profile & preferences initialization, and safe error recovery. |
 | 1 | 1.6 Login, Logout and Auth State | NOT STARTED | Safe errors and protected-session behavior. |
 | 1 | 1.7 Roles and Route Authorization | NOT STARTED | Citizen/admin isolation in UI, backend, and Firestore Rules. |
 | 1 | 1.8 Public Homepage Shell | NOT STARTED | Hero, mission, dashboard regions, content/CTA placeholders with real states. |
@@ -617,7 +617,7 @@ Never invent credentials or upgrade a status without evidence. `AVAILABLE` means
 
 ## 31. Current Blockers
 
-No blockers currently prevent proceeding to Phase 1.5 (Signup and Profile Creation). Prerequisites/pending inputs for live service operations are:
+No blockers currently prevent proceeding to Phase 1.6 (Login, Logout and Auth State). Prerequisites/pending inputs for live service operations are:
 
 - Firebase project configuration in `.env.local` (from Firebase Console: apiKey, authDomain, projectId, appId) needed for live cloud database/auth operations;
 - exact external disaster API endpoints and any access tokens for Phase 2;
@@ -789,16 +789,17 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-29
-Scope: Phase 1.4 Firebase Core Setup
+Scope: Phase 1.5 Citizen Signup & Profile Creation
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings or errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded without runtime/initialization crashes)
-Firebase Singleton Initialization: PASS (Safe singleton returns null/warns in unconfigured mode, avoiding build/SSR crashes)
-Environment Validation: PASS (Zod schema validates required/optional Firebase Web client config)
-No Secrets Committed: PASS (.env.example updated with clear documentation, .gitignore active)
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including /signup)
+Unit / Validation Suite: PASS (16 tests passed: valid signup payload, invalid email format, weak passwords without uppercase/number/special/length, mismatched passwords, missing fields, short & non-numeric phone rejection, phone normalization to +91 E.164, and Firebase Auth error mapping)
+Client Role Boundary: PASS (Public signup hardcodes role='citizen'; no client role assignment allowed)
+Safe Recovery: PASS (Partial failure handling if Firestore write fails after Auth account creation)
+No Secrets Committed: PASS (.gitignore verified, no sensitive keys in client bundle)
 
-Authentication: NOT TESTED (Scheduled for Phase 1.5/1.6)
+Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Map: NOT TESTED (Scheduled for Phase 2.1)
 Weather: NOT TESTED (Scheduled for Phase 2.4)
 Risk Engine: NOT TESTED (Scheduled for Phase 2.8)
@@ -814,31 +815,21 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 1.4 Firebase Core Setup in `Front-end/` on branch `phase-1`.
+Implemented Phase 1.5 Citizen Signup & Profile Creation in `Front-end/` on branch `phase-1`.
 
 Files/Components Created & Updated:
-- Front-end/src/types/firebase.ts (Complete TypeScript interfaces for UserProfile, UserPreferences, NotificationTokenRecord, DisasterEventDoc, AlertDoc, SmsDeliveryLogDoc, AuditLogDoc, ServiceStatusDoc)
-- Front-end/src/types/index.ts (Re-export all Firebase types)
-- Front-end/src/lib/firebase/config.ts (Zod schema validation, environment extraction, and diagnostic error reporting)
-- Front-end/src/lib/firebase/app.ts (Safe singleton FirebaseApp initialization with graceful unconfigured fallback)
-- Front-end/src/lib/firebase/auth.ts (Firebase Auth initialization and safe getters)
-- Front-end/src/lib/firebase/firestore.ts (Firestore initialization, canonical collection & subcollection constants)
-- Front-end/src/lib/firebase/storage.ts (Firebase Storage initialization and safe getters)
-- Front-end/src/lib/firebase/messaging.ts (Firebase Cloud Messaging with SSR guard & isSupported checks)
-- Front-end/src/lib/firebase/analytics.ts (Firebase Analytics with SSR & isSupported browser checks)
-- Front-end/src/lib/firebase/index.ts (Barrel export for lib/firebase)
-- Front-end/src/services/firebase/auth.ts (Auth state change subscriptions, ID token fetch, sign out helpers)
-- Front-end/src/services/firebase/firestore.ts (Typed Firestore converters and collection references for users, preferences, events, alerts, sms logs, audit logs, service status)
-- Front-end/src/services/firebase/storage.ts (Storage upload and download URL helpers)
-- Front-end/src/services/firebase/messaging.ts (FCM permission request and foreground message listener helpers)
-- Front-end/src/services/firebase/index.ts (Barrel export for services/firebase)
-- Front-end/src/services/index.ts (Top-level services barrel export)
-- Front-end/.env.example (Updated with comprehensive configuration guidance for Firebase Web App credentials)
+- Front-end/src/features/auth/schemas/signup-schema.ts (Zod schema with regex rules for name, Indian 10-digit mobile phone, email, strong password complexity checklist, password confirmation refinement, and phone number normalization to +91)
+- Front-end/src/features/auth/services/auth-service.ts (Firebase Auth registration via createUserWithEmailAndPassword, updateProfile display name, Firestore users/{uid} citizen profile creation with hardcoded role='citizen', users/{uid}/preferences/default disaster preferences initialization, error mapping, and partial failure recovery)
+- Front-end/src/features/auth/components/signup-form.tsx (Client-side React Hook Form component with accessible inputs, real-time password strength checklist, show/hide password toggles, password match indicator, Alert error banner, SMS emergency usage explanation, and redirect to /dashboard)
+- Front-end/src/features/auth/index.ts (Barrel export for auth feature module)
+- Front-end/src/features/auth/__tests__/signup-validation.test.ts (Automated 16-test suite for schema validation, phone normalization, and error mapping)
+- Front-end/src/app/signup/page.tsx (Connected SignupForm within RouteContainer and added SEO metadata)
 
 Features Completed:
-Phase 1.4 Firebase Core Setup.
+Phase 1.5 Citizen Signup & Profile Creation.
 
 Tests Run:
+- npx tsx src/features/auth/__tests__/signup-validation.test.ts: PASS (16/16 unit tests passed)
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
 - npm run build (next build): PASS (24 static routes compiled successfully)
@@ -847,13 +838,13 @@ Known Issues:
 None.
 
 Current Blockers:
-None for Phase 1.5. (For live cloud operations, real credentials from Firebase Console are required in `.env.local`).
+None for Phase 1.6. (For live cloud signup/login testing, real Firebase project credentials in `.env.local` are required).
 
 Next Recommended Task:
-Phase 1.5 — Signup and Profile Creation (Email/password Auth, Zod validation, citizen profile with consent fields).
+Phase 1.6 — Login, Logout and Auth State (SignInWithEmailAndPassword, AuthContext / useAuth hook, safe session persistence, protected route guards).
 
 Warnings for Next Agent:
-Maintain the modular singleton pattern in `src/lib/firebase` and service functions in `src/services/firebase`. Do not bypass Zod schema validation or commit secrets.
+Preserve citizen/admin role separation. Public signup must remain strictly citizen-only. Build on the established authService and signupSchema foundation.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -862,10 +853,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 1.4 Firebase Core Setup complete (PASS) on branch `phase-1`. Firebase client, Auth, Firestore, Storage, Messaging, and Analytics foundations are established and verified.
+Phase 1.5 Citizen Signup & Profile Creation complete (PASS) on branch `phase-1`. /signup route is fully functional with Zod validation, password criteria, Firebase Auth registration, Firestore profile initialization, and unit test coverage.
 
 Next Action:
-Proceed with Phase 1.5 Signup and Profile Creation.
+Proceed with Phase 1.6 Login, Logout and Auth State.
 ```
 
 ## 40. Brain.md Maintenance Rule
