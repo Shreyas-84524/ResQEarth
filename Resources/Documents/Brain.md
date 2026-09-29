@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.7 Unified Disaster Map Experience & Heatmap complete (PASS); WebGL multi-hazard heatmap layer with severity-weighted intensity, smooth zoom-based transitions (low zoom = density heatmap, high zoom = precision vector markers), display mode switcher (`all` / `markers` / `heatmap`), selected event cyan halo with map ↔ list two-way scroll synchronization, fit-to-filtered-events and recenter-to-GPS actions, compact mobile toolbar controls, and interactive multi-tab GIS legend explaining severity levels, heatmap density, statutory gold alert rings, and educational non-evacuation boundary notice. Next step: Phase 2.8 Explainable Deterministic Risk Engine and Phase 2 Final Validation.  
+**Current factual state:** Phase 1 and Phase 2 have been safely and cleanly integrated into `main` (PASS). `phase-1` was integrated into `main` using an intentional unrelated-histories merge, and `phase-2` was merged normally with zero merge conflicts. All 16 unit test suites (247 tests), TypeScript type checks, ESLint, Next.js production build (24 routes), and local dev server smoke testing across all 12 public, auth, protected, and admin routes passed with zero errors. All branches (`main`, `phase-1`, `phase-2`) and safety backups are preserved. Next step: Phase 3.1 Unified Alert Model and Lifecycle.  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -770,6 +770,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Decision:** Implement the deterministic, versioned (`v1.0.0-deterministic`), explainable disaster risk engine (`calculateDisasterRisk`) evaluating live weather telemetry (rain rate, precipitation forecast probability, sustained wind, squall gusts, heatwave/coldwave thermal extremes), nearby USGS earthquakes (tiered magnitude-distance matrix up to 150 km), nearby NASA EONET natural disasters (wildfires, cyclones, floods, landslides, volcanoes within proximity radii), Indian statutory alerts (NDMA SACHET / IMD CAP advisories with statutory provenance flags), and regional coastal vulnerability baselines. The engine returns clamped 0–100 integer scores, 5-tier canonical risk levels (`LOW`, `GUARDED`, `MODERATE`, `HIGH`, `CRITICAL`), 5-dimension per-hazard breakdowns (Flood, Storm, Earthquake, Heatwave, Wildfire), itemized point contributions (`+{points}`), plain-English factor summaries, missing feed disclosures with graceful confidence degradation (`HIGH`, `MODERATE`, `LOW`), `RiskOverviewCard`, `PerHazardRiskGrid`, and `RiskBadge`, strictly labeled as **`RESQEARTH CALCULATED RISK`** across `/`, `/dashboard`, and `/map`.  
 **Reason:** Deliver auditable, transparent, zero-black-box environmental risk assessments without misrepresenting calculated indicators as statutory government evacuation mandates, in full alignment with the ESE mission and PRD/Architecture specifications.  
 **Impact:** Citizens and public visitors receive real-time, explainable situational awareness and individual hazard readiness indices backed by 12 comprehensive unit tests (247 total passing across 16 test suites) and zero cloud database dependencies. Phase 2 is now complete.
+ 
+### Decision D-022
+
+**Date:** 2026-09-30  
+**Decision:** Safely integrate Phase 1 and Phase 2 into `main` using an intentional unrelated-histories merge for Phase 1 (`git merge phase-1 --allow-unrelated-histories --no-ff`) followed by a standard merge for Phase 2 (`git merge phase-2 --no-ff`), preserving all branches and safety backup references (`backup/main-before-phase-integration`, `backup/phase-1-before-main-integration`, `backup/phase-2-before-main-integration`).  
+**Reason:** `main` was originally initialized with an isolated repository commit (`1c52ce1`), whereas `phase-1` began on a distinct commit tree (`1c6d542` / `f02eb1a`), causing disconnected git root histories. Merging with `--allow-unrelated-histories` cleanly unified the trees while preserving complete commit provenance, and subsequent standard merging of `phase-2` established full ancestor relationships (`git merge-base --is-ancestor phase-1 main` and `git merge-base --is-ancestor phase-2 main` both true) with zero conflicts.  
+**Impact:** `main` now represents the full cumulative state of Phase 1 (foundation, auth, RBAC, shell, design system) and Phase 2 (MapLibre GIS, Open-Meteo weather, USGS earthquakes, NASA EONET events, Indian statutory alerts, unified multi-hazard intelligence, WebGL heatmap, and deterministic risk engine) verified with 247 passing tests, clean production builds, and 0 runtime errors.
 
 ## 33. AI Coding Rules
 
@@ -859,7 +866,19 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.8 Explainable Disaster Risk Engine & Phase 2 Final Validation
+Scope: Git Integration of Phase 1 & Phase 2 into `main` + Full Integration Validation Suite
+
+Git Integration Status: PASS (0 conflicts)
+- Phase 1 -> main: Merged cleanly via intentional unrelated-histories merge (343b425)
+- Phase 2 -> main: Merged cleanly via standard fast-forward-disabled merge (5a9e9a4)
+- Ancestry Check:
+  * phase-1 is ancestor of main: YES (git merge-base --is-ancestor phase-1 main = 0)
+  * phase-2 is ancestor of main: YES (git merge-base --is-ancestor phase-2 main = 0)
+  * Missing commits on main: NONE (git log main..phase-1 and main..phase-2 return 0 commits)
+- Safety Backups Created:
+  * backup/main-before-phase-integration (1c52ce1)
+  * backup/phase-1-before-main-integration (a544bd5)
+  * backup/phase-2-before-main-integration (579711c)
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
@@ -873,12 +892,12 @@ Unit / Validation Suite: PASS (247 tests passed across 16 test suites:
   - Global Disaster Intelligence (NASA EONET): 9 unit tests (Category mapping, severity classification, dynamic marker radius scaling, geometry centroid extraction across Point/LineString/Polygon/Temporal array, malformed/out-of-range rejection, distance math, feed sorting, GeoJSON conversion, cache management)
   - Unified Multi-Hazard Intelligence: 11 unit tests (Indian CAP alert normalization, statutory provenance integrity, CAP severity mappers, Earthquake-to-Unified adapter, GlobalDisaster-to-Unified adapter, Weather telemetry hazard extraction for heavy rain/wind/heatwaves, spatial & temporal deduplication [15 km, 6h], multi-criteria filtering [category, provider, severity, official-only, distance, search], GeoJSON conversion for MapLibre, styling expressions, concurrent feed aggregator with caching)
   - Explainable Risk Engine: 12 unit tests (Score-to-band mappings, nominal baseline assessment, precipitation & flood tiers, wind & cyclone squalls, extreme temperature heat/cold waves, nearby seismic tiered matrices, NASA EONET wildfire/cyclone scoring, NDMA/IMD statutory alert provenance flags, coastal exposure baseline, compound multi-hazard clamping, missing feed graceful degradation, per-hazard breakdown matrix))
-Multi-Hazard Heatmap Layer: PASS (MapUnifiedDisasterLayer with WebGL heatmap layer, severity-weighted intensity stops, smooth zoom transitions fading out from zoom 4 to zoom 9, and continuous display mode support)
-GIS Map Controls & Toolbar: PASS (MapGisToolbar floating component with Hybrid / Markers / Heatmap mode switcher, Fit to Filtered Events action via computeBoundingBox, Recenter to GPS location, Reset to Mumbai view, and Legend toggle)
-Interactive Multi-Tab GIS Legend: PASS (MapGisLegend component with Severity 5-tier scale, Heatmap color gradient & zoom transition explanation, Statutory gold ring provenance badges, and explicit disclaimer: "Heatmap reflects incident density and severity for decision-support; not an official flood or evacuation zone boundary.")
-Explainable Risk Architecture: PASS (Deterministic 0–100 risk scoring algorithm, itemized contributing factors with points, plain-English factor summaries, missing input disclosures, and strict RESQEARTH CALCULATED RISK labeling)
-Two-Way Map ↔ List Synchronization: PASS (Selected event renders cyan focus halo on map and automatically scrolls matching card into view smoothly in UnifiedDisasterListPanel)
-Attribution & Transparency: PASS (OSM basemap, USGS, NASA EONET, NDMA SACHET, IMD, and Open-Meteo attribution displayed clearly)
+
+Local Dev Server Launch & Smoke Test: PASS (HTTP 200 on all 12 verified endpoints with 0 runtime errors)
+- Public: / (200 OK), /map (200 OK), /disasters (200 OK), /history (200 OK), /government-response (200 OK), /about (200 OK)
+- Authentication: /signup (200 OK), /login (200 OK)
+- Protected: /dashboard (200 OK), /alerts (200 OK), /profile (200 OK)
+- Admin: /admin (200 OK)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
@@ -902,45 +921,24 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.8 Explainable Disaster Risk Engine and completed Phase 2 final validation in `Front-end/` on branch `phase-2`. Developed pure deterministic scoring algorithm (`calculateDisasterRisk` with modelVersion `v1.0.0-deterministic`), itemized factor weightings (precipitation, rain forecast probability, sustained winds, squall gusts, extreme temperature heat/cold waves, nearby USGS earthquakes with tiered magnitude-distance matrices, nearby NASA EONET events, Indian statutory NDMA SACHET / IMD CAP alerts with provenance flags, and coastal vulnerability baseline), per-hazard 5-dimension breakdown (Flood, Storm, Earthquake, Heatwave, Wildfire), plain-English explanations, missing feed disclosures with graceful confidence degradation, `RiskOverviewCard`, `PerHazardRiskGrid`, `RiskBadge`, and `useDisasterRisk` hook. Integrated live calculated risk onto the homepage (`/`), citizen dashboard (`/dashboard`), and interactive map (`/map`), strictly labeled as "RESQEARTH CALCULATED RISK". Verified with 12 comprehensive unit tests (247 total passing across 16 test suites), 0 TypeScript errors, 0 ESLint warnings, and 24 static pages in Next.js production build.
+Safely integrated completed Phase 1 and Phase 2 implementations into `main`. Performed full repository audit, created safety backups (`backup/main-before-phase-integration`, `backup/phase-1-before-main-integration`, `backup/phase-2-before-main-integration`), merged `phase-1` into `main` using `--allow-unrelated-histories` (commit 343b425), validated Phase 1 on `main`, merged `phase-2` into `main` normally (commit 5a9e9a4), and ran complete validation suite on `main`. Verified 247/247 passing unit tests across 16 test suites, 0 TypeScript errors, 0 ESLint warnings, successful Next.js production build (24 routes), and launched local dev server smoke testing all 12 public, auth, protected, and admin routes with 0 runtime errors. Updated Brain.md to document the integration state.
 
-Files/Components Created & Updated:
-- Front-end/src/features/risk/types/risk.ts (RiskAssessment, RiskFactorContribution, DisasterCategoryRisk, RiskEngineInputs, RiskLevel, RiskConfidence)
-- Front-end/src/features/risk/types/index.ts (Type exports)
-- Front-end/src/features/risk/constants/risk-config.ts (Weights, thresholds, bands, feeds, and model version v1.0.0-deterministic)
-- Front-end/src/features/risk/constants/index.ts (Constant exports)
-- Front-end/src/features/risk/services/risk-engine-service.ts (Deterministic calculateDisasterRisk algorithm, scoreToRiskLevel, factor evaluations, and summary generator)
-- Front-end/src/features/risk/services/index.ts (Service exports)
-- Front-end/src/features/risk/hooks/use-disaster-risk.ts (Reactive hook combining geolocation, weather, and unified disasters)
-- Front-end/src/features/risk/hooks/index.ts (Hook exports)
-- Front-end/src/features/risk/components/risk-overview-card.tsx (Card with gauge bar, factor point breakdown, confidence badge, missing inputs note, and statutory disclaimer)
-- Front-end/src/features/risk/components/per-hazard-risk-grid.tsx (5-dimension hazard breakdown with progress bars and preparedness links)
-- Front-end/src/features/risk/components/risk-badge.tsx (Compact badge with score and level)
-- Front-end/src/features/risk/components/index.ts (Component exports)
-- Front-end/src/features/risk/index.ts (Public risk feature module API)
-- Front-end/src/features/risk/__tests__/risk-engine.test.ts (12 executable unit test suites)
-- Front-end/src/app/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, and PerHazardRiskGrid into Section 5)
-- Front-end/src/app/dashboard/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, PerHazardRiskGrid, and header RiskBadge)
-- Front-end/src/app/map/page.tsx (Integrated useDisasterRisk and header RiskBadge)
-- Resources/Documents/Brain.md (Updated factual state, marked Phase 2 = PASS / COMPLETE, added Decision D-021, updated validation memory, and prepared Phase 3 handoff)
+Branches & History State:
+- main: Contains original main history + all Phase 1 commits + all Phase 2 commits
+- phase-1: Preserved intact (a544bd5, ancestor of main)
+- phase-2: Preserved intact (579711c, ancestor of main)
+- Safety Backups: backup/main-before-phase-integration, backup/phase-1-before-main-integration, backup/phase-2-before-main-integration preserved
 
-Features Completed:
-- Deterministic 0–100 risk calculation algorithm (`v1.0.0-deterministic`) with zero black-box AI.
-- Transparent itemized factor point contributions (`+{points}`) with plain-English descriptions and source attribution.
-- 5-tier canonical RiskLevel mapping: LOW (0–20), GUARDED (21–40), MODERATE (41–60), HIGH (61–80), CRITICAL (81–100).
-- 5-dimension per-hazard breakdown matrix: Flood & Inundation, Cyclone & Storm, Seismic Shaking, Extreme Temperature, and Wildfire.
-- Statutory Indian alert detection with official provenance flags, distinct from ResQEarth calculations.
-- Regional coastal vulnerability baseline integration for Mumbai & coastal Maharashtra.
-- Missing feed detection & disclosure with graceful confidence degradation (HIGH, MODERATE, LOW).
-- Prominent educational and non-evacuation boundary disclaimers with statutory NDMA/IMD precedence.
-- Live integration across `/`, `/dashboard`, and `/map`.
-- Phase 2 (Maps, Environmental APIs & Disaster Intelligence) is 100% complete and verified.
+Features Verified on Main:
+- Phase 1: ResQEarth design system, responsive application shell, navigation, Firebase core integration, citizen signup & profile creation, login & session management, role guards & access control, public disaster awareness dashboard.
+- Phase 2: MapLibre GL JS 5.2 GIS engine, geolocation & OSM Nominatim reverse geocoding, Open-Meteo weather intelligence, USGS earthquake feeds, NASA EONET natural disaster events, NDMA/IMD Indian statutory alerts, unified multi-hazard aggregation & deduplication, WebGL multi-hazard heatmap & GIS controls, deterministic explainable disaster risk engine v1.0.0.
 
-Tests Run:
+Tests Run on Main:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
 - npm run build (next build): PASS (24 static routes compiled successfully, / (9.4 kB), /map (4.63 kB), and /dashboard (2.73 kB) verified)
 - Unit test suite: PASS (247/247 unit tests passed across 16 test suites)
+- Dev server live smoke tests: PASS (12/12 routes return HTTP 200 with complete markup and 0 runtime errors)
 
 Known Issues:
 None.
@@ -952,17 +950,17 @@ Next Recommended Task:
 Phase 3.1 — Unified Alert Model and Lifecycle (Establish canonical alert Firestore schemas, source types, delivery attempt tracking, and lifecycle states on branch `phase-3`).
 
 Warnings for Next Agent:
-Maintain deterministic scoring weights and the strict `RESQEARTH CALCULATED RISK` provenance badge when integrating automated and manual alerts in Phase 3.
+Branch `phase-3` must be branched from `main` (which now incorporates all Phase 1 and Phase 2 foundations).
 ```
 
 ## 39. Immediate Next Action
 
 ```text
 Current State:
-Phase 2 (Sub-Phases 2.1 through 2.8) is 100% complete (PASS) on branch `phase-2`.
+Phase 1 and Phase 2 are 100% complete and integrated into `main` (PASS).
 
 Next Action:
-Proceed with Phase 3.1 Unified Alert Model and Lifecycle.
+Create branch `phase-3` from `main` and proceed with Phase 3.1 Unified Alert Model and Lifecycle.
 ```
 
 ## 40. Brain.md Maintenance Rule
