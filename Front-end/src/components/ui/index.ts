@@ -13,3 +13,4 @@ export * from "./error-state";
 export * from "./page-header";
 export * from "./severity-badge";
 export * from "./severity-indicator";
+export * from "./tabs";
