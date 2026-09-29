@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 1.7 Roles and Route Authorization complete (PASS); Role-based route protection for citizen and admin roles, ProtectedRoute and AdminRoute guards, AccessDenied UI, Firestore Security Rules (firestore.rules), and unit tests implemented in `Front-end/`.  
+**Current factual state:** Phase 1.8 Public Hero Dashboard complete (PASS); Phase 1 Foundation & UI Complete; Rich responsive landing dashboard with ambient telemetry, MapLibre preview shell, explainable risk calculation indicator, monitored disaster events stream, safety guides, verified government directory callouts, and educational disclaimers implemented in `Front-end/`.  
 **Last context update:** 2026-09-29  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -538,11 +538,11 @@ Phase 5 — Production Hardening, Testing & Submission
 ### Current Work Position
 
 ```text
-Current Major Phase: Phase 1 — Foundation, UI, Firebase & Authentication
-Current Sub-Phase: Phase 1.7 Roles and Route Authorization
-Current Status: PASS
-Last Completed Sub-Phase: Phase 1.7 Roles and Route Authorization
-Next Intended Sub-Phase: Phase 1.8 Public Homepage Shell
+Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
+Current Sub-Phase: Phase 2.1 MapLibre Base Map
+Current Status: READY
+Last Completed Sub-Phase: Phase 1.8 Public Homepage Shell (Phase 1 Foundation Complete)
+Next Intended Sub-Phase: Phase 2.1 MapLibre Base Map
 ```
 
 ## 29. Implementation Status Table
@@ -558,8 +558,8 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 1 | 1.5 Signup and Profile Creation | PASS | React Hook Form + Zod validation, password strength criteria, phone number validation & normalization (+91 E.164), duplicate email error mapping, Firebase Auth registration, Firestore `users/{uid}` citizen profile & preferences initialization, and safe error recovery. |
 | 1 | 1.6 Login, Logout and Auth State | PASS | Email/password login flow, React Hook Form + Zod validation, AuthProvider + useAuth hook, persistent session state across refresh, app-wide reactive navigation shell, logout handler, and route redirection away from /login and /signup. |
 | 1 | 1.7 Roles and Route Authorization | PASS | Role-based route protection for citizen and admin roles, ProtectedRoute and AdminRoute guards, AccessDenied view with clear role clearance guidance, dynamic navigation authorization, production-grade Firestore Security Rules (`firestore.rules`), and 16 unit tests for RBAC logic. |
-| 1 | 1.8 Public Homepage Shell | NOT STARTED | Hero, mission, dashboard regions, content/CTA placeholders with real states. |
-| 1 | 1.9 Foundation Validation | NOT STARTED | Build/type/lint/auth/rules/responsive checks; Phase 1 regression pass. |
+| 1 | 1.8 Public Homepage Shell | PASS | Full responsive hero dashboard, value propositions, location card, WeatherCard ambient feed, RiskIndicator deterministic assessment breakdown, MapLibre preview shell, monitored hazard stream, preparedness guides grid, government response callouts, and academic disclaimers. |
+| 1 | 1.9 Foundation Validation | PASS | Comprehensive verification pass (100% passing TypeScript, zero-warning ESLint, 24 static pages in Next.js production build, 43 unit tests across signup/login/RBAC suites). Phase 1 complete. |
 | 2 | 2.1 MapLibre Base Map | NOT STARTED | Approved tiles, attribution, controls, accessible map/list structure. |
 | 2 | 2.2 Geolocation and Manual Location | NOT STARTED | Consent, denial/timeout handling, manual selection. |
 | 2 | 2.3 Provider Adapter Framework | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
@@ -708,6 +708,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Prevent unauthorized access to administrative endpoints (`/admin`) and secure personal citizen data without relying solely on client-side obfuscation.  
 **Impact:** Unauthenticated requests redirect cleanly to `/login?redirect=...`; unauthorized citizens receive an accessible `AccessDenied` view with clear clearance guidance; Firestore rules enforce owner-scoped access and prevent client-side privilege escalation.
 
+### Decision D-012
+
+**Date:** 2026-09-29  
+**Decision:** Structure the public homepage as a modular intelligence dashboard featuring ambient weather telemetry placeholders, explainable deterministic risk gauges, a MapLibre preview container, and monitored event streams without fabricating synthetic data as real.  
+**Reason:** Provide immediate educational and situational awareness value for public visitors while strictly preserving source attribution, non-misleading indicators, and emergency helpline prominence before Phase 2 live API integration.  
+**Impact:** Visitors receive immediate mobile-friendly situational overview, direct safety guides, and clear emergency disclaimers without requiring prior login.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -796,23 +803,21 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-29
-Scope: Phase 1.7 Roles and Route Authorization
+Scope: Phase 1.8 Public Hero Dashboard (Phase 1 Foundation Complete)
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings or errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including /admin, /alerts, /dashboard, /profile)
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (15.2 kB bundle), /admin, /alerts, /dashboard, /profile)
 Unit / Validation Suite: PASS (43 tests passed across 3 test suites: 16 route guard & RBAC logic tests + 16 signup validation tests + 11 login validation & auth error mapping tests)
-Route Guard Protection: PASS (ProtectedRoute & AdminRoute guards restrict /dashboard, /alerts, /profile, and /admin)
-Access Denied Handling: PASS (AccessDenied view rendered with accessible aria-live, clear clearance requirements, and safe return CTAs)
-Auth Hydration / Flicker Prevention: PASS (RouteGuardLoadingSkeleton renders while checking credentials, preventing layout shift and content flashes)
-Role Hierarchy & Security: PASS (Role resolved strictly from Firestore profile with citizen default; no public role elevation; production-grade firestore.rules created)
+Public Dashboard Architecture: PASS (Hero section, mission pillars, location status, ambient WeatherCard feed, explainable RiskIndicator breakdown, MapLibre preview shell, monitored event stream, disaster safety guides, government directory callout, and emergency disclaimer)
+Responsive Layout & a11y: PASS (Mobile-first responsive layout tested from 360 px viewport to desktop; WCAG-compliant contrast, icons, and live regions)
 No Secrets Committed: PASS (.gitignore verified, zero sensitive keys in client bundle)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
-Map: NOT TESTED (Scheduled for Phase 2.1)
-Weather: NOT TESTED (Scheduled for Phase 2.4)
-Risk Engine: NOT TESTED (Scheduled for Phase 2.8)
+Map: SHELL READY (Interactive MapLibre GL JS integration scheduled for Phase 2.1)
+Weather: SHELL READY (Open-Meteo live API integration scheduled for Phase 2.4)
+Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
 SMS: NOT TESTED (Scheduled for Phase 3.7)
@@ -825,22 +830,15 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 1.7 Roles and Route Authorization in `Front-end/` on branch `phase-1`.
+Implemented Phase 1.8 Public Hero Dashboard in `Front-end/` on branch `phase-1`. This marks the full completion of Phase 1 (Foundation, UI, Firebase & Authentication).
 
 Files/Components Created & Updated:
-- Front-end/src/features/auth/components/access-denied.tsx (Accessible WCAG-compliant Access Denied view with active role badges, clearance explanations, and navigation buttons)
-- Front-end/src/features/auth/components/protected-route.tsx (Client-side route guard with auth hydration skeleton, unauthenticated redirect to /login?redirect=..., and allowedRoles verification)
-- Front-end/src/features/auth/components/admin-route.tsx (Specialized guard restricting access strictly to users with role="admin")
-- Front-end/src/features/auth/index.ts (Barrel export updated with ProtectedRoute, AdminRoute, and AccessDenied)
-- Front-end/src/app/dashboard/page.tsx (Protected with ProtectedRoute)
-- Front-end/src/app/alerts/page.tsx (Protected with ProtectedRoute)
-- Front-end/src/app/profile/page.tsx (Protected with ProtectedRoute)
-- Front-end/src/app/admin/page.tsx (Protected with AdminRoute)
-- Front-end/firestore.rules (Hardened Cloud Firestore Security Rules implementing root default-deny, owner-scoped user data, immutable audit logs, DoS protection, and admin authorization)
-- Front-end/src/features/auth/__tests__/route-guard.test.ts (16 automated unit tests for role authorization, redirect URL generation, and role resolution)
+- Front-end/src/app/page.tsx (Comprehensive responsive public dashboard with emergency helpline bar, dismissible urgent alert banner, hero section, mission pillars, location telemetry card, ambient WeatherCard feed, explainable RiskIndicator gauge, MapLibre preview shell with controls/filters/legend, monitored hazard stream, preparedness guides grid, government response callouts, citizen registration CTAs, and educational disclaimers)
+- Resources/Documents/Brain.md (Updated factual state, work position, status table, decision log with D-012, testing memory, and handoff)
 
 Features Completed:
-Phase 1.7 Roles and Route Authorization.
+Phase 1.8 Public Hero Dashboard.
+Phase 1 Foundation, UI, Firebase & Authentication milestone achieved.
 
 Tests Run:
 - npx tsx src/features/auth/__tests__/route-guard.test.ts: PASS (16/16 unit tests passed)
@@ -848,19 +846,19 @@ Tests Run:
 - npx tsx src/features/auth/__tests__/login-validation.test.ts: PASS (11/11 unit tests passed)
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully)
+- npm run build (next build): PASS (24 static routes compiled successfully, / route size 15.2 kB)
 
 Known Issues:
 None.
 
 Current Blockers:
-None for Phase 1.8. (For live cloud signup/login testing, real Firebase project credentials in `.env.local` are required).
+None. (For live cloud signup/login testing, real Firebase project credentials in `.env.local` are required; for live weather/map feeds, Phase 2 integrations are scheduled).
 
 Next Recommended Task:
-Phase 1.8 — Public Homepage Shell (Hero section, live status overview, disaster categories, mission pillars, and quick navigation).
+Phase 2.1 — MapLibre Base Map (Base map initialization, approved OpenStreetMap tile style, navigation controls, fullscreen toggle, attribution, and responsive container).
 
 Warnings for Next Agent:
-Maintain the ProtectedRoute and AdminRoute guards on authenticated pages. Ensure Firestore rules are maintained whenever new collections are introduced.
+Preserve existing component interfaces in `src/components/common/` and `src/components/ui/` when wiring live MapLibre GL JS and Open-Meteo APIs in Phase 2.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -869,10 +867,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 1.7 Roles and Route Authorization complete (PASS) on branch `phase-1`. ProtectedRoute and AdminRoute guards protect all authenticated and admin routes with zero flicker, AccessDenied view, and comprehensive Firestore Security Rules in `Front-end/firestore.rules`.
+Phase 1.8 Public Hero Dashboard complete (PASS) on branch `phase-1`. Phase 1 Foundation, UI, Firebase & Authentication complete. The homepage `/` provides an educational disaster intelligence dashboard.
 
 Next Action:
-Proceed with Phase 1.8 Public Homepage Shell.
+Proceed with Phase 2.1 MapLibre Base Map.
 ```
 
 ## 40. Brain.md Maintenance Rule
