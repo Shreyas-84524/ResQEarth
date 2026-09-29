@@ -14,6 +14,8 @@ import { MapRegionPresetPicker } from "./map-region-preset-picker";
 import { MapUserLocationMarker } from "./map-user-location-marker";
 import { MapLocationStatusBadge } from "./map-location-status-badge";
 import { LocationSearchDialog } from "./location-search-dialog";
+import { WeatherCompactBadge } from "@/features/weather/components/weather-compact-badge";
+import { useWeather } from "@/features/weather/hooks/use-weather";
 import {
   MapFilterChips,
   MapLegend,
@@ -41,6 +43,7 @@ export interface MapViewProps {
   showFilterChips?: boolean;
   showRegionPicker?: boolean;
   showLocationBadge?: boolean;
+  showWeatherBadge?: boolean;
   showLegend?: boolean;
   showNavigationControls?: boolean;
   showFullscreenControl?: boolean;
@@ -66,6 +69,7 @@ function MapViewInternal({
   showFilterChips = true,
   showRegionPicker = false,
   showLocationBadge = true,
+  showWeatherBadge = true,
   showLegend = true,
   showNavigationControls = true,
   showFullscreenControl = true,
@@ -77,6 +81,7 @@ function MapViewInternal({
 }: MapViewProps) {
   const mapContext = React.useContext(MapContext);
   const { location } = useGeolocation();
+  const { weather, isLoading: isWeatherLoading } = useWeather();
   const [selectedFilter, setSelectedFilter] = React.useState("all");
   const [isLocationDialogOpen, setIsLocationDialogOpen] = React.useState(false);
 
@@ -129,11 +134,18 @@ function MapViewInternal({
           </div>
         )}
 
-        {/* Top-Left Sub-bar: Region Preset Picker and Location Status Badge */}
+        {/* Top-Left Sub-bar: Region Preset Picker, Location Status Badge, and Weather Badge */}
         <div className="absolute top-14 left-3 z-10 flex flex-wrap items-center gap-1.5 max-w-[calc(100%-80px)]">
           {showLocationBadge && (
             <MapLocationStatusBadge
               onClickChange={() => setIsLocationDialogOpen(true)}
+            />
+          )}
+
+          {showWeatherBadge && (
+            <WeatherCompactBadge
+              weather={weather}
+              isLoading={isWeatherLoading}
             />
           )}
 

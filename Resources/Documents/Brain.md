@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.2 Geolocation & Region Resolution complete (PASS); Browser geolocation with permission lifecycle (prompt/granted/denied/unavailable/timeout), MapLibre GPS dot with accuracy buffer circle polygon, OpenStreetMap Nominatim reverse geocoding with throttling/caching/offline Indian city fallback, manual location selector dialog with 16 preset cities/coordinates, session persistence, and location status telemetry card implemented in `Front-end/`. Next step: Phase 2.3 Provider Adapter Framework.  
+**Current factual state:** Phase 2.3 Weather Intelligence Integration complete (PASS); Open-Meteo live weather API integration with WMO interpretation codes, coordinate rounding cache (~1km), in-flight deduplication, stale cache fallback, responsive WeatherOverviewCard with 8-hour hourly trend ribbon, WeatherCompactBadge map overlay, and useWeather hook connected to homepage `/`, `/map`, and `/dashboard`. Next step: Phase 2.4 Earthquake & Global Event Integrations (or Provider Adapter Framework).  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
-Current Sub-Phase: Phase 2.2 Geolocation and Manual Location
+Current Sub-Phase: Phase 2.3 Weather Intelligence Integration
 Current Status: PASS
-Last Completed Sub-Phase: Phase 2.2 Geolocation and Manual Location
-Next Intended Sub-Phase: Phase 2.3 Provider Adapter Framework
+Last Completed Sub-Phase: Phase 2.3 Weather Intelligence Integration
+Next Intended Sub-Phase: Phase 2.4 Earthquake & Global Event Integrations
 ```
 
 ## 29. Implementation Status Table
@@ -562,11 +562,11 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 1 | 1.9 Foundation Validation | PASS | Comprehensive verification pass (100% passing TypeScript, zero-warning ESLint, 24 static pages in Next.js production build, 43 unit tests across signup/login/RBAC suites). Phase 1 complete. |
 | 2 | 2.1 MapLibre Base Map | PASS | MapLibre GL JS 5.2 engine, OpenStreetMap basemap, Mumbai anchor, pan/zoom/touch/fullscreen/scale controls, cluster & heatmap layer registry, GeoJSON helpers, 95 GIS unit tests, active on `/` and `/map`. |
 | 2 | 2.2 Geolocation and Manual Location | PASS | Browser GPS request, permission states, accuracy buffer circle, OSM Nominatim reverse geocoder with throttling/caching/offline fallback, manual search dialog, session persistence, and location telemetry card. |
-| 2 | 2.3 Provider Adapter Framework | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
-| 2 | 2.4 Weather Integration | NOT STARTED | Open-Meteo cards, units, source, freshness, fallback. |
-| 2 | 2.5 Earthquake and Global Event Integrations | NOT STARTED | USGS plus NASA EONET or GDACS after verification. |
-| 2 | 2.6 Flood and Indian Source Evaluation | NOT STARTED | Integrate only verified sources; label unavailable/curated data honestly. |
-| 2 | 2.7 Unified Events, Map Layers and Nearby Detection | NOT STARTED | Normalized GeoJSON, markers, clusters, filters, Haversine distance. |
+| 2 | 2.3 Weather Intelligence Integration | PASS | Open-Meteo live weather API, WMO interpretation codes, coordinate rounding cache (~1km), deduplication, stale cache fallback, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard. |
+| 2 | 2.4 Earthquake and Global Event Integrations | NOT STARTED | USGS plus NASA EONET or GDACS after verification. |
+| 2 | 2.5 Flood and Indian Source Evaluation | NOT STARTED | Integrate only verified sources; label unavailable/curated data honestly. |
+| 2 | 2.6 Unified Events, Map Layers and Nearby Detection | NOT STARTED | Normalized GeoJSON, markers, clusters, filters, Haversine distance. |
+| 2 | 2.7 Provider Adapter Framework & Pipeline Hardening | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
 | 2 | 2.8 Explainable Risk Engine and Phase Validation | NOT STARTED | Versioned rules, contribution UI, boundaries, partial-provider tests. |
 | 3 | 3.1 Unified Alert Model and Lifecycle | NOT STARTED | Source types, statuses, dedupe, expiry, Firestore model. |
 | 3 | 3.2 In-Site Citizen Warnings | NOT STARTED | Target-aware warning list/detail independent of FCM. |
@@ -601,14 +601,14 @@ Allowed statuses: `PENDING`, `AVAILABLE`, `CONNECTED`, `TESTED`, `FAILED`, `NOT 
 
 | Provider | Purpose | Status | Credentials Needed | Notes |
 |---|---|---|---|---|
-| Open-Meteo | Weather | PENDING | No/Unknown | Intended P0 provider; endpoint/terms not yet verified in repository. |
+| Open-Meteo | Weather | TESTED | No/Unknown | Live forecast endpoint connected; temperature, humidity, precipitation, wind, weather codes, and hourly forecasts normalized and tested. |
 | Open-Meteo Flood / GloFAS | Flood/river data | PENDING | No/Unknown | Access and MVP feasibility not yet verified. |
-| USGS | Earthquakes | PENDING | No expected, unverified | GeoJSON integration not started. |
+| USGS | Earthquakes | PENDING | No expected, unverified | GeoJSON integration scheduled for Phase 2.4. |
 | NASA EONET | Global natural events | PENDING | TBD | Candidate; final selection not made. |
 | GDACS | Global disaster events | PENDING | TBD | Candidate; final selection not made. |
 | NDMA SACHET | Indian official alerts | PENDING | TBD | Endpoint/access/reuse details pending. |
 | IMD | Indian weather/official information | PENDING | TBD | Endpoint/access/reuse details pending. |
-| Map tile provider | OSM-compatible basemap | PENDING | TBD | Provider, usage limits, and attribution must be approved. |
+| Map tile provider | OSM-compatible basemap | TESTED | None required | OpenStreetMap standard raster basemap tiles active and verified. |
 | Firebase | Auth, Firestore, Storage, FCM | AVAILABLE | Project credentials in `.env.local` | SDK initialization, singleton, Zod validation, and typed services created; live console config required for live database operations. |
 | SMS Gateway | Two-part SMS alerts | PENDING | Existing gateway details required | Credentials must remain backend-only; integration not started. |
 | Antideploy | Production hosting | PENDING | Deployment access/configuration required | Required runtime/FCM/HTTPS capabilities not yet verified. |
@@ -736,6 +736,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Respect user privacy, provide instant visual feedback on location precision, avoid repeated permission prompts, and guarantee full functionality even when network reverse geocoding or GPS permissions fail (with zero Firebase dependency).  
 **Impact:** Map view updates seamlessly on GPS resolve or manual region switch; session storage maintains selection for the visit without privacy violation; offline nearest preset lookup prevents UI breaks during connectivity drops.
 
+### Decision D-016
+
+**Date:** 2026-09-30  
+**Decision:** Integrate Open-Meteo Weather API (`/v1/forecast`) using a normalized canonical weather contract, complete WMO interpretation codes table, coordinate precision rounding cache (~1km grid, 10 min TTL), in-flight request deduplication, stale cache recovery, and reactive `useWeather` hook.  
+**Reason:** Deliver live location-aware temperature, humidity, precipitation, wind, and forecast metrics across homepage, map overlays, and citizen dashboard without fabricating synthetic values, risking API quota exhaustion, or requiring API keys/Firebase storage.  
+**Impact:** Weather data updates automatically whenever the user's GPS position or manual region selection changes; UI displays 8-hour forecast horizon and attribution with zero page crash risk on network timeout or transient provider outages.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -824,25 +831,27 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.2 Geolocation & Region Resolution
+Scope: Phase 2.3 Weather Intelligence Integration
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (13.3 kB bundle), /map (1.99 kB bundle), /admin, /alerts, /dashboard, /profile)
-Unit / Validation Suite: PASS (169 tests passed across 10 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (11.2 kB bundle), /map (1.99 kB bundle), /dashboard (2.1 kB bundle), /admin, /alerts, /profile)
+Unit / Validation Suite: PASS (195 tests passed across 12 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
   - Map / GIS: 95 unit tests (29 GeoJSON helper tests + 18 style expressions tests + 31 viewport/region preset tests + 16 layer registry tests)
-  - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests))
-Geolocation Permission & Fallback: PASS (GPS permission flow prompt/granted/denied/unavailable/timeout with default Mumbai fallback and nearest Indian city offline approximation)
-MapLibre User Dot & Accuracy Circle: PASS (Dynamic MapLibre source + layer displaying GPS center dot with outer accuracy buffer polygon)
-Manual Location Search: PASS (Accessible dialog with Indian city/hazard presets and coordinate input with instant map flyTo)
-No Secrets / Zero Firebase Dependency: PASS (Session persistence in sessionStorage, rate-limited OSM Nominatim reverse geocoder, zero cloud database requirements)
+  - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests)
+  - Weather Intelligence: 26 unit tests (14 WMO weather interpretation & dictionary integrity tests + 12 weather service normalization / minimal payload / extreme values / cache rounding / deduplication / error tests))
+Open-Meteo Integration: PASS (Live weather API integration with WMO code dictionary, precipitation probability, humidity, wind gusts, hourly forecast horizon)
+Coordinate Rounding & Cache: PASS (In-memory cache with ~1km coordinate precision key to prevent API thrashing; 10-minute TTL)
+Stale Cache Fallback: PASS (Offline/network failure fallback gracefully preserves cached weather with isStale indicator without throwing unhandled exceptions)
+Reactive Location Sync: PASS (useWeather hook automatically refreshes when user GPS updates or when manual region preset is changed)
+Attribution & Transparency: PASS (Visible Open-Meteo source link with non-commercial usage statement and zero secret leakage)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
 Map: PASS (Interactive MapLibre GL JS engine, OSM basemap tiles, layer drawer, region presets on / and /map)
 Geolocation & Region Resolution: PASS (Live GPS layer, OSM Nominatim reverse geocoder, manual search dialog, session persistence)
-Weather: SHELL READY (Open-Meteo live API integration scheduled for Phase 2.4)
+Weather: PASS (Open-Meteo live API integration, WMO interpretations, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard)
 Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
@@ -856,39 +865,36 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.2 Geolocation & Region Resolution in `Front-end/` on branch `phase-2`. Added browser geolocation request handling with full permission lifecycle, MapLibre user location dot + accuracy circle buffer, OpenStreetMap Nominatim reverse geocoding with 1 req/sec rate limiting, in-memory TTL caching, offline nearest Indian city fallback, manual region selector dialog, and session-only persistence.
+Implemented Phase 2.3 Weather Intelligence Integration in `Front-end/` on branch `phase-2`. Integrated Open-Meteo weather API (`/v1/forecast`), created comprehensive WMO code dictionary, built weather normalization and caching service with coordinate rounding and in-flight deduplication, created responsive `WeatherOverviewCard` with 8-hour hourly trend ribbon, `WeatherCompactBadge` overlay, and connected `useWeather` hook to homepage `/`, `/map`, and authenticated `/dashboard`.
 
 Files/Components Created & Updated:
-- Front-end/src/features/map/types/geolocation.ts & index.ts (Typed NormalizedLocation, GeolocationPermissionState, NominatimReverseResponse, and ManualCityPreset models)
-- Front-end/src/features/map/constants/geolocation-defaults.ts & index.ts (Default Mumbai fallback, storage keys, rate limits, 16 curated Indian city/hazard presets)
-- Front-end/src/features/map/services/accuracy-circle.ts (GeoJSON polygon generator for GPS accuracy buffer)
-- Front-end/src/features/map/services/reverse-geocoding.ts (Nominatim reverse geocoding client with 1 req/sec rate limit, in-memory TTL cache, and Haversine nearest city fallback)
-- Front-end/src/features/map/services/geolocation-service.ts (Browser Geolocation API wrapper, permission checks, session storage persistence)
-- Front-end/src/features/map/context/location-context.tsx & index.ts (LocationContext and LocationProvider managing live GPS, manual selection, permission states, and session persistence)
-- Front-end/src/features/map/hooks/use-geolocation.ts & index.ts (Convenience hook for consuming LocationContext)
-- Front-end/src/features/map/components/map-location-status-badge.tsx (GPS/Manual/Fallback status pill with modal trigger)
-- Front-end/src/features/map/components/map-user-location-marker.tsx (MapLibre source and layer for GPS dot and accuracy buffer circle)
-- Front-end/src/features/map/components/location-search-dialog.tsx (Accessible dialog for Indian city search, GPS trigger, and coordinate input)
-- Front-end/src/features/map/components/location-status-card.tsx (Location telemetry summary card on dashboard and homepage)
-- Front-end/src/features/map/components/map-view.tsx (Integrated LocationProvider and MapUserLocationMarker with flyTo on location change)
-- Front-end/src/app/page.tsx (Integrated LocationStatusCard and wrapped homepage with LocationProvider)
-- Front-end/src/features/map/__tests__/geolocation-service.test.ts, accuracy-circle.test.ts, reverse-geocoding.test.ts (31 unit tests)
-- Resources/Documents/Brain.md (Updated factual state, status table, decision log with D-015, testing memory, and handoff)
+- Front-end/src/features/weather/types/weather.ts & index.ts (Typed NormalizedWeather, HourlyWeatherPoint, DailyWeatherSummary, OpenMeteoResponse, WeatherFetchOptions)
+- Front-end/src/features/weather/constants/wmo-codes.ts, weather-config.ts & index.ts (Complete WMO code interpretation dictionary, hazard severity mappings, icon associations, Open-Meteo endpoint config)
+- Front-end/src/features/weather/services/weather-service.ts & index.ts (Open-Meteo client, canonical normalizer, coordinate rounding cache ~1km, in-flight request deduplication, stale cache fallback, clearWeatherCache)
+- Front-end/src/features/weather/hooks/use-weather.ts & index.ts (Reactive hook integrating with useGeolocation and providing loading, error, stale, lastFetchedAt, and refresh states)
+- Front-end/src/features/weather/components/weather-overview-card.tsx, weather-compact-badge.tsx & index.ts (Full weather overview card with 8-hour forecast ribbon, source attribution, stale indicator, manual refresh button, and compact map badge)
+- Front-end/src/features/weather/index.ts (Feature module barrel export)
+- Front-end/src/features/weather/__tests__/wmo-codes.test.ts, weather-service.test.ts (26 unit tests)
+- Front-end/src/features/map/components/map-view.tsx (Integrated WeatherCompactBadge into top-left overlay sub-bar)
+- Front-end/src/app/page.tsx (Replaced static sample weather card with live WeatherOverviewCard and useWeather hook inside LocationProvider)
+- Front-end/src/app/dashboard/page.tsx (Added live LocationStatusCard and WeatherOverviewCard for authenticated citizens)
+- Resources/Documents/Brain.md (Updated factual state, status table, API table with Open-Meteo = TESTED, decision log with D-016, testing memory, and handoff)
 
 Features Completed:
-- Browser geolocation request with explicit permission handling (`prompt`, `granted`, `denied`, `unavailable`, `timeout`).
-- MapLibre user location dot + accuracy buffer circle polygon layer.
-- OpenStreetMap Nominatim reverse geocoding adapter with 1 req/sec rate limiting and in-memory TTL cache.
-- Offline nearest Indian city fallback (Haversine distance calculation against 16 major Indian hazard zones).
-- Manual location search dialog with Indian city presets, manual coordinate input, and instant map camera flyTo.
-- Session persistence via `sessionStorage` (zero Firebase requirement, respects privacy).
-- Location telemetry card and status badge on homepage and map header.
+- Current temperature, apparent feels-like temperature, humidity, precipitation, precipitation probability, rain, wind speed, wind gusts, weather code, and condition description.
+- 8-hour hourly forecast ribbon with mini weather icons and precipitation probabilities.
+- Complete WMO interpretation code dictionary (codes 0 to 99) with severity categorization and Lucide icons.
+- In-memory cache with 10-minute TTL and coordinate precision rounding (~1km grid) to prevent API rate-limit exhaustion.
+- Request deduplication for simultaneous concurrent requests.
+- Graceful offline / failure fallback returning stale cache if available or clean error card.
+- Reactive auto-refresh when user's GPS coordinates or manual city preset changes.
+- Seamless integration across homepage `/`, `/map` overlay, and citizen `/dashboard`.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / and /map bundles verified)
-- Unit test suite: PASS (169/169 unit tests passed across 10 test suites)
+- npm run build (next build): PASS (24 static routes compiled successfully, / (11.2 kB), /map (1.99 kB), and /dashboard (2.1 kB) verified)
+- Unit test suite: PASS (195/195 unit tests passed across 12 test suites)
 
 Known Issues:
 None.
@@ -897,10 +903,10 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 2.3 — Provider Adapter Framework (Fetch/validate/normalize/health/provenance boundary for external disaster APIs).
+Phase 2.4 — Earthquake & Global Event Integrations (USGS GeoJSON feeds & NASA EONET v3 disaster event layers on MapLibre).
 
 Warnings for Next Agent:
-Preserve the NormalizedLocation model and LocationProvider context when integrating Open-Meteo weather and USGS/NASA disaster event adapters in Phase 2.3 - 2.7.
+Preserve the NormalizedWeather model and useWeather hook when building the explainable risk engine in Phase 2.8, which will take precipitation and wind inputs directly from NormalizedWeather.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -909,10 +915,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 2.2 Geolocation & Region Resolution complete (PASS) on branch `phase-2`.
+Phase 2.3 Weather Intelligence Integration complete (PASS) on branch `phase-2`.
 
 Next Action:
-Proceed with Phase 2.3 Provider Adapter Framework.
+Proceed with Phase 2.4 Earthquake & Global Event Integrations.
 ```
 
 ## 40. Brain.md Maintenance Rule

@@ -36,9 +36,9 @@ import {
 } from "@/components/ui/card";
 import { RouteContainer } from "@/components/layout/route-container";
 import {
-  WeatherCard,
-  type WeatherData,
-} from "@/components/common/weather-card";
+  WeatherOverviewCard,
+  useWeather,
+} from "@/features/weather";
 import {
   DisasterCard,
   type DisasterCardData,
@@ -55,30 +55,21 @@ import {
   MapView,
   LocationProvider,
   LocationStatusCard,
+  useGeolocation,
 } from "@/features/map";
 import { useAuth } from "@/features/auth";
 
-export default function HomePage() {
+function HomePageContent() {
   const { isAuthenticated, role } = useAuth();
-  const [isRefreshingWeather, setIsRefreshingWeather] = React.useState(false);
+  const { location } = useGeolocation();
+  const {
+    weather,
+    isLoading: isRefreshingWeather,
+    error: weatherError,
+    refresh: handleWeatherRefresh,
+  } = useWeather();
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
-
-  // Sample real-world ambient weather state ready for Phase 2 API connection
-  const sampleWeatherData: WeatherData = {
-    temperature: 29.4,
-    apparentTemperature: 33.2,
-    humidity: 78,
-    windSpeed: 18,
-    windGusts: 26,
-    precipitation: 4.2,
-    precipitationProbability: 65,
-    weatherCode: 61, // Rain
-    locationName: "Mumbai Region (19.0760° N, 72.8777° E)",
-    source: "Open-Meteo Weather API (Phase 2 Pipeline)",
-    updatedAt: new Date().toISOString(),
-    isStale: false,
-  };
 
   // Sample explainable calculated risk data matching architecture specification
   const sampleRiskData: RiskAssessmentData = {
@@ -166,16 +157,8 @@ export default function HomePage() {
     guideSlug: "flood",
   };
 
-  const handleWeatherRefresh = () => {
-    setIsRefreshingWeather(true);
-    setTimeout(() => {
-      setIsRefreshingWeather(false);
-    }, 600);
-  };
-
   return (
-    <LocationProvider>
-      <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
+    <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
         {/* 1. Emergency Helpline & Provenance Bar */}
       <div className="border-b border-border/80 bg-muted/40 py-2.5 px-4 text-xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -433,14 +416,14 @@ export default function HomePage() {
                 </Badge>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5 text-primary" />
-                  Selected Region: <strong>Mumbai Metropolitan (MH)</strong>
+                  Selected Region: <strong>{location.city || "Mumbai"}, {location.state || "Maharashtra"}</strong>
                 </span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
                 Regional Environmental & Risk Overview
               </h2>
               <p className="text-xs text-muted-foreground">
-                Near-live telemetry and explainable deterministic calculations prepared for Phase 2 provider integration.
+                Near-live telemetry from Open-Meteo and explainable deterministic calculations.
               </p>
             </div>
 
@@ -463,7 +446,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* Real WeatherCard Component */}
+            {/* Live Open-Meteo WeatherOverviewCard Component */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">
@@ -471,9 +454,10 @@ export default function HomePage() {
                 </span>
                 <span className="font-mono text-[11px]">Source: Open-Meteo</span>
               </div>
-              <WeatherCard
-                data={sampleWeatherData}
+              <WeatherOverviewCard
+                data={weather}
                 isLoading={isRefreshingWeather}
+                error={weatherError}
                 onRefresh={handleWeatherRefresh}
               />
             </div>
@@ -812,6 +796,13 @@ export default function HomePage() {
         </section>
       </RouteContainer>
     </div>
-  </LocationProvider>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <LocationProvider>
+      <HomePageContent />
+    </LocationProvider>
   );
 }
