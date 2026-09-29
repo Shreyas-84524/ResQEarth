@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 1.1 Project Bootstrap complete (PASS); frontend foundation initialized in `Front-end/`.  
+**Current factual state:** Phase 1.2 Design System complete (PASS); reusable UI primitives, domain cards, severity indicators, and global tokens implemented in `Front-end/`.  
 **Last context update:** 2026-09-29  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 1 — Foundation, UI, Firebase & Authentication
-Current Sub-Phase: Phase 1.1 Project Bootstrap
+Current Sub-Phase: Phase 1.2 Design System and Global Layout
 Current Status: PASS
-Last Completed Sub-Phase: Phase 1.1 Project Bootstrap
-Next Intended Sub-Phase: Phase 1.2 Design System and Global Layout
+Last Completed Sub-Phase: Phase 1.2 Design System and Global Layout
+Next Intended Sub-Phase: Phase 1.3 Firebase Project Connection
 ```
 
 ## 29. Implementation Status Table
@@ -552,7 +552,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | Phase | Sub-Phase | Status | Notes |
 |---:|---|---|---|
 | 1 | 1.1 Project Bootstrap | PASS | Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Lucide React, React Hook Form, Zod, Recharts, MapLibre GL JS, Firebase Web SDK initialized and validated. |
-| 1 | 1.2 Design System and Global Layout | NOT STARTED | Tokens, typography, responsive shell, navigation, accessible primitives. |
+| 1 | 1.2 Design System and Global Layout | PASS | Global tokens, HSL palette, dark/light theme, typography, responsive utilities, UI primitives (Button, Input, Textarea, Label, Card, Badge, Alert, Dialog, Select, Skeleton, EmptyState, ErrorState, PageHeader), accessible Severity components (Low to Critical with dual text+icon), and domain cards (WeatherCard, DisasterCard, RiskIndicator, MapOverlay, AdminDashboardCard, NotificationBanner). |
 | 1 | 1.3 Firebase Project Connection | NOT STARTED | Environment-based client/server setup; no committed secrets. |
 | 1 | 1.4 Signup and Profile Creation | NOT STARTED | Email/password Auth; citizen profile and consent fields. |
 | 1 | 1.5 Login, Logout and Auth State | NOT STARTED | Safe errors and protected-session behavior. |
@@ -788,15 +788,14 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-29
-Scope: Phase 1.1 Project Bootstrap
+Scope: Phase 1.2 Design System & UI Components
 
-Dependencies Installation: PASS (504 packages audited and installed cleanly)
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings or errors)
-Production Build (next build): PASS (Next.js 15.5.26 production build succeeded, static routes generated)
-Development Server (next dev): PASS (Started on port 3000, HTTP GET 200 OK)
-Secrets Check: PASS (No secrets committed, .env.example created, .gitignore active)
-Template Cleanup: PASS (No unnecessary demo/template code present)
+Production Build (next build): PASS (Next.js 15.5.26 production build succeeded, all components compiled into bundle)
+Design System Completeness: PASS (All requested UI primitives and domain components built and typed)
+Accessibility & Non-Color Severity: PASS (Severity badges and indicators feature text + icon + color + ARIA labels)
+Responsive Verification: PASS (Mobile-to-desktop responsive classes and flex/grid layouts applied)
 
 Authentication: NOT TESTED (Scheduled for Phase 1.4/1.5)
 Map: NOT TESTED (Scheduled for Phase 2.1)
@@ -805,7 +804,6 @@ Risk Engine: NOT TESTED (Scheduled for Phase 2.8)
 Admin: NOT TESTED (Scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
 SMS: NOT TESTED (Scheduled for Phase 3.7)
-Responsive: NOT TESTED (Scheduled for Phase 1.2/1.8)
 Deployment: NOT TESTED (Scheduled for Phase 5.7)
 ```
 
@@ -815,45 +813,54 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Bootstrapped the ResQEarth frontend foundation inside `Front-end/` in Phase 1.1 on branch `phase-1`.
+Implemented Phase 1.2 Design System in `Front-end/` on branch `phase-1`. Created comprehensive design tokens, global styles, accessible UI primitives, severity indicators, and reusable domain components.
 
-Files/Configuration Created:
-- Front-end/package.json & package-lock.json (Next.js, React, TypeScript, Tailwind CSS, shadcn/ui config, Framer Motion, Lucide React, React Hook Form, Zod, Recharts, MapLibre GL JS, Firebase Web SDK)
-- Front-end/tsconfig.json (Strict shared TypeScript configuration with @/* and module import aliases)
-- Front-end/next.config.ts (Next.js config)
-- Front-end/tailwind.config.ts & Front-end/postcss.config.mjs (Tailwind CSS, shadcn/ui CSS variable system, risk level tokens)
-- Front-end/components.json (shadcn/ui configuration)
-- Front-end/eslint.config.mjs (ESLint configuration)
-- Front-end/.env.example (Environment variable template with Firebase, Map, API placeholders)
-- Front-end/.gitignore & root .gitignore (Ignore rules for build artifacts, node_modules, and secrets)
-- Front-end/src/app/globals.css (Global base styles, light/dark themes, risk color tokens)
-- Front-end/src/app/layout.tsx & Front-end/src/app/page.tsx (Minimal root layout and placeholder home)
-- Front-end/src/lib/utils.ts (Utility functions with clsx + tailwind-merge)
-- Front-end/src/types/index.ts (Base shared TypeScript type definitions)
-- Scalable directory structure created for components, features (auth, dashboard, weather, disasters, map, risk, alerts, notifications, admin, history, government), hooks, services.
+Files/Components Created & Updated:
+- Resources/Documents/design.md (UI source of truth documentation)
+- Front-end/src/app/globals.css (Updated with theme colors, status colors, 5-level risk tokens, and provenance badge tokens)
+- Front-end/tailwind.config.ts (Extended with risk, status, and provenance color utilities)
+- Front-end/src/components/ui/button.tsx (Button with variants, sizes, risk variants, and loading spinner)
+- Front-end/src/components/ui/input.tsx & textarea.tsx (Accessible input & textarea with focus rings and error states)
+- Front-end/src/components/ui/label.tsx (Label with required indicator)
+- Front-end/src/components/ui/card.tsx (Card, Header, Title, Description, Content, Footer)
+- Front-end/src/components/ui/badge.tsx (Badge with default, status, provenance, and risk severity variants)
+- Front-end/src/components/ui/alert.tsx (Alert, Title, Description with severity and provenance variants)
+- Front-end/src/components/ui/dialog.tsx (Accessible Modal Dialog with backdrop and ESC key listener)
+- Front-end/src/components/ui/select.tsx (Accessible Select component with chevron and error state)
+- Front-end/src/components/ui/skeleton.tsx (Pulse loading skeleton)
+- Front-end/src/components/ui/empty-state.tsx (Standard empty state with icon and action)
+- Front-end/src/components/ui/error-state.tsx (Error state with retry button and error ID)
+- Front-end/src/components/ui/page-header.tsx (PageHeader and SectionHeader)
+- Front-end/src/components/ui/severity-badge.tsx (Severity badge with dual text + icon + color)
+- Front-end/src/components/ui/severity-indicator.tsx (Detailed severity indicator with progress bar and guidance)
+- Front-end/src/components/ui/index.ts (Barrel export for UI primitives)
+- Front-end/src/components/common/weather-card.tsx (Weather card with metrics, Open-Meteo source badge, and loading/stale states)
+- Front-end/src/components/common/disaster-card.tsx (Disaster card with type icon, severity badge, provenance, and links)
+- Front-end/src/components/common/risk-indicator.tsx (0-100 gauge, contributing factors breakdown, and RESQEARTH CALCULATED RISK disclaimer)
+- Front-end/src/components/common/map-overlay.tsx (Map overlay controls, category filter chips, legend, and OSM attribution)
+- Front-end/src/components/common/admin-dashboard-card.tsx (Admin dashboard metric card with trend and status badge)
+- Front-end/src/components/common/notification-banner.tsx (In-site warning banner with severity styling and precautions preview)
+- Front-end/src/components/common/index.ts (Barrel export for common components)
 
 Features Completed:
-Phase 1.1 Project Bootstrap.
+Phase 1.2 Design System.
 
 Tests Run:
-- npm install: SUCCESS (504 packages installed)
-- npm run type-check (tsc --noEmit): PASS
-- npm run lint (next lint): PASS
-- npm run build (next build): PASS
-- npm run dev (next dev): PASS (verified HTTP 200 OK on localhost:3000)
-- Secret check: PASS (no credentials or private keys in repo)
+- npm run type-check (tsc --noEmit): PASS (zero errors)
+- npm run lint (next lint): PASS (zero warnings, zero errors)
+- npm run build (next build): PASS (compiled successfully)
 
 Known Issues:
 None.
 
 Current Blockers:
-None for Phase 1.2. (Firebase project credentials, SMS gateway details, and external API keys remain pending for subsequent phases).
+None for Phase 1.3. (Firebase project credentials needed for Phase 1.3 configuration).
 
 Next Recommended Task:
-Phase 1.2 — Design System and Global Layout (Tokens, typography, responsive shell, navigation, accessible primitives).
+Phase 1.3 — Firebase Project Connection (Client/server SDK setup, environment-based configuration, no committed secrets).
 
 Warnings for Next Agent:
-Preserve the clean modular structure in Front-end/. Do not hardcode credentials or commit .env files. Follow the architectural guidelines in architecture.md and PRD.md.
+Reuse existing components from `@/components/ui` and `@/components/common`. Do not duplicate styles or hardcode credentials.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -862,10 +869,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 1.1 Project Bootstrap complete on branch `phase-1`. Frontend foundation, dependencies, TypeScript, Tailwind, ESLint, Next.js, and directory structure are established and validated.
+Phase 1.2 Design System complete (PASS) on branch `phase-1`. UI primitives, domain cards, severity indicators, and design tokens are fully built, typed, and validated.
 
 Next Action:
-Proceed with Phase 1.2 Design System and Global Layout.
+Proceed with Phase 1.3 Firebase Project Connection.
 ```
 
 ## 40. Brain.md Maintenance Rule

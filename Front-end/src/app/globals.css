@@ -4,7 +4,8 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Base theme tokens */
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -25,20 +26,33 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
 
+    /* Status Tokens */
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+
     /* ResQEarth Risk Level Tokens (0-100) */
-    --risk-low: 142 71% 45%;         /* 0-20: Green */
-    --risk-guarded: 217 91% 60%;     /* 21-40: Blue */
-    --risk-moderate: 38 92% 50%;     /* 41-60: Yellow/Amber */
-    --risk-high: 25 95% 53%;         /* 61-80: Orange */
-    --risk-critical: 0 84% 60%;      /* 81-100: Red */
+    --risk-low: 142 71% 45%;         /* 0-20: Low (Green) */
+    --risk-guarded: 217 91% 60%;     /* 21-40: Guarded (Blue) */
+    --risk-moderate: 38 92% 50%;     /* 41-60: Moderate (Amber/Yellow) */
+    --risk-high: 25 95% 53%;         /* 61-80: High (Orange) */
+    --risk-critical: 0 84% 60%;      /* 81-100: Critical (Red) */
+
+    /* Provenance Badge Tokens */
+    --provenance-official: 238 82% 59%;     /* Official Alert */
+    --provenance-calculated: 173 80% 40%;   /* Calculated Risk */
+    --provenance-simulation: 280 65% 60%;   /* Admin Simulation */
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 84% 6.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 84% 6.5%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
@@ -54,12 +68,25 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
 
-    /* Dark mode risk tokens */
+    /* Status Tokens in Dark Mode */
+    --success: 142 69% 58%;
+    --success-foreground: 222.2 84% 4.9%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --info: 199 89% 58%;
+    --info-foreground: 222.2 84% 4.9%;
+
+    /* Dark Mode Risk Tokens */
     --risk-low: 142 69% 58%;
     --risk-guarded: 217 91% 65%;
     --risk-moderate: 38 92% 55%;
     --risk-high: 25 95% 58%;
     --risk-critical: 0 84% 65%;
+
+    /* Dark Mode Provenance Tokens */
+    --provenance-official: 238 82% 68%;
+    --provenance-calculated: 173 70% 50%;
+    --provenance-simulation: 280 65% 70%;
   }
 }
 
@@ -68,7 +95,23 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Focus visible accessibility styling */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar for clean UI elements while preserving scrollability */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
