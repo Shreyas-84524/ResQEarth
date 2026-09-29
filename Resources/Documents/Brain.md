@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.7 Unified Disaster Map Experience & Heatmap complete (PASS); WebGL multi-hazard heatmap layer with severity-weighted intensity, smooth zoom-based transitions (low zoom = density heatmap, high zoom = precision vector markers), display mode switcher (`all` / `markers` / `heatmap`), selected event cyan halo with map ↔ list two-way scroll synchronization, fit-to-filtered-events and recenter-to-GPS actions, compact mobile toolbar controls, and interactive multi-tab GIS legend explaining severity levels, heatmap density, statutory gold alert rings, and educational non-evacuation boundary notice. Next step: Phase 2.8 Explainable Deterministic Risk Engine and Phase 2 Final Validation.  
+**Current factual state:** Phase 3.1 Unified Alert Model & Lifecycle complete (PASS); canonical Firebase-backed alert schema, Firestore converters, lifecycle state machine (`draft` -> `active` -> `expired` / `cancelled` / `superseded`), deterministic deduplication-key generator, delivery-attempt tracking foundation, append-only audit-log recorder, hardened Firestore security rules with statutory provenance immutability, composite Firestore indexes (`firestore.indexes.json`), and comprehensive 101-assertion unit test suite across schemas, lifecycles, deduplication, service operations, and citizen/admin authorization boundaries (348 total passing tests across 21 suites). Next step: Phase 3.2 Automated Risk-Triggered Warning Flow.  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -770,6 +770,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Decision:** Implement the deterministic, versioned (`v1.0.0-deterministic`), explainable disaster risk engine (`calculateDisasterRisk`) evaluating live weather telemetry (rain rate, precipitation forecast probability, sustained wind, squall gusts, heatwave/coldwave thermal extremes), nearby USGS earthquakes (tiered magnitude-distance matrix up to 150 km), nearby NASA EONET natural disasters (wildfires, cyclones, floods, landslides, volcanoes within proximity radii), Indian statutory alerts (NDMA SACHET / IMD CAP advisories with statutory provenance flags), and regional coastal vulnerability baselines. The engine returns clamped 0–100 integer scores, 5-tier canonical risk levels (`LOW`, `GUARDED`, `MODERATE`, `HIGH`, `CRITICAL`), 5-dimension per-hazard breakdowns (Flood, Storm, Earthquake, Heatwave, Wildfire), itemized point contributions (`+{points}`), plain-English factor summaries, missing feed disclosures with graceful confidence degradation (`HIGH`, `MODERATE`, `LOW`), `RiskOverviewCard`, `PerHazardRiskGrid`, and `RiskBadge`, strictly labeled as **`RESQEARTH CALCULATED RISK`** across `/`, `/dashboard`, and `/map`.  
 **Reason:** Deliver auditable, transparent, zero-black-box environmental risk assessments without misrepresenting calculated indicators as statutory government evacuation mandates, in full alignment with the ESE mission and PRD/Architecture specifications.  
 **Impact:** Citizens and public visitors receive real-time, explainable situational awareness and individual hazard readiness indices backed by 12 comprehensive unit tests (247 total passing across 16 test suites) and zero cloud database dependencies. Phase 2 is now complete.
+ 
+### Decision D-022
+
+**Date:** 2026-09-30  
+**Decision:** Establish the canonical Firebase-backed unified alert model (`UnifiedAlert` / `AlertDoc`) supporting `official`, `automatic`, and `manual-admin` source types across a strict 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`). Enforce strict statutory provenance invariants (`isOfficialAlert: true` strictly restricted to `sourceType: 'official'` and immutable once stored), deterministic deduplication-key generation with 0.05-degree spatial grid quantization and 6-hour temporal bucketing, subcollection-based delivery attempt tracking foundation (`alerts/{alertId}/deliveryAttempts`), top-level append-only audit logging (`auditLogs`), composite Firestore indexes (`firestore.indexes.json`), and hardened Firestore Security Rules isolating draft alerts to administrators and rejecting unauthorized citizen mutations.  
+**Reason:** Prevent misleading risk communication, eliminate duplicate warning broadcast storms, establish tamper-proof emergency warning records with full auditability, and provide a secure foundation for automated risk triggers (Phase 3.2), manual admin dispatch (Phase 3.4), FCM browser push (Phase 3.6), and two-part SMS warnings (Phase 3.7).  
+**Impact:** Alerts feature module (`src/features/alerts/`) provides schemas, typed models, lifecycle transition validators, and reactive hooks backed by 101 new passing unit test assertions (348 total passing across 21 suites), 0 TypeScript errors, 0 ESLint warnings, and zero external blocking dependencies. Phase 3.1 is complete.
 
 ## 33. AI Coding Rules
 
@@ -859,12 +866,12 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.8 Explainable Disaster Risk Engine & Phase 2 Final Validation
+Scope: Phase 3.1 Unified Alert Model & Lifecycle
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (9.4 kB bundle), /map (4.63 kB bundle), /dashboard (2.73 kB bundle), /admin, /alerts, /profile)
-Unit / Validation Suite: PASS (247 tests passed across 16 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (9.4 kB bundle), /map (4.65 kB bundle), /dashboard (2.73 kB bundle), /admin, /alerts, /profile)
+Unit / Validation Suite: PASS (348 tests passed across 21 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
   - Map / GIS: 107 unit tests (29 GeoJSON helper tests + 30 style expressions tests [severity matching, category mapping, dynamic radius, cluster steps, heatmap color ramp, severity weighting, zoom intensity, radius scaling, zoom fadeout] + 31 viewport/region preset tests + 16 layer registry tests)
   - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests)
@@ -872,13 +879,16 @@ Unit / Validation Suite: PASS (247 tests passed across 16 test suites:
   - Earthquake Intelligence: 8 unit tests (Severity mapping, dynamic radius scaling, feature normalization, Haversine distance relative to Mumbai/user, tsunami flag recognition, malformed feature rejection, feed sorting, GeoJSON conversion, cache management)
   - Global Disaster Intelligence (NASA EONET): 9 unit tests (Category mapping, severity classification, dynamic marker radius scaling, geometry centroid extraction across Point/LineString/Polygon/Temporal array, malformed/out-of-range rejection, distance math, feed sorting, GeoJSON conversion, cache management)
   - Unified Multi-Hazard Intelligence: 11 unit tests (Indian CAP alert normalization, statutory provenance integrity, CAP severity mappers, Earthquake-to-Unified adapter, GlobalDisaster-to-Unified adapter, Weather telemetry hazard extraction for heavy rain/wind/heatwaves, spatial & temporal deduplication [15 km, 6h], multi-criteria filtering [category, provider, severity, official-only, distance, search], GeoJSON conversion for MapLibre, styling expressions, concurrent feed aggregator with caching)
-  - Explainable Risk Engine: 12 unit tests (Score-to-band mappings, nominal baseline assessment, precipitation & flood tiers, wind & cyclone squalls, extreme temperature heat/cold waves, nearby seismic tiered matrices, NASA EONET wildfire/cyclone scoring, NDMA/IMD statutory alert provenance flags, coastal exposure baseline, compound multi-hazard clamping, missing feed graceful degradation, per-hazard breakdown matrix))
-Multi-Hazard Heatmap Layer: PASS (MapUnifiedDisasterLayer with WebGL heatmap layer, severity-weighted intensity stops, smooth zoom transitions fading out from zoom 4 to zoom 9, and continuous display mode support)
-GIS Map Controls & Toolbar: PASS (MapGisToolbar floating component with Hybrid / Markers / Heatmap mode switcher, Fit to Filtered Events action via computeBoundingBox, Recenter to GPS location, Reset to Mumbai view, and Legend toggle)
-Interactive Multi-Tab GIS Legend: PASS (MapGisLegend component with Severity 5-tier scale, Heatmap color gradient & zoom transition explanation, Statutory gold ring provenance badges, and explicit disclaimer: "Heatmap reflects incident density and severity for decision-support; not an official flood or evacuation zone boundary.")
-Explainable Risk Architecture: PASS (Deterministic 0–100 risk scoring algorithm, itemized contributing factors with points, plain-English factor summaries, missing input disclosures, and strict RESQEARTH CALCULATED RISK labeling)
-Two-Way Map ↔ List Synchronization: PASS (Selected event renders cyan focus halo on map and automatically scrolls matching card into view smoothly in UnifiedDisasterListPanel)
-Attribution & Transparency: PASS (OSM basemap, USGS, NASA EONET, NDMA SACHET, IMD, and Open-Meteo attribution displayed clearly)
+  - Explainable Risk Engine: 12 unit tests (Score-to-band mappings, nominal baseline assessment, precipitation & flood tiers, wind & cyclone squalls, extreme temperature heat/cold waves, nearby seismic tiered matrices, NASA EONET wildfire/cyclone scoring, NDMA/IMD statutory alert provenance flags, coastal exposure baseline, compound multi-hazard clamping, missing feed graceful degradation, per-hazard breakdown matrix)
+  - Alerts Model & Schemas: 15 unit tests (Zod schema validation, official source invariant enforcement [isOfficialAlert: true iff sourceType: 'official'], fake official rejection, malformed alerts rejection, targetMode radius coordinate validation, strict update immutability, cancel schema, supersede schema, delivery attempt schema, audit log schema)
+  - Alerts Lifecycle & Transitions: 25 unit tests (State machine transition matrix [draft -> active/cancelled; active -> expired/cancelled/superseded; terminal states], active time-validity checks, natural expiration checks, dynamic effective status resolution, severity-based default expiration horizons)
+  - Alerts Deduplication: 11 unit tests (Deterministic SHA/slug key generation, spatial grid quantization [0.05 deg ~ 5km], temporal bucketing [6-hour windows], cross-hazard key separation, source-type separation, Set/Array duplicate checking)
+  - Alerts Service & Operations: 30 unit tests (Admin draft and active alert creation, getAlertById, updateAlert mutable updates, immutable field preservation, activateAlert, expireAlert, cancelAlert with reasons, supersedeAlert with two-way ID linking, multi-faceted filtering, delivery attempt recording & retrieval, in-memory store fallback)
+  - Alerts Security & RBAC: 20 unit tests (Citizen alert creation/update/activation/cancellation/expiration/supersede rejection with Unauthorized error, guest write rejection, delivery attempts isolation from citizens, draft alert isolation from citizens in both ID lookups and queries, official provenance immutability verification))
+
+Firestore Rules & Composite Indexes:
+- Rules: Hardened `firestore.rules` validating `isValidAlert` statutory provenance invariants, draft alert isolation (`resource.data.status in ['active', 'expired', 'cancelled', 'superseded'] || isAdmin()`), immutable update checks (`id`, `createdAt`, `createdBy`, `sourceType`, `isOfficialAlert`, `deduplicationKey`), and delivery attempts admin isolation.
+- Indexes: `firestore.indexes.json` configured for composite queries (`status` + `expiresAt`, `status` + `severity` + `createdAt`, `status` + `region` + `createdAt`, `status` + `isOfficialAlert` + `createdAt`, `deduplicationKey` + `status`).
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
@@ -890,6 +900,7 @@ Global Disasters: PASS (NASA EONET live feed, category taxonomy, centroid calcul
 Unified Multi-Hazard Intelligence: PASS (USGS, EONET, NDMA SACHET, IMD, Open-Meteo integrated into canonical layer with deduplication and provenance badges)
 Heatmap & GIS Polish: PASS (Severity-weighted WebGL heatmap, display mode switcher, fit-to-bounds, and interactive legend)
 Risk Engine: PASS (Deterministic v1.0 engine with itemized factor contributions, per-hazard breakdown, missing feed disclosures, RiskOverviewCard, PerHazardRiskGrid, and RiskBadge on /, /dashboard, and /map)
+Alerts & Lifecycle: PASS (Canonical typed model, lifecycle state machine, deterministic deduplication key, delivery attempt tracking foundation, audit logging, and security rules on branch `phase-3`)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
 SMS: NOT TESTED (Scheduled for Phase 3.7)
@@ -902,45 +913,49 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.8 Explainable Disaster Risk Engine and completed Phase 2 final validation in `Front-end/` on branch `phase-2`. Developed pure deterministic scoring algorithm (`calculateDisasterRisk` with modelVersion `v1.0.0-deterministic`), itemized factor weightings (precipitation, rain forecast probability, sustained winds, squall gusts, extreme temperature heat/cold waves, nearby USGS earthquakes with tiered magnitude-distance matrices, nearby NASA EONET events, Indian statutory NDMA SACHET / IMD CAP alerts with provenance flags, and coastal vulnerability baseline), per-hazard 5-dimension breakdown (Flood, Storm, Earthquake, Heatwave, Wildfire), plain-English explanations, missing feed disclosures with graceful confidence degradation, `RiskOverviewCard`, `PerHazardRiskGrid`, `RiskBadge`, and `useDisasterRisk` hook. Integrated live calculated risk onto the homepage (`/`), citizen dashboard (`/dashboard`), and interactive map (`/map`), strictly labeled as "RESQEARTH CALCULATED RISK". Verified with 12 comprehensive unit tests (247 total passing across 16 test suites), 0 TypeScript errors, 0 ESLint warnings, and 24 static pages in Next.js production build.
+Implemented Phase 3.1 Unified Alert Model & Lifecycle in `Front-end/` on branch `phase-3`. Built the canonical Firebase-backed alert architecture supporting official, automatic, and manual-admin alert sources across a 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`). Created typed models, Zod validation schemas (`createAlertSchema`, `updateAlertSchema`, `supersedeAlertSchema`, `cancelAlertSchema`, `recordDeliveryAttemptSchema`, `createAuditLogSchema`), deterministic deduplication key generator (`generateAlertDeduplicationKey`), alert lifecycle helpers (`validateStatusTransition`, `computeEffectiveStatus`, `deriveDefaultExpiration`), alert service repository (`createAlert`, `getAlertById`, `getAlerts`, `updateAlert`, `activateAlert`, `expireAlert`, `cancelAlert`, `supersedeAlert`, `recordDeliveryAttempt`), and reactive React hook (`useAlerts`, `useAlertDetails`). Updated Firestore security rules with statutory provenance immutability and citizen draft isolation, and configured composite indexes in `firestore.indexes.json`. Validated with 101 new unit tests (348 total passing across 21 test suites), 0 TypeScript errors, 0 ESLint warnings, and clean Next.js production build.
 
 Files/Components Created & Updated:
-- Front-end/src/features/risk/types/risk.ts (RiskAssessment, RiskFactorContribution, DisasterCategoryRisk, RiskEngineInputs, RiskLevel, RiskConfidence)
-- Front-end/src/features/risk/types/index.ts (Type exports)
-- Front-end/src/features/risk/constants/risk-config.ts (Weights, thresholds, bands, feeds, and model version v1.0.0-deterministic)
-- Front-end/src/features/risk/constants/index.ts (Constant exports)
-- Front-end/src/features/risk/services/risk-engine-service.ts (Deterministic calculateDisasterRisk algorithm, scoreToRiskLevel, factor evaluations, and summary generator)
-- Front-end/src/features/risk/services/index.ts (Service exports)
-- Front-end/src/features/risk/hooks/use-disaster-risk.ts (Reactive hook combining geolocation, weather, and unified disasters)
-- Front-end/src/features/risk/hooks/index.ts (Hook exports)
-- Front-end/src/features/risk/components/risk-overview-card.tsx (Card with gauge bar, factor point breakdown, confidence badge, missing inputs note, and statutory disclaimer)
-- Front-end/src/features/risk/components/per-hazard-risk-grid.tsx (5-dimension hazard breakdown with progress bars and preparedness links)
-- Front-end/src/features/risk/components/risk-badge.tsx (Compact badge with score and level)
-- Front-end/src/features/risk/components/index.ts (Component exports)
-- Front-end/src/features/risk/index.ts (Public risk feature module API)
-- Front-end/src/features/risk/__tests__/risk-engine.test.ts (12 executable unit test suites)
-- Front-end/src/app/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, and PerHazardRiskGrid into Section 5)
-- Front-end/src/app/dashboard/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, PerHazardRiskGrid, and header RiskBadge)
-- Front-end/src/app/map/page.tsx (Integrated useDisasterRisk and header RiskBadge)
-- Resources/Documents/Brain.md (Updated factual state, marked Phase 2 = PASS / COMPLETE, added Decision D-021, updated validation memory, and prepared Phase 3 handoff)
+- Front-end/src/types/firebase.ts (Enriched AlertDoc with isOfficialAlert, updatedAt, deduplicationKey, relatedDisasterEventId, riskScoreSnapshot, supersededById, supersedesAlertId, cancellationReason, metadata; added DeliveryAttemptDoc)
+- Front-end/src/features/alerts/types/alert.ts (UnifiedAlert, CreateAlertInput, UpdateAlertInput, SupersedeAlertInput, AlertFilterOptions, AlertStatus, TargetMode)
+- Front-end/src/features/alerts/types/delivery-attempt.ts (DeliveryAttempt, RecordDeliveryAttemptInput, DeliveryChannel, DeliveryStatus)
+- Front-end/src/features/alerts/types/audit-log.ts (AlertAuditLogEntry, CreateAlertAuditLogInput, AlertAuditAction, AuditOutcome)
+- Front-end/src/features/alerts/types/index.ts (Type exports)
+- Front-end/src/features/alerts/constants/alert-config.ts (ALERT_SOURCE_TYPES, ALERT_STATUSES, ALERT_SEVERITIES, TARGET_MODES, DELIVERY_CHANNELS, STATUTORY_OFFICIAL_SOURCES, DEFAULT_ALERT_EXPIRY_HOURS, ALERT_CONFIG, ALLOWED_STATUS_TRANSITIONS)
+- Front-end/src/features/alerts/constants/index.ts (Constant exports)
+- Front-end/src/features/alerts/schemas/alert-schema.ts (Zod schemas with statutory provenance invariants and strict update restrictions)
+- Front-end/src/features/alerts/schemas/index.ts (Schema exports)
+- Front-end/src/features/alerts/services/deduplication-service.ts (Deterministic 0.05-degree spatial grid + 6-hour temporal bucket deduplication key generator)
+- Front-end/src/features/alerts/services/alert-lifecycle.ts (State machine transition validator, time-based expiration computation, default expiration derivation)
+- Front-end/src/features/alerts/services/alert-service.ts (Alert repository operations, in-memory test store fallback, Firestore synchronization, delivery attempt recorder, audit logger)
+- Front-end/src/features/alerts/services/index.ts (Service exports)
+- Front-end/src/features/alerts/hooks/use-alerts.ts (useAlerts and useAlertDetails React hooks)
+- Front-end/src/features/alerts/hooks/index.ts (Hook exports)
+- Front-end/src/features/alerts/index.ts (Public alerts feature module barrel)
+- Front-end/firestore.rules (Updated with isValidAlert statutory invariants, draft alert isolation, and immutable update checks)
+- Front-end/firestore.indexes.json (Composite indexes for alerts queries)
+- Front-end/firebase.json (Mapped rules and indexes)
+- Front-end/src/features/alerts/__tests__/alert-schema.test.ts (15 unit test assertions)
+- Front-end/src/features/alerts/__tests__/alert-lifecycle.test.ts (25 unit test assertions)
+- Front-end/src/features/alerts/__tests__/alert-deduplication.test.ts (11 unit test assertions)
+- Front-end/src/features/alerts/__tests__/alert-service.test.ts (30 unit test assertions)
+- Front-end/src/features/alerts/__tests__/alert-authorization.test.ts (20 unit test assertions)
+- Resources/Documents/Brain.md (Updated factual state, marked Phase 3.1 = PASS, recorded Decision D-022, updated validation memory, and prepared Phase 3.2 handoff)
 
 Features Completed:
-- Deterministic 0–100 risk calculation algorithm (`v1.0.0-deterministic`) with zero black-box AI.
-- Transparent itemized factor point contributions (`+{points}`) with plain-English descriptions and source attribution.
-- 5-tier canonical RiskLevel mapping: LOW (0–20), GUARDED (21–40), MODERATE (41–60), HIGH (61–80), CRITICAL (81–100).
-- 5-dimension per-hazard breakdown matrix: Flood & Inundation, Cyclone & Storm, Seismic Shaking, Extreme Temperature, and Wildfire.
-- Statutory Indian alert detection with official provenance flags, distinct from ResQEarth calculations.
-- Regional coastal vulnerability baseline integration for Mumbai & coastal Maharashtra.
-- Missing feed detection & disclosure with graceful confidence degradation (HIGH, MODERATE, LOW).
-- Prominent educational and non-evacuation boundary disclaimers with statutory NDMA/IMD precedence.
-- Live integration across `/`, `/dashboard`, and `/map`.
-- Phase 2 (Maps, Environmental APIs & Disaster Intelligence) is 100% complete and verified.
+- Typed unified alert data model supporting `official`, `automatic`, and `manual-admin` source types.
+- 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`) with strict transition enforcement.
+- Deterministic deduplication key generator combining source type, source, hazard type, quantized coordinates (~5km grid), and quantized 6-hour time window.
+- In-memory store and Firestore repository with CRUD, lifecycle actions, delivery attempt logging, and audit trail emission.
+- Role-based authorization isolating draft alerts and all mutation actions from citizens and unauthenticated guests.
+- Statutory official provenance immutability preventing tampering with official alerts or fake official labeling.
+- Delivery-attempt tracking foundation and audit-log foundation ready for notification dispatch phases.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / (9.4 kB), /map (4.63 kB), and /dashboard (2.73 kB) verified)
-- Unit test suite: PASS (247/247 unit tests passed across 16 test suites)
+- npm run build (next build): PASS (24 static routes compiled successfully, / (9.4 kB), /map (4.65 kB), and /dashboard (2.73 kB) verified)
+- Unit test suite: PASS (348/348 unit tests passed across 21 test suites, including 101 new alert assertions)
 
 Known Issues:
 None.
@@ -949,20 +964,20 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 3.1 — Unified Alert Model and Lifecycle (Establish canonical alert Firestore schemas, source types, delivery attempt tracking, and lifecycle states on branch `phase-3`).
+Phase 3.2 — Automated Risk-Triggered Warning Flow (Connect deterministic risk engine and severe multi-hazard events to automatic alert candidate evaluation, deduplication suppression, and draft/active alert generation).
 
 Warnings for Next Agent:
-Maintain deterministic scoring weights and the strict `RESQEARTH CALCULATED RISK` provenance badge when integrating automated and manual alerts in Phase 3.
+Preserve deterministic scoring weights, strict `RESQEARTH CALCULATED RISK` labeling, and statutory official provenance immutability when triggering automated alerts in Phase 3.2.
 ```
 
 ## 39. Immediate Next Action
 
 ```text
 Current State:
-Phase 2 (Sub-Phases 2.1 through 2.8) is 100% complete (PASS) on branch `phase-2`.
+Phase 3.1 Unified Alert Model & Lifecycle is 100% complete (PASS) on branch `phase-3`.
 
 Next Action:
-Proceed with Phase 3.1 Unified Alert Model and Lifecycle.
+Proceed with Phase 3.2 Automated Risk-Triggered Warning Flow.
 ```
 
 ## 40. Brain.md Maintenance Rule

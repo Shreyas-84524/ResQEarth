@@ -91,18 +91,47 @@ export interface AlertDoc {
   severity: RiskLevel;
   source: string;
   sourceType: AlertSourceType;
+  isOfficialAlert: boolean; // Strictly true iff sourceType === 'official', immutable
   region?: string;
   latitude?: number;
   longitude?: number;
   radiusKm?: number;
   targetMode: "all" | "state" | "city" | "region" | "radius";
   instructions: string[];
-  createdAt: string;
-  expiresAt: string;
-  createdBy: string; // UID of admin or 'system-risk-engine'
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+  expiresAt: string; // ISO 8601
+  createdBy: string; // UID of admin or 'system-risk-engine' or provider name
   status: "draft" | "active" | "expired" | "cancelled" | "superseded";
+  deduplicationKey: string; // Deterministic deduplication key
+  dedupeKey?: string; // Backwards compatible alias
+  relatedDisasterEventId?: string;
   eventIds?: string[];
-  dedupeKey: string;
+  riskScoreSnapshot?: number; // Snapshot of calculated risk score (0-100) if triggered by risk engine
+  supersededById?: string;
+  supersedesAlertId?: string;
+  cancellationReason?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Delivery Attempt Record stored in `alerts/{alertId}/deliveryAttempts/{attemptId}`
+ */
+export interface DeliveryAttemptDoc {
+  id: string;
+  alertId: string;
+  channel: "in-site" | "fcm" | "sms";
+  targetRecipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  status: "pending" | "in-progress" | "completed" | "failed";
+  createdAt: string;
+  updatedAt: string;
+  dispatchedAt?: string;
+  completedAt?: string;
+  providerReference?: string;
+  safeErrorCode?: string;
+  errorDetails?: string;
 }
 
 /**
