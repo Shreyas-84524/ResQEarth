@@ -1,24 +1,30 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { RouteContainer } from "@/components/layout/route-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
-import { History } from "lucide-react";
+import { getAllHistoricalEvents } from "@/features/history/services/history-service";
+import { HistoryTimelineView } from "@/features/history/components/history-timeline-view";
 
-export default function HistoryPage() {
+export const metadata: Metadata = {
+  title: "Indian Disaster History & Lessons Learned | ResQEarth",
+  description:
+    "Chronological archive of major Indian disasters from 1984 to 2024, analyzing meteorological/geological triggers, human impacts, and transformative policy reforms.",
+};
+
+export default function DisasterHistoryPage() {
+  const allEvents = getAllHistoricalEvents();
+
   return (
-    <RouteContainer>
+    <RouteContainer size="lg">
       <PageHeader
-        title="Indian Disaster History Timeline"
-        description="A curated, sourced historical record of major natural and industrial disasters in India, their causes, and lessons learned."
-        badge={<Badge variant="outline">Educational Archive</Badge>}
+        title="Indian Disaster History & Policy Evolution"
+        description="Comprehensive historical archive examining major Indian natural and industrial catastrophes, meteorological triggers, response actions, and institutional lessons learned."
+        badge={<Badge variant="outline">Historical Archive (1984–2024)</Badge>}
       />
+
       <div className="mt-6">
-        <EmptyState
-          icon={History}
-          title="Historical Timeline Shell"
-          description="Interactive timeline with filterable disaster categories (Cyclone, Tsunami, Earthquake, Gas Leak) will be populated in Phase 4.5."
-        />
+        <HistoryTimelineView initialEvents={allEvents} />
       </div>
     </RouteContainer>
   );
