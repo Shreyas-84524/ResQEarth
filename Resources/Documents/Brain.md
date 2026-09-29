@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 3 Disaster Warning, Admin Control Center, Notification & SMS System COMPLETE (PASS across all 8 sub-phases: 3.1 Unified Alert Model & Lifecycle, 3.2 Regional Recipient Matching, 3.3 Automatic Alert Engine, 3.4 Firebase Cloud Messaging, 3.5 Admin Control Center, 3.6 Manual Regional Warning Workflow, 3.7 SMS Gateway Integration, and 3.8 Two-Message Emergency Workflow). Built canonical Firebase-backed alert architecture, geospatial recipient targeting, automatic risk-triggered warning engine with strict RESQEARTH CALCULATED RISK provenance separation, Web Push (FCM) service with background service worker, full Admin Control Center dashboard at `/admin`, manual warning dispatch workflow with live targeting preview, secure SMS gateway client, and sequential two-message emergency workflow. Validated with 456 passing unit tests across 26 test suites, 0 TypeScript errors, 0 ESLint warnings, and clean Next.js production build on branch `phase-3`. Next step: Phase 4 (Historical Disasters, Preparedness Guides & Recovery).  
+**Current factual state:** Phase 1 and Phase 2 are integrated into `main`; Phase 3 Disaster Warning, Admin Control Center, Notification & SMS System is complete on branch `phase-3` (PASS across all 8 sub-phases: 3.1 Unified Alert Model & Lifecycle, 3.2 Regional Recipient Matching, 3.3 Automatic Alert Engine, 3.4 Firebase Cloud Messaging, 3.5 Admin Control Center, 3.6 Manual Regional Warning Workflow, 3.7 SMS Gateway Integration, and 3.8 Two-Message Emergency Workflow). Phase 3 provides canonical Firebase-backed alerts, geospatial recipient targeting, automatic risk-triggered warnings with strict RESQEARTH CALCULATED RISK provenance separation, Web Push (FCM), the protected `/admin` control center, manual regional warning dispatch, secure SMS gateway integration, and a sequential two-message emergency workflow. The phase branch was validated with 456 passing unit tests across 26 test suites, 0 TypeScript errors, 0 ESLint warnings, and a clean Next.js production build. Current task: safely integrate `main` into `phase-3`, validate the combined tree, and merge Phase 3 through a pull request.
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -538,11 +538,11 @@ Phase 5 — Production Hardening, Testing & Submission
 ### Current Work Position
 
 ```text
-Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence (COMPLETE)
-Current Sub-Phase: Phase 2.8 Explainable Risk Engine and Phase Validation
+Current Major Phase: Phase 3 — Alerts, Admin Control Center & SMS Gateway (COMPLETE)
+Current Sub-Phase: Phase 3.8 Two-Message Emergency Workflow and Phase Validation
 Current Status: PASS
-Last Completed Sub-Phase: Phase 2.8 Explainable Risk Engine and Phase Validation
-Next Intended Major Phase: Phase 3 — Alerts, Admin Control Center & SMS Gateway (Sub-Phase 3.1 Unified Alert Model and Lifecycle)
+Last Completed Sub-Phase: Phase 3.8 Two-Message Emergency Workflow and Phase Validation
+Next Intended Major Phase: Phase 4 — ESE Knowledge Portal, History & Government Resources (after Phase 3 is integrated into main)
 ```
 
 ## 29. Implementation Status Table
@@ -568,14 +568,14 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 2 | 2.6 Unified Events, Map Layers and Nearby Detection | PASS | Canonical UnifiedDisasterEvent model combining USGS, NASA EONET, Indian statutory CAP alerts (NDMA SACHET / IMD), and Open-Meteo severe weather hazards; spatial & temporal deduplication (15 km, 6h); statutory golden rings on MapLibre vector maps; MapUnifiedDisasterLayer; UnifiedDisasterPopup; UnifiedDisasterListPanel; UnifiedDisasterOverviewCard; 11 unit tests. |
 | 2 | 2.7 Unified Disaster Map Experience & Heatmap | PASS | Multi-hazard WebGL heatmap with severity-weighted intensity and zoom-based transitions (low zoom = density heatmap, high zoom = precision vector markers), display mode switcher (`all`/`markers`/`heatmap`), selected event cyan halo with map ↔ list two-way scroll synchronization, fit-to-events & recenter toolbar (`MapGisToolbar`), interactive multi-tab GIS legend (`MapGisLegend`) with statutory non-evacuation notice; 30 style expression unit tests (235 total passing). |
 | 2 | 2.8 Explainable Risk Engine and Phase Validation | PASS | Deterministic 0–100 risk calculation algorithm (`v1.0.0-deterministic`), itemized factor weightings (rain, wind, temperature extremes, USGS earthquakes, NASA EONET events, NDMA/IMD statutory alerts, coastal exposure baseline), per-hazard 5-dimension breakdown (Flood, Storm, Earthquake, Heatwave, Wildfire), plain-English explanations, missing feed disclosures & confidence degradation, RiskOverviewCard, PerHazardRiskGrid, RiskBadge on `/`, `/dashboard`, and `/map`; 12 risk unit tests (247 total passing across 16 test suites). Phase 2 complete. |
-| 3 | 3.1 Unified Alert Model and Lifecycle | NOT STARTED | Source types, statuses, dedupe, expiry, Firestore model. |
-| 3 | 3.2 In-Site Citizen Warnings | NOT STARTED | Target-aware warning list/detail independent of FCM. |
-| 3 | 3.3 Admin Control Center Shell | NOT STARTED | Protected dashboard, health, events, alerts, map, empty/failure states. |
-| 3 | 3.4 Manual Warning Form and Preview | NOT STARTED | Validated type/severity/target/message/instructions/expiry and preview. |
-| 3 | 3.5 Regional and Radius Targeting | NOT STARTED | Server-authoritative eligibility, consent, exact-distance filtering. |
-| 3 | 3.6 Firebase Cloud Messaging | NOT STARTED | Permission, token lifecycle, foreground/background, safe click routes. |
-| 3 | 3.7 SMS Gateway and Two-Part Dispatch | NOT STARTED | Server-only adapter, templates, idempotency, masked status. |
-| 3 | 3.8 End-to-End Warning Demo and Phase Validation | NOT STARTED | Admin → citizen → in-site/FCM/SMS; audit, expiry, failure, dedupe tests. |
+| 3 | 3.1 Unified Alert Model and Lifecycle | PASS | Canonical types, lifecycle, dedupe, delivery tracking, audit foundation, rules, and indexes validated. |
+| 3 | 3.2 Regional Recipient Matching | PASS | All/radius/city/state/region targeting with Haversine distance and consent guards validated. |
+| 3 | 3.3 Automatic Alert Engine | PASS | Official, nearby-severe-event, and calculated-risk triggers with provenance/cooldown controls validated. |
+| 3 | 3.4 Firebase Cloud Messaging | PASS | Permission guards, token lifecycle, foreground/background handling, and click routing implemented and unit tested. |
+| 3 | 3.5 Admin Control Center | PASS | Protected dashboard, alert catalog, metrics, map context, and service-health views implemented. |
+| 3 | 3.6 Manual Regional Warning Workflow | PASS | Validated warning form, targeting preview, confirmation, dispatch, and audit flow implemented. |
+| 3 | 3.7 SMS Gateway Integration | PASS | Server-side gateway client, E.164 normalization, consent, retries, and masked logging validated. |
+| 3 | 3.8 Two-Message Emergency Workflow | PASS | Sequential warning/guide and emergency-contact messages with idempotency validated; 456 total tests pass. |
 | 4 | 4.1 Disaster Content Schema and Index | NOT STARTED | Natural/man-made taxonomy, sourced content model, `/disasters`. |
 | 4 | 4.2 Core Natural-Disaster Pages | NOT STARTED | Flood, cyclone, earthquake, landslide, heat wave. |
 | 4 | 4.3 Core Man-Made Disaster Pages | NOT STARTED | Chemical leak plus priority man-made guidance. |
@@ -777,6 +777,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Decision:** Establish the canonical Firebase-backed unified alert model (`UnifiedAlert` / `AlertDoc`) supporting `official`, `automatic`, and `manual-admin` source types across a strict 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`). Enforce strict statutory provenance invariants (`isOfficialAlert: true` strictly restricted to `sourceType: 'official'` and immutable once stored), deterministic deduplication-key generation with 0.05-degree spatial grid quantization and 6-hour temporal bucketing, subcollection-based delivery attempt tracking foundation (`alerts/{alertId}/deliveryAttempts`), top-level append-only audit logging (`auditLogs`), composite Firestore indexes (`firestore.indexes.json`), and hardened Firestore Security Rules isolating draft alerts to administrators and rejecting unauthorized citizen mutations.  
 **Reason:** Prevent misleading risk communication, eliminate duplicate warning broadcast storms, establish tamper-proof emergency warning records with full auditability, and provide a secure foundation for automated risk triggers (Phase 3.2), manual admin dispatch (Phase 3.4), FCM browser push (Phase 3.6), and two-part SMS warnings (Phase 3.7).  
 **Impact:** Alerts feature module (`src/features/alerts/`) provides schemas, typed models, lifecycle transition validators, and reactive hooks backed by 101 new passing unit test assertions (348 total passing across 21 suites), 0 TypeScript errors, 0 ESLint warnings, and zero external blocking dependencies. Phase 3.1 is complete.
+
+### Decision D-023
+
+**Date:** 2026-09-30
+**Decision:** Preserve the completed Phase 1 and Phase 2 integration history on `main`, including merge commits `343b425` and `5a9e9a4` and the safety references `backup/main-before-phase-integration`, `backup/phase-1-before-main-integration`, and `backup/phase-2-before-main-integration`, while synchronizing `main` into `phase-3` before the Phase 3 pull request.
+**Reason:** The Phase 3 branch was created from the completed Phase 2 tip before the separate Phase 1/2 integration commits were added to `main`. Synchronizing the branches preserves both sets of provenance and resolves the shared `Brain.md` update explicitly instead of rewriting or discarding history.
+**Impact:** The Phase 3 pull request includes the completed warning/notification implementation plus `main`'s integration record and existing lowercase `resources/design.md` file; the code changes merge without conflict, and the live project memory reflects both the mainline integration and Phase 3 completion.
 
 ## 33. AI Coding Rules
 
