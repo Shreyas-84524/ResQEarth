@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 1.6 Login & Session Management complete (PASS); Email/password login, AuthProvider, useAuth hook, persistent session state across refresh, app-wide reactive navigation shell, and route redirection implemented in `Front-end/`.  
+**Current factual state:** Phase 1.7 Roles and Route Authorization complete (PASS); Role-based route protection for citizen and admin roles, ProtectedRoute and AdminRoute guards, AccessDenied UI, Firestore Security Rules (firestore.rules), and unit tests implemented in `Front-end/`.  
 **Last context update:** 2026-09-29  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 1 — Foundation, UI, Firebase & Authentication
-Current Sub-Phase: Phase 1.6 Login, Logout and Auth State
+Current Sub-Phase: Phase 1.7 Roles and Route Authorization
 Current Status: PASS
-Last Completed Sub-Phase: Phase 1.6 Login, Logout and Auth State
-Next Intended Sub-Phase: Phase 1.7 Roles and Route Authorization
+Last Completed Sub-Phase: Phase 1.7 Roles and Route Authorization
+Next Intended Sub-Phase: Phase 1.8 Public Homepage Shell
 ```
 
 ## 29. Implementation Status Table
@@ -557,7 +557,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 1 | 1.4 Firebase Core Setup | PASS | Typed config loading with Zod validation, safe singleton initialization (`initializeApp`), Auth service foundation, Firestore service foundation with collection/subcollection constants & converters, Firebase Storage foundation, FCM foundation with browser/SSR support checks, and updated `.env.example`. |
 | 1 | 1.5 Signup and Profile Creation | PASS | React Hook Form + Zod validation, password strength criteria, phone number validation & normalization (+91 E.164), duplicate email error mapping, Firebase Auth registration, Firestore `users/{uid}` citizen profile & preferences initialization, and safe error recovery. |
 | 1 | 1.6 Login, Logout and Auth State | PASS | Email/password login flow, React Hook Form + Zod validation, AuthProvider + useAuth hook, persistent session state across refresh, app-wide reactive navigation shell, logout handler, and route redirection away from /login and /signup. |
-| 1 | 1.7 Roles and Route Authorization | NOT STARTED | Citizen/admin isolation in UI, backend, and Firestore Rules. |
+| 1 | 1.7 Roles and Route Authorization | PASS | Role-based route protection for citizen and admin roles, ProtectedRoute and AdminRoute guards, AccessDenied view with clear role clearance guidance, dynamic navigation authorization, production-grade Firestore Security Rules (`firestore.rules`), and 16 unit tests for RBAC logic. |
 | 1 | 1.8 Public Homepage Shell | NOT STARTED | Hero, mission, dashboard regions, content/CTA placeholders with real states. |
 | 1 | 1.9 Foundation Validation | NOT STARTED | Build/type/lint/auth/rules/responsive checks; Phase 1 regression pass. |
 | 2 | 2.1 MapLibre Base Map | NOT STARTED | Approved tiles, attribution, controls, accessible map/list structure. |
@@ -701,6 +701,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Prevent misleading risk and alert communication.  
 **Impact:** Source labels, audit information, timestamps, and limitations are required throughout the UI/data model.
 
+### Decision D-011
+
+**Date:** 2026-09-29  
+**Decision:** Enforce role-based access authorization through layered client route guards (`ProtectedRoute`, `AdminRoute`, `AccessDenied`), Firestore profile role resolution, and hardened Cloud Firestore Security Rules (`Front-end/firestore.rules`).  
+**Reason:** Prevent unauthorized access to administrative endpoints (`/admin`) and secure personal citizen data without relying solely on client-side obfuscation.  
+**Impact:** Unauthenticated requests redirect cleanly to `/login?redirect=...`; unauthorized citizens receive an accessible `AccessDenied` view with clear clearance guidance; Firestore rules enforce owner-scoped access and prevent client-side privilege escalation.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -789,22 +796,24 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-29
-Scope: Phase 1.6 Login & Session Management
+Scope: Phase 1.7 Roles and Route Authorization
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings or errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including /login and /signup)
-Unit / Validation Suite: PASS (27 tests passed: 16 signup validation tests + 11 login validation & auth error mapping tests for invalid credentials, user not found, wrong password, disabled accounts, rate limiting, and network failures)
-Session Persistence: PASS (AuthProvider + useAuth subscribes to onAuthStateChanged, restores user and Firestore profile, prevents flicker)
-Route Redirection: PASS (Authenticated users are automatically redirected away from /login and /signup to /dashboard)
-Reactive UI Shell: PASS (PageShell and Navbar dynamically reflect real-time authentication state and provide accessible logout triggers)
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including /admin, /alerts, /dashboard, /profile)
+Unit / Validation Suite: PASS (43 tests passed across 3 test suites: 16 route guard & RBAC logic tests + 16 signup validation tests + 11 login validation & auth error mapping tests)
+Route Guard Protection: PASS (ProtectedRoute & AdminRoute guards restrict /dashboard, /alerts, /profile, and /admin)
+Access Denied Handling: PASS (AccessDenied view rendered with accessible aria-live, clear clearance requirements, and safe return CTAs)
+Auth Hydration / Flicker Prevention: PASS (RouteGuardLoadingSkeleton renders while checking credentials, preventing layout shift and content flashes)
+Role Hierarchy & Security: PASS (Role resolved strictly from Firestore profile with citizen default; no public role elevation; production-grade firestore.rules created)
 No Secrets Committed: PASS (.gitignore verified, zero sensitive keys in client bundle)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
+Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
 Map: NOT TESTED (Scheduled for Phase 2.1)
 Weather: NOT TESTED (Scheduled for Phase 2.4)
 Risk Engine: NOT TESTED (Scheduled for Phase 2.8)
-Admin: NOT TESTED (Scheduled for Phase 3.3)
+Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
 SMS: NOT TESTED (Scheduled for Phase 3.7)
 Deployment: NOT TESTED (Scheduled for Phase 5.7)
@@ -816,25 +825,25 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 1.6 Login & Session Management in `Front-end/` on branch `phase-1`.
+Implemented Phase 1.7 Roles and Route Authorization in `Front-end/` on branch `phase-1`.
 
 Files/Components Created & Updated:
-- Front-end/src/features/auth/schemas/login-schema.ts (Zod schema for login with email validation and required password)
-- Front-end/src/features/auth/services/auth-service.ts (signInCitizen, fetchUserProfile, signOutCitizen, and comprehensive error mapping for all Firebase Auth error codes)
-- Front-end/src/features/auth/context/auth-context.tsx (AuthProvider managing persistent Firebase Auth state, Firestore profile hydration, login/signup/logout methods, and loading state)
-- Front-end/src/features/auth/hooks/use-auth.ts (Convenient hook export for consuming auth state)
-- Front-end/src/features/auth/components/login-form.tsx (Client-side LoginForm with Zod validation, show/hide password toggle, redirectTarget query param handling, and Alert error banner)
-- Front-end/src/features/auth/components/signup-form.tsx (Updated with useAuth integration and automatic redirect when authenticated)
-- Front-end/src/features/auth/index.ts (Barrel export for auth schemas, services, context, hooks, and components)
-- Front-end/src/features/auth/__tests__/login-validation.test.ts (11 unit tests for login schema validation and Firebase Auth error mapping)
-- Front-end/src/app/login/page.tsx (Connected LoginForm with Suspense boundary and SEO metadata)
-- Front-end/src/app/layout.tsx (Wrapped root layout with AuthProvider for global session management)
-- Front-end/src/components/layout/page-shell.tsx (Connected PageShell to useAuth context for reactive navigation across all routes)
+- Front-end/src/features/auth/components/access-denied.tsx (Accessible WCAG-compliant Access Denied view with active role badges, clearance explanations, and navigation buttons)
+- Front-end/src/features/auth/components/protected-route.tsx (Client-side route guard with auth hydration skeleton, unauthenticated redirect to /login?redirect=..., and allowedRoles verification)
+- Front-end/src/features/auth/components/admin-route.tsx (Specialized guard restricting access strictly to users with role="admin")
+- Front-end/src/features/auth/index.ts (Barrel export updated with ProtectedRoute, AdminRoute, and AccessDenied)
+- Front-end/src/app/dashboard/page.tsx (Protected with ProtectedRoute)
+- Front-end/src/app/alerts/page.tsx (Protected with ProtectedRoute)
+- Front-end/src/app/profile/page.tsx (Protected with ProtectedRoute)
+- Front-end/src/app/admin/page.tsx (Protected with AdminRoute)
+- Front-end/firestore.rules (Hardened Cloud Firestore Security Rules implementing root default-deny, owner-scoped user data, immutable audit logs, DoS protection, and admin authorization)
+- Front-end/src/features/auth/__tests__/route-guard.test.ts (16 automated unit tests for role authorization, redirect URL generation, and role resolution)
 
 Features Completed:
-Phase 1.6 Login & Session Management.
+Phase 1.7 Roles and Route Authorization.
 
 Tests Run:
+- npx tsx src/features/auth/__tests__/route-guard.test.ts: PASS (16/16 unit tests passed)
 - npx tsx src/features/auth/__tests__/signup-validation.test.ts: PASS (16/16 unit tests passed)
 - npx tsx src/features/auth/__tests__/login-validation.test.ts: PASS (11/11 unit tests passed)
 - npm run type-check (tsc --noEmit): PASS (zero errors)
@@ -845,13 +854,13 @@ Known Issues:
 None.
 
 Current Blockers:
-None for Phase 1.7. (For live cloud signup/login testing, real Firebase project credentials in `.env.local` are required).
+None for Phase 1.8. (For live cloud signup/login testing, real Firebase project credentials in `.env.local` are required).
 
 Next Recommended Task:
-Phase 1.7 — Roles and Route Authorization (Role-based route protection for /dashboard, /profile, /admin; citizen and admin authorization guards).
+Phase 1.8 — Public Homepage Shell (Hero section, live status overview, disaster categories, mission pillars, and quick navigation).
 
 Warnings for Next Agent:
-Maintain the AuthProvider and useAuth hook patterns. Enforce role checks in both client UI guards and backend/Firestore rules.
+Maintain the ProtectedRoute and AdminRoute guards on authenticated pages. Ensure Firestore rules are maintained whenever new collections are introduced.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -860,10 +869,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 1.6 Login & Session Management complete (PASS) on branch `phase-1`. /login and /signup routes are connected to Firebase Auth and Firestore with persistent session management, AuthProvider, useAuth hook, and unit test coverage.
+Phase 1.7 Roles and Route Authorization complete (PASS) on branch `phase-1`. ProtectedRoute and AdminRoute guards protect all authenticated and admin routes with zero flicker, AccessDenied view, and comprehensive Firestore Security Rules in `Front-end/firestore.rules`.
 
 Next Action:
-Proceed with Phase 1.7 Roles and Route Authorization.
+Proceed with Phase 1.8 Public Homepage Shell.
 ```
 
 ## 40. Brain.md Maintenance Rule

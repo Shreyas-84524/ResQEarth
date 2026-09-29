@@ -9,3 +9,6 @@ export * from "./context/auth-context";
 export * from "./hooks/use-auth";
 export * from "./components/signup-form";
 export * from "./components/login-form";
+export * from "./components/access-denied";
+export * from "./components/protected-route";
+export * from "./components/admin-route";

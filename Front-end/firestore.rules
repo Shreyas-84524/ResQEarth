@@ -1,0 +1,526 @@
+rules_version = '2';
+
+// ===============================================================
+// ResQEarth Cloud Firestore Security Rules
+// ===============================================================
+//
+// Description: Hardened, production-grade security rules for the ResQEarth
+// disaster intelligence and emergency warning platform.
+//
+// Enforces:
+// 1. Root default deny on all collections.
+// 2. Strict Role-Based Access Control (RBAC) preventing privilege escalation.
+// 3. User data privacy & PII separation (profiles & tokens owned by user).
+// 4. Public access for verified disaster feeds, maps, and emergency alerts.
+// 5. Immutable audit trails with append-only logs.
+// 6. Comprehensive domain validators with CEL type and size bounds to mitigate DoS.
+//
+// ===============================================================
+// Assumed Data Model Definitions
+// ===============================================================
+//
+// Collection: users
+// Document ID: {uid} (Firebase Auth UID)
+// Fields:
+//   - uid: string (required, immutable) - Firebase Auth UID
+//   - name: string (required, 1-100 chars) - Full name
+//   - email: string (required, valid email, <= 150 chars) - Email address
+//   - phone: string (required, valid phone, <= 30 chars) - SMS contact number
+//   - role: string (required, 'citizen' | 'admin') - Authorization role
+//   - createdAt: string | timestamp (required, immutable) - ISO timestamp of account creation
+//   - updatedAt: string | timestamp (optional) - ISO timestamp of last profile update
+//   - notificationConsent: bool (required) - FCM browser push notification consent
+//   - smsConsent: bool (required) - SMS notification consent
+//   - lastKnownLocation: map (optional) - Latitude, longitude, and precision metadata
+//
+// Subcollection: users/{uid}/preferences
+// Document ID: {prefId} (e.g., 'default')
+// Fields:
+//   - disasterTypes: list (required, string items, <= 30 items) - Subscribed disaster types
+//   - radiiKm: list (required, number items, <= 10 items) - Alert radii options
+//   - channelChoices: map (required, { inSite: bool, FCM: bool, SMS: bool })
+//   - locationMode: string (required, 'auto' | 'manual')
+//   - cookiePreferences: map (required, { essentialOnly: bool, updatedAt: string | timestamp })
+//
+// Subcollection: users/{uid}/notificationTokens
+// Document ID: {tokenId}
+// Fields:
+//   - tokenHash: string (required, <= 256 chars) - FCM device token reference
+//   - platform: string (required, <= 50 chars) - Client platform ('web')
+//   - createdAt: string | timestamp (required)
+//   - updatedAt: string | timestamp (required)
+//   - lastSeenAt: string | timestamp (required)
+//   - status: string (required, 'active' | 'invalid' | 'revoked')
+//
+// Collection: disasterEvents
+// Document ID: {eventId}
+// Fields:
+//   - provider: string (required, <= 100 chars) - Source provider (open-meteo, USGS, etc.)
+//   - providerEventId: string (required, <= 200 chars) - Provider external ID
+//   - disasterType: string (required, <= 100 chars) - Standardized hazard identifier
+//   - category: string (required, 'natural' | 'man-made')
+//   - title: string (required, <= 300 chars) - Event title
+//   - description: string (required, <= 5000 chars) - Detailed description
+//   - severity: string (required, 'LOW' | 'GUARDED' | 'MODERATE' | 'HIGH' | 'CRITICAL')
+//   - severityScale: string (optional, <= 100 chars)
+//   - source: string (required, <= 200 chars) - Authoritative source name
+//   - sourceUrl: string (optional, <= 500 chars) - Reference URL
+//   - sourceType: string (required, 'official' | 'public-feed' | 'curated')
+//   - latitude: number (optional, -90 to 90)
+//   - longitude: number (optional, -180 to 180)
+//   - affectedRegions: list (optional, string items, <= 50 items)
+//   - occurredAt: string | timestamp (required)
+//   - updatedAt: string | timestamp (required)
+//   - expiresAt: string | timestamp (optional)
+//   - status: string (required, 'active' | 'resolved' | 'expired')
+//   - fetchedAt: string | timestamp (required)
+//   - freshness: string (required, 'live' | 'cached' | 'stale')
+//
+// Collection: riskAssessments
+// Document ID: {assessmentId}
+// Fields:
+//   - score: number (required, 0-100) - Clamped calculated risk score
+//   - level: string (required, 'LOW' | 'GUARDED' | 'MODERATE' | 'HIGH' | 'CRITICAL')
+//   - calculatedAt: string | timestamp (required)
+//   - expiresAt: string | timestamp (optional)
+//   - modelVersion: string (optional, <= 50 chars)
+//   - contributions: map | list (optional) - Breakdown of scoring factors
+//   - eventIds: list (optional, string items, <= 50 items)
+//
+// Collection: alerts
+// Document ID: {alertId}
+// Fields:
+//   - title: string (required, <= 300 chars) - Warning title
+//   - description: string (required, <= 5000 chars) - Warning body
+//   - disasterType: string (required, <= 100 chars)
+//   - severity: string (required, 'LOW' | 'GUARDED' | 'MODERATE' | 'HIGH' | 'CRITICAL')
+//   - source: string (required, <= 200 chars)
+//   - sourceType: string (required, 'official' | 'automatic' | 'manual-admin')
+//   - region: string (optional, <= 200 chars)
+//   - latitude: number (optional, -90 to 90)
+//   - longitude: number (optional, -180 to 180)
+//   - radiusKm: number (optional, >= 0)
+//   - targetMode: string (required, 'all' | 'state' | 'city' | 'region' | 'radius')
+//   - instructions: list (required, string items, <= 20 items, <= 500 chars each)
+//   - createdAt: string | timestamp (required)
+//   - expiresAt: string | timestamp (required)
+//   - createdBy: string (required, <= 100 chars)
+//   - status: string (required, 'draft' | 'active' | 'expired' | 'cancelled' | 'superseded')
+//   - eventIds: list (optional, string items, <= 50 items)
+//   - dedupeKey: string (required, <= 256 chars)
+//
+// Subcollection: alerts/{alertId}/deliveryAttempts
+// Document ID: {attemptId}
+// Fields:
+//   - userId: string (optional, <= 100 chars)
+//   - channel: string (required, <= 50 chars)
+//   - status: string (required, <= 50 chars)
+//   - providerReference: string (optional, <= 256 chars)
+//   - attemptedAt: string | timestamp (optional)
+//   - safeErrorCode: string (optional, <= 100 chars)
+//
+// Collection: smsDeliveryLogs
+// Document ID: {logId}
+// Fields:
+//   - alertId: string (required, <= 100 chars)
+//   - userId: string (required, <= 100 chars)
+//   - messagePart: number (required, 1 | 2)
+//   - phoneHash: string (required, <= 256 chars)
+//   - maskedPhone: string (required, <= 50 chars)
+//   - status: string (required, 'queued' | 'sent' | 'delivered' | 'failed')
+//   - providerReference: string (optional, <= 256 chars)
+//   - createdAt: string | timestamp (required)
+//   - dispatchedAt: string | timestamp (optional)
+//   - safeErrorCode: string (optional, <= 100 chars)
+//
+// Collection: auditLogs
+// Document ID: {logId}
+// Fields:
+//   - actorUid: string (required, <= 100 chars, matches request.auth.uid)
+//   - actorRole: string (required, 'citizen' | 'admin')
+//   - action: string (required, <= 100 chars)
+//   - resource: string (required, <= 100 chars)
+//   - resourceId: string (optional, <= 100 chars)
+//   - timestamp: string | timestamp (required)
+//   - correlationId: string (required, <= 100 chars)
+//   - outcome: string (required, 'success' | 'denied' | 'failed')
+//   - details: map (optional)
+//
+// Collection: serviceStatus
+// Document ID: {serviceId}
+// Fields:
+//   - serviceId: string (required, <= 100 chars)
+//   - providerName: string (required, <= 100 chars)
+//   - health: string (required, 'healthy' | 'degraded' | 'down' | 'unverified')
+//   - lastAttemptAt: string | timestamp (required)
+//   - lastSuccessAt: string | timestamp (optional)
+//   - freshness: string (required, 'live' | 'stale' | 'unknown')
+//   - safeErrorSummary: string (optional, <= 500 chars)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions & Security Predicates
+    // ===============================================================
+
+    // Check if the request is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAuthenticated() {
+      return isSignedIn();
+    }
+
+    // Check if the signed-in user owns the given UID
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Check if user has administrative privileges (custom claim or verified users profile)
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token != null && request.auth.token.role == 'admin') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Ensure specified immutable fields are never altered in update requests
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // String length validation helpers
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() > 0 && val.size() <= maxLen;
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    // Email regex validation (standard format)
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() <= 150 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Phone number format validation (E.164 or standardized local format)
+    function isValidPhone(phone) {
+      return phone is string &&
+        phone.size() >= 7 &&
+        phone.size() <= 30 &&
+        phone.matches("^\\+?[0-9\\s\\-\\(\\)]{7,30}$");
+    }
+
+    // Timestamp / ISO 8601 validation helper
+    function isValidTimeValue(val) {
+      return (val is timestamp) || (val is string && val.size() <= 50);
+    }
+
+    function isOptionalTimeValue(data, field) {
+      return !(field in data) || isValidTimeValue(data[field]);
+    }
+
+    // ===============================================================
+    // Domain Validator Functions
+    // ===============================================================
+
+    // Validates UserProfile schema (`users/{uid}`)
+    function isValidUserProfile(data) {
+      return isNonEmptyString(data.uid, 128) &&
+        isNonEmptyString(data.name, 100) &&
+        isValidEmail(data.email) &&
+        isValidPhone(data.phone) &&
+        (data.role in ['citizen', 'admin']) &&
+        (data.notificationConsent is bool) &&
+        (data.smsConsent is bool) &&
+        isValidTimeValue(data.createdAt) &&
+        isOptionalTimeValue(data, 'updatedAt') &&
+        (!('lastKnownLocation' in data) || (
+          data.lastKnownLocation is map &&
+          data.lastKnownLocation.latitude is number &&
+          data.lastKnownLocation.latitude >= -90.0 &&
+          data.lastKnownLocation.latitude <= 90.0 &&
+          data.lastKnownLocation.longitude is number &&
+          data.lastKnownLocation.longitude >= -180.0 &&
+          data.lastKnownLocation.longitude <= 180.0 &&
+          isOptionalString(data.lastKnownLocation, 'cityName', 100) &&
+          isOptionalString(data.lastKnownLocation, 'stateName', 100) &&
+          isOptionalString(data.lastKnownLocation, 'precision', 50) &&
+          isValidTimeValue(data.lastKnownLocation.updatedAt)
+        ));
+    }
+
+    // Validates UserPreferences schema (`users/{uid}/preferences/{prefId}`)
+    function isValidUserPreferences(data) {
+      return (data.disasterTypes is list && data.disasterTypes.size() <= 30) &&
+        (data.radiiKm is list && data.radiiKm.size() <= 10) &&
+        (data.channelChoices is map &&
+         data.channelChoices.inSite is bool &&
+         data.channelChoices.fcm is bool &&
+         data.channelChoices.sms is bool) &&
+        (data.locationMode in ['auto', 'manual']) &&
+        (data.cookiePreferences is map &&
+         data.cookiePreferences.essentialOnly is bool &&
+         isValidTimeValue(data.cookiePreferences.updatedAt));
+    }
+
+    // Validates NotificationTokenRecord schema (`users/{uid}/notificationTokens/{tokenId}`)
+    function isValidNotificationToken(data) {
+      return isNonEmptyString(data.tokenHash, 256) &&
+        isNonEmptyString(data.platform, 50) &&
+        isValidTimeValue(data.createdAt) &&
+        isValidTimeValue(data.updatedAt) &&
+        isValidTimeValue(data.lastSeenAt) &&
+        (data.status in ['active', 'invalid', 'revoked']);
+    }
+
+    // Validates DisasterEventDoc schema (`disasterEvents/{eventId}`)
+    function isValidDisasterEvent(data) {
+      return isNonEmptyString(data.provider, 100) &&
+        isNonEmptyString(data.providerEventId, 200) &&
+        isNonEmptyString(data.disasterType, 100) &&
+        (data.category in ['natural', 'man-made']) &&
+        isNonEmptyString(data.title, 300) &&
+        isNonEmptyString(data.description, 5000) &&
+        (data.severity in ['LOW', 'GUARDED', 'MODERATE', 'HIGH', 'CRITICAL']) &&
+        isOptionalString(data, 'severityScale', 100) &&
+        isNonEmptyString(data.source, 200) &&
+        isOptionalString(data, 'sourceUrl', 500) &&
+        (data.sourceType in ['official', 'public-feed', 'curated']) &&
+        isValidTimeValue(data.occurredAt) &&
+        isValidTimeValue(data.updatedAt) &&
+        isOptionalTimeValue(data, 'expiresAt') &&
+        (data.status in ['active', 'resolved', 'expired']) &&
+        isValidTimeValue(data.fetchedAt) &&
+        (data.freshness in ['live', 'cached', 'stale']) &&
+        (!('latitude' in data) || data.latitude is number) &&
+        (!('longitude' in data) || data.longitude is number) &&
+        (!('affectedRegions' in data) || (data.affectedRegions is list && data.affectedRegions.size() <= 50));
+    }
+
+    // Validates RiskAssessment schema (`riskAssessments/{assessmentId}`)
+    function isValidRiskAssessment(data) {
+      return (data.score is number && data.score >= 0 && data.score <= 100) &&
+        (data.level in ['LOW', 'GUARDED', 'MODERATE', 'HIGH', 'CRITICAL']) &&
+        isValidTimeValue(data.calculatedAt) &&
+        isOptionalTimeValue(data, 'expiresAt') &&
+        isOptionalString(data, 'modelVersion', 50) &&
+        (!('eventIds' in data) || (data.eventIds is list && data.eventIds.size() <= 50));
+    }
+
+    // Validates AlertDoc schema (`alerts/{alertId}`)
+    function isValidAlert(data) {
+      return isNonEmptyString(data.title, 300) &&
+        isNonEmptyString(data.description, 5000) &&
+        isNonEmptyString(data.disasterType, 100) &&
+        (data.severity in ['LOW', 'GUARDED', 'MODERATE', 'HIGH', 'CRITICAL']) &&
+        isNonEmptyString(data.source, 200) &&
+        (data.sourceType in ['official', 'automatic', 'manual-admin']) &&
+        isOptionalString(data, 'region', 200) &&
+        (!('latitude' in data) || data.latitude is number) &&
+        (!('longitude' in data) || data.longitude is number) &&
+        (!('radiusKm' in data) || (data.radiusKm is number && data.radiusKm >= 0)) &&
+        (data.targetMode in ['all', 'state', 'city', 'region', 'radius']) &&
+        (data.instructions is list && data.instructions.size() <= 20) &&
+        isValidTimeValue(data.createdAt) &&
+        isValidTimeValue(data.expiresAt) &&
+        isNonEmptyString(data.createdBy, 100) &&
+        (data.status in ['draft', 'active', 'expired', 'cancelled', 'superseded']) &&
+        (!('eventIds' in data) || (data.eventIds is list && data.eventIds.size() <= 50)) &&
+        isNonEmptyString(data.dedupeKey, 256);
+    }
+
+    // Validates DeliveryAttempt schema (`alerts/{alertId}/deliveryAttempts/{attemptId}`)
+    function isValidDeliveryAttempt(data) {
+      return isOptionalString(data, 'userId', 100) &&
+        isNonEmptyString(data.channel, 50) &&
+        isNonEmptyString(data.status, 50) &&
+        isOptionalString(data, 'providerReference', 256) &&
+        isOptionalTimeValue(data, 'attemptedAt') &&
+        isOptionalString(data, 'safeErrorCode', 100);
+    }
+
+    // Validates SmsDeliveryLog schema (`smsDeliveryLogs/{logId}`)
+    function isValidSmsDeliveryLog(data) {
+      return isNonEmptyString(data.alertId, 100) &&
+        isNonEmptyString(data.userId, 100) &&
+        (data.messagePart is int || data.messagePart is number) &&
+        isNonEmptyString(data.phoneHash, 256) &&
+        isNonEmptyString(data.maskedPhone, 50) &&
+        (data.status in ['queued', 'sent', 'delivered', 'failed']) &&
+        isOptionalString(data, 'providerReference', 256) &&
+        isValidTimeValue(data.createdAt) &&
+        isOptionalTimeValue(data, 'dispatchedAt') &&
+        isOptionalString(data, 'safeErrorCode', 100);
+    }
+
+    // Validates AuditLog schema (`auditLogs/{logId}`)
+    function isValidAuditLog(data) {
+      return isNonEmptyString(data.actorUid, 100) &&
+        (data.actorRole in ['citizen', 'admin']) &&
+        isNonEmptyString(data.action, 100) &&
+        isNonEmptyString(data.resource, 100) &&
+        isOptionalString(data, 'resourceId', 100) &&
+        isValidTimeValue(data.timestamp) &&
+        isNonEmptyString(data.correlationId, 100) &&
+        (data.outcome in ['success', 'denied', 'failed']) &&
+        (!('details' in data) || data.details is map);
+    }
+
+    // Validates ServiceStatus schema (`serviceStatus/{serviceId}`)
+    function isValidServiceStatus(data) {
+      return isNonEmptyString(data.serviceId, 100) &&
+        isNonEmptyString(data.providerName, 100) &&
+        (data.health in ['healthy', 'degraded', 'down', 'unverified']) &&
+        isValidTimeValue(data.lastAttemptAt) &&
+        isOptionalTimeValue(data, 'lastSuccessAt') &&
+        (data.freshness in ['live', 'stale', 'unknown']) &&
+        isOptionalString(data, 'safeErrorSummary', 500);
+    }
+
+    // ===============================================================
+    // Default Root Security Rule (Deny All by Default)
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Collection & Document Rules
+    // ===============================================================
+
+    // ---------------------------------------------------------------
+    // 1. Users Collection (`users/{uid}`)
+    // ---------------------------------------------------------------
+    match /users/{uid} {
+      // Read: Profile owner or admin (protects PII: email, phone, location)
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Create: Owner can initialize own citizen profile; admins can bootstrap
+      allow create: if ((isOwner(uid) && request.resource.data.role == 'citizen') || isAdmin())
+                    && isValidUserProfile(request.resource.data)
+                    && request.resource.data.uid == uid;
+
+      // Update: Citizens cannot change their role or UID/createdAt; Admins can update
+      allow update: if (((isOwner(uid) && request.resource.data.role == resource.data.role && areImmutableFieldsUnchanged(['uid', 'createdAt'])) || isAdmin())
+                    && isValidUserProfile(request.resource.data));
+
+      // Delete: Strictly Admin-only
+      allow delete: if isAdmin();
+
+      // -------------------------------------------------------------
+      // Subcollection: `users/{uid}/preferences/{prefId}`
+      // -------------------------------------------------------------
+      match /preferences/{prefId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if (isOwner(uid) || isAdmin()) && isValidUserPreferences(request.resource.data);
+        allow update: if (isOwner(uid) || isAdmin()) && isValidUserPreferences(request.resource.data);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      // -------------------------------------------------------------
+      // Subcollection: `users/{uid}/notificationTokens/{tokenId}`
+      // -------------------------------------------------------------
+      match /notificationTokens/{tokenId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create: if (isOwner(uid) || isAdmin()) && isValidNotificationToken(request.resource.data);
+        allow update: if (isOwner(uid) || isAdmin()) && isValidNotificationToken(request.resource.data);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // 2. Disaster Events Collection (`disasterEvents/{eventId}`)
+    // ---------------------------------------------------------------
+    match /disasterEvents/{eventId} {
+      // Publicly readable for real-time map, dashboard feeds, and guest visitors
+      allow read: if true;
+
+      // Write operations restricted to authorized backend / admin
+      allow create: if isAdmin() && isValidDisasterEvent(request.resource.data);
+      allow update: if isAdmin() && isValidDisasterEvent(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // 3. Risk Assessments Collection (`riskAssessments/{assessmentId}`)
+    // ---------------------------------------------------------------
+    match /riskAssessments/{assessmentId} {
+      // Publicly readable calculated risk scores
+      allow read: if true;
+
+      // Write operations restricted to authorized backend / admin
+      allow create: if isAdmin() && isValidRiskAssessment(request.resource.data);
+      allow update: if isAdmin() && isValidRiskAssessment(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // 4. Alerts Collection (`alerts/{alertId}`)
+    // ---------------------------------------------------------------
+    match /alerts/{alertId} {
+      // Publicly readable for critical emergency warning broadcast
+      allow read: if true;
+
+      // Write operations restricted to authorized backend / admin
+      allow create: if isAdmin() && isValidAlert(request.resource.data);
+      allow update: if isAdmin() && isValidAlert(request.resource.data);
+      allow delete: if isAdmin();
+
+      // -------------------------------------------------------------
+      // Subcollection: `alerts/{alertId}/deliveryAttempts/{attemptId}`
+      // -------------------------------------------------------------
+      match /deliveryAttempts/{attemptId} {
+        allow read, delete: if isAdmin();
+        allow create: if isAdmin() && isValidDeliveryAttempt(request.resource.data);
+        allow update: if isAdmin() && isValidDeliveryAttempt(request.resource.data);
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // 5. SMS Delivery Logs Collection (`smsDeliveryLogs/{logId}`)
+    // ---------------------------------------------------------------
+    match /smsDeliveryLogs/{logId} {
+      // Operational queries restricted to authorized administrators
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin() && isValidSmsDeliveryLog(request.resource.data);
+      allow update: if isAdmin() && isValidSmsDeliveryLog(request.resource.data);
+    }
+
+    // ---------------------------------------------------------------
+    // 6. Audit Logs Collection (`auditLogs/{logId}`)
+    // ---------------------------------------------------------------
+    match /auditLogs/{logId} {
+      // Audit records viewable only by admins
+      allow read: if isAdmin();
+
+      // Signed-in users and backend services can record audit entries
+      allow create: if isSignedIn()
+                    && isValidAuditLog(request.resource.data)
+                    && request.resource.data.actorUid == request.auth.uid;
+
+      // Strictly immutable: No update or delete allowed for audit trail integrity
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // 7. Service Status Collection (`serviceStatus/{serviceId}`)
+    // ---------------------------------------------------------------
+    match /serviceStatus/{serviceId} {
+      // Publicly readable health/uptime metrics for transparency
+      allow read: if true;
+
+      // Writes restricted to admin monitoring jobs
+      allow create: if isAdmin() && isValidServiceStatus(request.resource.data);
+      allow update: if isAdmin() && isValidServiceStatus(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
