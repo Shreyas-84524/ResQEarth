@@ -7,8 +7,13 @@ import { cn } from "@/lib/utils";
 import type { LngLat, RegionPreset } from "../types/map";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../constants/map-config";
 import { MapProvider, MapContext } from "../context/map-context";
+import { LocationProvider } from "../context/location-context";
+import { useGeolocation } from "../hooks/use-geolocation";
 import { MapLoadingSkeleton } from "./map-loading-skeleton";
 import { MapRegionPresetPicker } from "./map-region-preset-picker";
+import { MapUserLocationMarker } from "./map-user-location-marker";
+import { MapLocationStatusBadge } from "./map-location-status-badge";
+import { LocationSearchDialog } from "./location-search-dialog";
 import {
   MapFilterChips,
   MapLegend,
@@ -35,6 +40,7 @@ export interface MapViewProps {
   className?: string;
   showFilterChips?: boolean;
   showRegionPicker?: boolean;
+  showLocationBadge?: boolean;
   showLegend?: boolean;
   showNavigationControls?: boolean;
   showFullscreenControl?: boolean;
@@ -59,6 +65,7 @@ function MapViewInternal({
   className,
   showFilterChips = true,
   showRegionPicker = false,
+  showLocationBadge = true,
   showLegend = true,
   showNavigationControls = true,
   showFullscreenControl = true,
@@ -69,7 +76,9 @@ function MapViewInternal({
   onMapReady,
 }: MapViewProps) {
   const mapContext = React.useContext(MapContext);
+  const { location } = useGeolocation();
   const [selectedFilter, setSelectedFilter] = React.useState("all");
+  const [isLocationDialogOpen, setIsLocationDialogOpen] = React.useState(false);
 
   const handleFilterSelect = (filterId: string) => {
     setSelectedFilter(filterId);
@@ -97,7 +106,7 @@ function MapViewInternal({
   return (
     <div className={cn("relative w-full", className)}>
       <DynamicMapContainer
-        initialCenter={initialCenter}
+        initialCenter={initialCenter || [location.longitude, location.latitude]}
         initialZoom={initialZoom}
         showNavigationControls={showNavigationControls}
         showFullscreenControl={showFullscreenControl}
@@ -106,6 +115,9 @@ function MapViewInternal({
         interactive={interactive}
         onMapReady={onMapReady}
       >
+        {/* User GPS Dot & Accuracy Buffer on MapLibre Canvas */}
+        <MapUserLocationMarker />
+
         {/* Top-Left: Category Filter Chips Overlay */}
         {showFilterChips && (
           <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-80px)]">
@@ -117,15 +129,21 @@ function MapViewInternal({
           </div>
         )}
 
-        {/* Top-Center/Right: Region Preset Picker if enabled */}
-        {showRegionPicker && (
-          <div className="absolute top-14 left-3 z-10 max-w-[calc(100%-80px)]">
+        {/* Top-Left Sub-bar: Region Preset Picker and Location Status Badge */}
+        <div className="absolute top-14 left-3 z-10 flex flex-wrap items-center gap-1.5 max-w-[calc(100%-80px)]">
+          {showLocationBadge && (
+            <MapLocationStatusBadge
+              onClickChange={() => setIsLocationDialogOpen(true)}
+            />
+          )}
+
+          {showRegionPicker && (
             <MapRegionPresetPicker
               activeRegionId={mapContext?.activeRegion?.id}
               onSelectRegion={handleRegionSelect}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Bottom-Left: Map Legend Overlay */}
         {showLegend && <MapLegend />}
@@ -133,18 +151,31 @@ function MapViewInternal({
         {/* Custom Nested Children */}
         {children}
       </DynamicMapContainer>
+
+      {/* Region / City Search Dialog */}
+      <LocationSearchDialog
+        open={isLocationDialogOpen}
+        onOpenChange={setIsLocationDialogOpen}
+        onLocationSelected={() => {
+          if (mapContext) {
+            mapContext.flyTo([location.longitude, location.latitude], 11);
+          }
+        }}
+      />
     </div>
   );
 }
 
 export function MapView(props: MapViewProps) {
   return (
-    <MapProvider
-      initialCenter={props.initialCenter || DEFAULT_MAP_CENTER}
-      initialZoom={props.initialZoom || DEFAULT_MAP_ZOOM}
-      initialRegionId={props.initialRegionId || "mumbai"}
-    >
-      <MapViewInternal {...props} />
-    </MapProvider>
+    <LocationProvider>
+      <MapProvider
+        initialCenter={props.initialCenter || DEFAULT_MAP_CENTER}
+        initialZoom={props.initialZoom || DEFAULT_MAP_ZOOM}
+        initialRegionId={props.initialRegionId || "mumbai"}
+      >
+        <MapViewInternal {...props} />
+      </MapProvider>
+    </LocationProvider>
   );
 }

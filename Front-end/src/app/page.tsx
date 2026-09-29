@@ -51,7 +51,11 @@ import {
   NotificationBanner,
   type WarningBannerData,
 } from "@/components/common/notification-banner";
-import { MapView } from "@/features/map";
+import {
+  MapView,
+  LocationProvider,
+  LocationStatusCard,
+} from "@/features/map";
 import { useAuth } from "@/features/auth";
 
 export default function HomePage() {
@@ -170,8 +174,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
-      {/* 1. Emergency Helpline & Provenance Bar */}
+    <LocationProvider>
+      <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
+        {/* 1. Emergency Helpline & Provenance Bar */}
       <div className="border-b border-border/80 bg-muted/40 py-2.5 px-4 text-xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -414,6 +419,9 @@ export default function HomePage() {
             </Card>
           </div>
         </section>
+
+        {/* 4.5. Real-Time Location Telemetry Card */}
+        <LocationStatusCard />
 
         {/* 5. Live Surveillance & Local Risk Assessment Dashboard */}
         <section className="space-y-6">
@@ -804,5 +812,6 @@ export default function HomePage() {
         </section>
       </RouteContainer>
     </div>
+  </LocationProvider>
   );
 }

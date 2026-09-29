@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.1 MapLibre GIS Engine complete (PASS); Reusable MapLibre GL JS engine with OpenStreetMap basemap, navigation/fullscreen/scale/geolocate controls, default Mumbai anchor, region presets, GeoJSON/cluster/heatmap services, and responsive container implemented in `Front-end/` and deployed to `/` and `/map`. Next step: Phase 2.2 Geolocation and Manual Location.  
+**Current factual state:** Phase 2.2 Geolocation & Region Resolution complete (PASS); Browser geolocation with permission lifecycle (prompt/granted/denied/unavailable/timeout), MapLibre GPS dot with accuracy buffer circle polygon, OpenStreetMap Nominatim reverse geocoding with throttling/caching/offline Indian city fallback, manual location selector dialog with 16 preset cities/coordinates, session persistence, and location status telemetry card implemented in `Front-end/`. Next step: Phase 2.3 Provider Adapter Framework.  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
-Current Sub-Phase: Phase 2.1 MapLibre Base Map
-Current Status: READY
-Last Completed Sub-Phase: Phase 1.8 Public Homepage Shell (Phase 1 Foundation Complete)
-Next Intended Sub-Phase: Phase 2.1 MapLibre Base Map
+Current Sub-Phase: Phase 2.2 Geolocation and Manual Location
+Current Status: PASS
+Last Completed Sub-Phase: Phase 2.2 Geolocation and Manual Location
+Next Intended Sub-Phase: Phase 2.3 Provider Adapter Framework
 ```
 
 ## 29. Implementation Status Table
@@ -561,7 +561,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 1 | 1.8 Public Homepage Shell | PASS | Full responsive hero dashboard, value propositions, location card, WeatherCard ambient feed, RiskIndicator deterministic assessment breakdown, MapLibre preview shell, monitored hazard stream, preparedness guides grid, government response callouts, and academic disclaimers. |
 | 1 | 1.9 Foundation Validation | PASS | Comprehensive verification pass (100% passing TypeScript, zero-warning ESLint, 24 static pages in Next.js production build, 43 unit tests across signup/login/RBAC suites). Phase 1 complete. |
 | 2 | 2.1 MapLibre Base Map | PASS | MapLibre GL JS 5.2 engine, OpenStreetMap basemap, Mumbai anchor, pan/zoom/touch/fullscreen/scale controls, cluster & heatmap layer registry, GeoJSON helpers, 95 GIS unit tests, active on `/` and `/map`. |
-| 2 | 2.2 Geolocation and Manual Location | NOT STARTED | Consent, denial/timeout handling, manual selection. |
+| 2 | 2.2 Geolocation and Manual Location | PASS | Browser GPS request, permission states, accuracy buffer circle, OSM Nominatim reverse geocoder with throttling/caching/offline fallback, manual search dialog, session persistence, and location telemetry card. |
 | 2 | 2.3 Provider Adapter Framework | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
 | 2 | 2.4 Weather Integration | NOT STARTED | Open-Meteo cards, units, source, freshness, fallback. |
 | 2 | 2.5 Earthquake and Global Event Integrations | NOT STARTED | USGS plus NASA EONET or GDACS after verification. |
@@ -729,6 +729,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Provide sub-second 60 FPS geospatial visualization across desktop and 360 px mobile viewports with zero API key dependencies and strict OpenStreetMap provenance attribution.  
 **Impact:** Reusable across homepage `/` and dedicated `/map` interface; includes 95 unit tests across GeoJSON parsing, Haversine calculations, MapLibre expressions, and region presets.
 
+### Decision D-015
+
+**Date:** 2026-09-30  
+**Decision:** Implement user geolocation and region resolution with explicit browser permission states (`prompt`, `granted`, `denied`, `unavailable`, `timeout`), MapLibre user dot + accuracy circle buffer polygon, OpenStreetMap Nominatim reverse geocoding with 1 req/sec rate limiting, in-memory TTL caching, offline nearest Indian city fallback, and session-only persistence in `sessionStorage`.  
+**Reason:** Respect user privacy, provide instant visual feedback on location precision, avoid repeated permission prompts, and guarantee full functionality even when network reverse geocoding or GPS permissions fail (with zero Firebase dependency).  
+**Impact:** Map view updates seamlessly on GPS resolve or manual region switch; session storage maintains selection for the visit without privacy violation; offline nearest preset lookup prevents UI breaks during connectivity drops.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -817,21 +824,24 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.1 MapLibre Base Map & GIS Engine
+Scope: Phase 2.2 Geolocation & Region Resolution
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (15 kB bundle), /map (2.97 kB bundle), /admin, /alerts, /dashboard, /profile)
-Unit / Validation Suite: PASS (138 tests passed across 7 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (13.3 kB bundle), /map (1.99 kB bundle), /admin, /alerts, /dashboard, /profile)
+Unit / Validation Suite: PASS (169 tests passed across 10 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
-  - Map / GIS: 95 unit tests (29 GeoJSON helper tests + 18 style expressions tests + 31 viewport/region preset tests + 16 layer registry tests))
-Interactive Map Controls: PASS (Pan, pinch-zoom, scroll zoom, navigation controls, fullscreen, scale, geolocate foundation, region preset picker, filter chips, and attribution verified)
-SSR & Mobile Gestures: PASS (Dynamic client mounting with accessible loading skeleton, touch support, WebGL error fallback)
-No Secrets Committed: PASS (.gitignore verified, zero sensitive keys in client bundle)
+  - Map / GIS: 95 unit tests (29 GeoJSON helper tests + 18 style expressions tests + 31 viewport/region preset tests + 16 layer registry tests)
+  - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests))
+Geolocation Permission & Fallback: PASS (GPS permission flow prompt/granted/denied/unavailable/timeout with default Mumbai fallback and nearest Indian city offline approximation)
+MapLibre User Dot & Accuracy Circle: PASS (Dynamic MapLibre source + layer displaying GPS center dot with outer accuracy buffer polygon)
+Manual Location Search: PASS (Accessible dialog with Indian city/hazard presets and coordinate input with instant map flyTo)
+No Secrets / Zero Firebase Dependency: PASS (Session persistence in sessionStorage, rate-limited OSM Nominatim reverse geocoder, zero cloud database requirements)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
 Map: PASS (Interactive MapLibre GL JS engine, OSM basemap tiles, layer drawer, region presets on / and /map)
+Geolocation & Region Resolution: PASS (Live GPS layer, OSM Nominatim reverse geocoder, manual search dialog, session persistence)
 Weather: SHELL READY (Open-Meteo live API integration scheduled for Phase 2.4)
 Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
@@ -846,34 +856,39 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.1 MapLibre GIS Engine in `Front-end/` on branch `phase-2`. Replaced the static homepage map preview shell and `/map` placeholder with the live interactive MapLibre GL JS engine.
+Implemented Phase 2.2 Geolocation & Region Resolution in `Front-end/` on branch `phase-2`. Added browser geolocation request handling with full permission lifecycle, MapLibre user location dot + accuracy circle buffer, OpenStreetMap Nominatim reverse geocoding with 1 req/sec rate limiting, in-memory TTL caching, offline nearest Indian city fallback, manual region selector dialog, and session-only persistence.
 
 Files/Components Created & Updated:
-- Front-end/src/features/map/types/map.ts & index.ts (Typed definitions for coordinates, viewports, region presets, layers, and popups)
-- Front-end/src/features/map/constants/map-config.ts, map-layers.ts, index.ts (Default Mumbai anchor, India/Maharashtra bounds, OSM raster tile style, CartoDB themes, severity colors, layer IDs, cluster presets)
-- Front-end/src/features/map/services/geojson-helper.ts, style-expressions.ts, layer-registry.ts, index.ts (FeatureCollection builders, Haversine distance calculations, circular polygon generator, MapLibre style expression builders, layer & cluster registry)
-- Front-end/src/features/map/context/map-context.tsx & index.ts (MapContext and MapProvider managing map instance, loaded state, WebGL error handling, viewport tracking, active region, layer visibility, and flyTo/fitBounds actions)
-- Front-end/src/features/map/hooks/use-map.ts, use-map-viewport.ts, index.ts (Convenience hooks for consuming MapContext and viewport state)
-- Front-end/src/features/map/components/map-loading-skeleton.tsx, map-error-fallback.tsx, map-popup.tsx, map-region-preset-picker.tsx, map-container.tsx, map-view.tsx, index.ts (Core WebGL canvas container, SSR-safe dynamic wrapper, controls, presets picker, popups)
-- Front-end/src/features/map/index.ts (Root barrel export for map feature module)
-- Front-end/src/features/map/__tests__/geojson-helper.test.ts, style-expressions.test.ts, viewport-presets.test.ts, layer-registry.test.ts (95 unit tests for GIS services)
-- Front-end/src/app/map/page.tsx (Full-height interactive GIS surveillance page with MapView, region switcher, and engine metadata)
-- Front-end/src/app/page.tsx (Integrated live MapView in Section 6, removing simulated preview)
-- Resources/Documents/Brain.md (Updated factual state, status table, decision log with D-014, testing memory, and handoff)
+- Front-end/src/features/map/types/geolocation.ts & index.ts (Typed NormalizedLocation, GeolocationPermissionState, NominatimReverseResponse, and ManualCityPreset models)
+- Front-end/src/features/map/constants/geolocation-defaults.ts & index.ts (Default Mumbai fallback, storage keys, rate limits, 16 curated Indian city/hazard presets)
+- Front-end/src/features/map/services/accuracy-circle.ts (GeoJSON polygon generator for GPS accuracy buffer)
+- Front-end/src/features/map/services/reverse-geocoding.ts (Nominatim reverse geocoding client with 1 req/sec rate limit, in-memory TTL cache, and Haversine nearest city fallback)
+- Front-end/src/features/map/services/geolocation-service.ts (Browser Geolocation API wrapper, permission checks, session storage persistence)
+- Front-end/src/features/map/context/location-context.tsx & index.ts (LocationContext and LocationProvider managing live GPS, manual selection, permission states, and session persistence)
+- Front-end/src/features/map/hooks/use-geolocation.ts & index.ts (Convenience hook for consuming LocationContext)
+- Front-end/src/features/map/components/map-location-status-badge.tsx (GPS/Manual/Fallback status pill with modal trigger)
+- Front-end/src/features/map/components/map-user-location-marker.tsx (MapLibre source and layer for GPS dot and accuracy buffer circle)
+- Front-end/src/features/map/components/location-search-dialog.tsx (Accessible dialog for Indian city search, GPS trigger, and coordinate input)
+- Front-end/src/features/map/components/location-status-card.tsx (Location telemetry summary card on dashboard and homepage)
+- Front-end/src/features/map/components/map-view.tsx (Integrated LocationProvider and MapUserLocationMarker with flyTo on location change)
+- Front-end/src/app/page.tsx (Integrated LocationStatusCard and wrapped homepage with LocationProvider)
+- Front-end/src/features/map/__tests__/geolocation-service.test.ts, accuracy-circle.test.ts, reverse-geocoding.test.ts (31 unit tests)
+- Resources/Documents/Brain.md (Updated factual state, status table, decision log with D-015, testing memory, and handoff)
 
 Features Completed:
-- MapLibre GL JS initialization with WebGL detection and ResizeObserver.
-- OpenStreetMap basemap tiles (no API keys required) with full attribution.
-- Default Mumbai viewport anchor ([72.8777, 19.0760]) and verified regional presets (Maharashtra, India, Himalayan belt, Bay of Bengal).
-- Pan, pinch-zoom, scroll zoom, navigation controls, fullscreen control, scale bar, and geolocate foundation.
-- Reusable GeoJSON sources, hazard circles, cluster aggregation, and density heatmap layer registry.
-- Shared map engine running on both `/` and `/map`.
+- Browser geolocation request with explicit permission handling (`prompt`, `granted`, `denied`, `unavailable`, `timeout`).
+- MapLibre user location dot + accuracy buffer circle polygon layer.
+- OpenStreetMap Nominatim reverse geocoding adapter with 1 req/sec rate limiting and in-memory TTL cache.
+- Offline nearest Indian city fallback (Haversine distance calculation against 16 major Indian hazard zones).
+- Manual location search dialog with Indian city presets, manual coordinate input, and instant map camera flyTo.
+- Session persistence via `sessionStorage` (zero Firebase requirement, respects privacy).
+- Location telemetry card and status badge on homepage and map header.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
 - npm run build (next build): PASS (24 static routes compiled successfully, / and /map bundles verified)
-- Unit test suite: PASS (138/138 unit tests passed across 7 test suites)
+- Unit test suite: PASS (169/169 unit tests passed across 10 test suites)
 
 Known Issues:
 None.
@@ -882,10 +897,10 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 2.2 — Geolocation and Manual Location (Browser geolocation with consent handling, accuracy circle overlay, manual location selector, and local storage fallback).
+Phase 2.3 — Provider Adapter Framework (Fetch/validate/normalize/health/provenance boundary for external disaster APIs).
 
 Warnings for Next Agent:
-Preserve existing MapView component interfaces and layer registry structure when connecting live geolocation and Open-Meteo weather feeds.
+Preserve the NormalizedLocation model and LocationProvider context when integrating Open-Meteo weather and USGS/NASA disaster event adapters in Phase 2.3 - 2.7.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -894,10 +909,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 2.1 MapLibre Base Map & GIS Engine complete (PASS) on branch `phase-2`. The homepage `/` and `/map` feature interactive 60 FPS MapLibre vector maps.
+Phase 2.2 Geolocation & Region Resolution complete (PASS) on branch `phase-2`.
 
 Next Action:
-Proceed with Phase 2.2 Geolocation and Manual Location.
+Proceed with Phase 2.3 Provider Adapter Framework.
 ```
 
 ## 40. Brain.md Maintenance Rule
