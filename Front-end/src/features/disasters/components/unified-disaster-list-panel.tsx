@@ -102,6 +102,15 @@ export function UnifiedDisasterListPanel({
   className = "",
 }: UnifiedDisasterListPanelProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = React.useState(false);
+  const itemRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
+
+  React.useEffect(() => {
+    if (!selectedDisasterId) return;
+    const el = itemRefs.current.get(selectedDisasterId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [selectedDisasterId]);
 
   return (
     <Card className={`flex flex-col h-full border-border/80 shadow-sm ${className}`}>
@@ -309,6 +318,13 @@ export function UnifiedDisasterListPanel({
             return (
               <div
                 key={event.id}
+                ref={(el) => {
+                  if (el) {
+                    itemRefs.current.set(event.id, el);
+                  } else {
+                    itemRefs.current.delete(event.id);
+                  }
+                }}
                 role="button"
                 tabIndex={0}
                 onClick={() => onSelectDisaster(event)}

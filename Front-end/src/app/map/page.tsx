@@ -9,8 +9,11 @@ import { MapView, LocationProvider } from "@/features/map";
 import {
   MapUnifiedDisasterLayer,
   UnifiedDisasterListPanel,
+  MapGisToolbar,
+  MapGisLegend,
   useUnifiedDisasters,
   type UnifiedDisasterEvent,
+  type MapGisDisplayMode,
 } from "@/features/disasters";
 import {
   Compass,
@@ -24,6 +27,9 @@ import {
 } from "lucide-react";
 
 function MapPageContent() {
+  const [displayMode, setDisplayMode] = React.useState<MapGisDisplayMode>("all");
+  const [isLegendOpen, setIsLegendOpen] = React.useState(false);
+
   const {
     disasters,
     filteredDisasters,
@@ -99,19 +105,35 @@ function MapPageContent() {
             showRegionPicker={true}
             showLocationBadge={true}
             showWeatherBadge={true}
-            showLegend={true}
-            showNavigationControls={true}
+            showLegend={false}
+            showNavigationControls={false}
             showFullscreenControl={true}
             showScaleControl={true}
-            showGeolocateControl={true}
+            showGeolocateControl={false}
           >
-            {/* Live Unified Multi-Hazard Layer (USGS, EONET, NDMA, IMD, Open-Meteo) */}
+            {/* GIS Top-Right Quick Toolbar (Mode Switcher, Fit, Recenter, Legend) */}
+            <MapGisToolbar
+              displayMode={displayMode}
+              onDisplayModeChange={setDisplayMode}
+              disasters={filteredDisasters}
+              isLegendOpen={isLegendOpen}
+              onToggleLegend={() => setIsLegendOpen((prev) => !prev)}
+            />
+
+            {/* Live Unified Multi-Hazard Layer (Heatmap + Pulsing Rings + Gold Official Rings + Markers) */}
             <MapUnifiedDisasterLayer
               geoJson={geoJson}
               disasters={filteredDisasters}
               selectedDisaster={selectedDisaster}
               onSelectDisaster={handleSelectDisaster}
+              displayMode={displayMode}
               visible={true}
+            />
+
+            {/* Interactive Multi-Tab GIS Legend */}
+            <MapGisLegend
+              isOpen={isLegendOpen}
+              onToggle={() => setIsLegendOpen((prev) => !prev)}
             />
           </MapView>
         </div>

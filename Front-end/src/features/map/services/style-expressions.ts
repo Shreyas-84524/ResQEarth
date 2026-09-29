@@ -124,3 +124,76 @@ export function getHeatmapColorRamp(): ExpressionSpecification {
     "rgb(220, 0, 0)",
   ];
 }
+
+/**
+ * Builds a severity-weighted heatmap weight expression
+ */
+export function getSeverityHeatmapWeightExpression(): ExpressionSpecification {
+  return [
+    "match",
+    ["get", "severity"],
+    "CRITICAL",
+    1.0,
+    "HIGH",
+    0.75,
+    "MODERATE",
+    0.5,
+    "GUARDED",
+    0.3,
+    "LOW",
+    0.1,
+    0.2, // fallback weight
+  ];
+}
+
+/**
+ * Builds a zoom-interpolated heatmap intensity expression
+ */
+export function getHeatmapIntensityExpression(): ExpressionSpecification {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    0,
+    0.6,
+    5,
+    1.2,
+    9,
+    2.5,
+  ];
+}
+
+/**
+ * Builds a zoom-interpolated heatmap radius expression
+ */
+export function getHeatmapRadiusExpression(): ExpressionSpecification {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    0,
+    8,
+    4,
+    18,
+    8,
+    32,
+  ];
+}
+
+/**
+ * Builds a zoom-interpolated heatmap opacity expression for smooth fadeout
+ */
+export function getHeatmapOpacityExpression(): ExpressionSpecification {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    4,
+    0.85,
+    7,
+    0.45,
+    9,
+    0.0,
+  ];
+}
+

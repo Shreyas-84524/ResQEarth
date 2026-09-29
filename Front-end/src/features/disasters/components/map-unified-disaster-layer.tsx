@@ -4,15 +4,25 @@ import * as React from "react";
 import type { MapGeoJSONFeature } from "maplibre-gl";
 import type maplibregl from "maplibre-gl";
 import { useMap } from "@/features/map/hooks/use-map";
-import { getSeverityColorExpression } from "@/features/map/services/style-expressions";
+import {
+  getSeverityColorExpression,
+  getHeatmapColorRamp,
+  getSeverityHeatmapWeightExpression,
+  getHeatmapIntensityExpression,
+  getHeatmapRadiusExpression,
+  getHeatmapOpacityExpression,
+} from "@/features/map/services/style-expressions";
 import type { UnifiedDisasterEvent } from "../types/disaster-event";
 import { UnifiedDisasterPopup } from "./unified-disaster-popup";
+
+export type MapGisDisplayMode = "all" | "markers" | "heatmap";
 
 export interface MapUnifiedDisasterLayerProps {
   geoJson: GeoJSON.FeatureCollection<GeoJSON.Point>;
   disasters: UnifiedDisasterEvent[];
   selectedDisaster: UnifiedDisasterEvent | null;
   onSelectDisaster: (disaster: UnifiedDisasterEvent | null) => void;
+  displayMode?: MapGisDisplayMode;
   visible?: boolean;
 }
 
@@ -21,14 +31,17 @@ export function MapUnifiedDisasterLayer({
   disasters,
   selectedDisaster,
   onSelectDisaster,
+  displayMode = "all",
   visible = true,
 }: MapUnifiedDisasterLayerProps) {
   const { map, isLoaded } = useMap();
 
   const sourceId = "resqearth-source-unified-hazards";
+  const heatmapLayerId = "resqearth-unified-hazard-heatmap";
   const circleLayerId = "resqearth-unified-hazard-circles";
   const pulseLayerId = "resqearth-unified-hazard-pulse";
   const officialRingLayerId = "resqearth-unified-official-ring";
+  const selectedHaloLayerId = "resqearth-unified-selected-halo";
   const labelLayerId = "resqearth-unified-hazard-labels";
 
   // 1. Initialize Source and Layers once Map is loaded
@@ -43,7 +56,26 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // Add High-Severity Pulse Ring Layer (for CRITICAL or HIGH events)
+    // 1a. Multi-Hazard Severity-Weighted Heatmap Layer (Lowest z-index layer)
+    if (!map.getLayer(heatmapLayerId)) {
+      map.addLayer({
+        id: heatmapLayerId,
+        type: "heatmap",
+        source: sourceId,
+        layout: {
+          visibility: "visible",
+        },
+        paint: {
+          "heatmap-weight": getSeverityHeatmapWeightExpression(),
+          "heatmap-intensity": getHeatmapIntensityExpression(),
+          "heatmap-color": getHeatmapColorRamp(),
+          "heatmap-radius": getHeatmapRadiusExpression(),
+          "heatmap-opacity": getHeatmapOpacityExpression(),
+        },
+      });
+    }
+
+    // 1b. High-Severity Pulse Ring Layer (for CRITICAL or HIGH events)
     if (!map.getLayer(pulseLayerId)) {
       map.addLayer({
         id: pulseLayerId,
@@ -63,7 +95,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // Add Official Statutory Alert Outer Ring Layer
+    // 1c. Official Statutory Alert Outer Ring Layer
     if (!map.getLayer(officialRingLayerId)) {
       map.addLayer({
         id: officialRingLayerId,
@@ -75,15 +107,15 @@ export function MapUnifiedDisasterLayer({
         },
         paint: {
           "circle-color": "transparent",
-          "circle-radius": ["+", ["get", "markerRadius"], 3],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#f59e0b", // amber/gold border for official alerts
+          "circle-radius": ["+", ["get", "markerRadius"], 3.5],
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#f59e0b", // statutory gold ring for official alerts
           "circle-stroke-opacity": 0.95,
         },
       });
     }
 
-    // Add Primary Unified Disaster Point Circle Layer
+    // 1d. Primary Unified Disaster Point Circle Layer
     if (!map.getLayer(circleLayerId)) {
       map.addLayer({
         id: circleLayerId,
@@ -102,7 +134,27 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // Add Category Text Labels at closer zoom levels
+    // 1e. Selected Event Focus / Halo Layer
+    if (!map.getLayer(selectedHaloLayerId)) {
+      map.addLayer({
+        id: selectedHaloLayerId,
+        type: "circle",
+        source: sourceId,
+        filter: ["==", ["get", "id"], ""],
+        layout: {
+          visibility: "visible",
+        },
+        paint: {
+          "circle-color": "transparent",
+          "circle-radius": ["+", ["get", "markerRadius"], 7],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#06b6d4", // Cyan focus halo
+          "circle-stroke-opacity": 1.0,
+        },
+      });
+    }
+
+    // 1f. Category Text Labels at closer zoom levels
     if (!map.getLayer(labelLayerId)) {
       map.addLayer({
         id: labelLayerId,
@@ -161,9 +213,11 @@ export function MapUnifiedDisasterLayer({
     disasters,
     onSelectDisaster,
     sourceId,
+    heatmapLayerId,
     circleLayerId,
     pulseLayerId,
     officialRingLayerId,
+    selectedHaloLayerId,
     labelLayerId,
   ]);
 
@@ -176,15 +230,51 @@ export function MapUnifiedDisasterLayer({
     }
   }, [map, isLoaded, geoJson, sourceId]);
 
-  // Update visibility when toggled
+  // Update selected event halo filter
+  React.useEffect(() => {
+    if (!map || !isLoaded || !map.getLayer(selectedHaloLayerId)) return;
+    const selectedId = selectedDisaster ? selectedDisaster.id : "";
+    map.setFilter(selectedHaloLayerId, ["==", ["get", "id"], selectedId]);
+  }, [map, isLoaded, selectedDisaster, selectedHaloLayerId]);
+
+  // Update layer visibility and display modes (all / markers / heatmap)
   React.useEffect(() => {
     if (!map || !isLoaded) return;
-    const vis = visible ? "visible" : "none";
-    if (map.getLayer(circleLayerId)) map.setLayoutProperty(circleLayerId, "visibility", vis);
-    if (map.getLayer(pulseLayerId)) map.setLayoutProperty(pulseLayerId, "visibility", vis);
-    if (map.getLayer(officialRingLayerId)) map.setLayoutProperty(officialRingLayerId, "visibility", vis);
-    if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, "visibility", vis);
-  }, [map, isLoaded, visible, circleLayerId, pulseLayerId, officialRingLayerId, labelLayerId]);
+
+    const isOverallVisible = visible;
+    const showHeatmap = isOverallVisible && (displayMode === "all" || displayMode === "heatmap");
+    const showMarkers = isOverallVisible && (displayMode === "all" || displayMode === "markers");
+
+    const heatmapVis = showHeatmap ? "visible" : "none";
+    const markersVis = showMarkers ? "visible" : "none";
+
+    if (map.getLayer(heatmapLayerId)) {
+      map.setLayoutProperty(heatmapLayerId, "visibility", heatmapVis);
+      // If user explicitly chose "heatmap" mode, keep full opacity across all zooms
+      if (displayMode === "heatmap") {
+        map.setPaintProperty(heatmapLayerId, "heatmap-opacity", 0.85);
+      } else {
+        map.setPaintProperty(heatmapLayerId, "heatmap-opacity", getHeatmapOpacityExpression());
+      }
+    }
+
+    if (map.getLayer(circleLayerId)) map.setLayoutProperty(circleLayerId, "visibility", markersVis);
+    if (map.getLayer(pulseLayerId)) map.setLayoutProperty(pulseLayerId, "visibility", markersVis);
+    if (map.getLayer(officialRingLayerId)) map.setLayoutProperty(officialRingLayerId, "visibility", markersVis);
+    if (map.getLayer(selectedHaloLayerId)) map.setLayoutProperty(selectedHaloLayerId, "visibility", markersVis);
+    if (map.getLayer(labelLayerId)) map.setLayoutProperty(labelLayerId, "visibility", markersVis);
+  }, [
+    map,
+    isLoaded,
+    visible,
+    displayMode,
+    heatmapLayerId,
+    circleLayerId,
+    pulseLayerId,
+    officialRingLayerId,
+    selectedHaloLayerId,
+    labelLayerId,
+  ]);
 
   return (
     <>

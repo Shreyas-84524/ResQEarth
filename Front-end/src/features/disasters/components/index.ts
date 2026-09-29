@@ -10,3 +10,5 @@ export * from "./map-unified-disaster-layer";
 export * from "./unified-disaster-popup";
 export * from "./unified-disaster-list-panel";
 export * from "./unified-disaster-overview-card";
+export * from "./map-gis-legend";
+export * from "./map-gis-toolbar";
