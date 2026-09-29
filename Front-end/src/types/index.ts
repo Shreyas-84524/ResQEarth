@@ -9,3 +9,5 @@ export type RiskLevel = "LOW" | "GUARDED" | "MODERATE" | "HIGH" | "CRITICAL";
 export type AlertSourceType = "official" | "automatic" | "manual-admin";
 
 export type DisasterCategory = "natural" | "man-made";
+
+export * from "./firebase";
