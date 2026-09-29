@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 1 and Phase 2 are integrated into `main`; Phase 3 Disaster Warning, Admin Control Center, Notification & SMS System is complete on branch `phase-3` (PASS across all 8 sub-phases: 3.1 Unified Alert Model & Lifecycle, 3.2 Regional Recipient Matching, 3.3 Automatic Alert Engine, 3.4 Firebase Cloud Messaging, 3.5 Admin Control Center, 3.6 Manual Regional Warning Workflow, 3.7 SMS Gateway Integration, and 3.8 Two-Message Emergency Workflow). Phase 3 provides canonical Firebase-backed alerts, geospatial recipient targeting, automatic risk-triggered warnings with strict RESQEARTH CALCULATED RISK provenance separation, Web Push (FCM), the protected `/admin` control center, manual regional warning dispatch, secure SMS gateway integration, and a sequential two-message emergency workflow. The phase branch was validated with 456 passing unit tests across 26 test suites, 0 TypeScript errors, 0 ESLint warnings, and a clean Next.js production build. Current task: safely integrate `main` into `phase-3`, validate the combined tree, and merge Phase 3 through a pull request.
+**Current factual state:** Phase 1, Phase 2, and Phase 3 are complete; Phase 4 Disaster Knowledge Portal, Preparedness Library, Indian Disaster History, Government Response Directory, and Legal Center is complete on branch `phase-4` (PASS across all 8 sub-phases: 4.1 Disaster Knowledge Architecture, 4.2 Natural Disaster Knowledge Library, 4.3 Man-Made Disaster Knowledge Library, 4.4 Disaster Preparedness and Precaution Guides, 4.5 Indian Disaster History Timeline, 4.6 Government Disaster Response Directory, 4.7 ResQEarth ESE Project Information, and 4.8 Privacy, Terms & Cookie Preferences). Phase 4 provides structured data models for 22 natural and man-made disasters, SSG dynamic routing for all disaster slugs, phased SOP guidance (Before/During/After), interactive emergency kit checklists, 17 verified historical Indian disaster case studies (1984–2024), 11 national statutory response agencies, 14 state SDMAs, CAP/Sachet integration documentation, comprehensive ESE curriculum documentation, DPDP Act 2023 compliant privacy policy, terms of service, and an interactive cookie consent center. The phase branch was validated with 500+ passing unit tests across 33 test suites, 0 TypeScript errors, 0 ESLint warnings, and a clean Next.js production build compiling all 40 static and dynamic routes.
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -915,6 +915,14 @@ Admin Control Center (Phase 3.5): PASS (Protected `/admin` dashboard with stats 
 Manual Regional Warning (Phase 3.6): PASS (Interactive warning creation dialog, live targeting preview with affected citizen counts, multi-channel dispatch, and audit logging)
 SMS Gateway Integration (Phase 3.7): PASS (SMS Gateway Free integration, E.164 phone sanitization, consent validation, exponential backoff retries, and masked phone logging in `smsDeliveryLogs`)
 Two-Message Emergency Workflow (Phase 3.8): PASS (Sequential Part 1 hazard warning with deep link + Part 2 verified SOS helplines 112/100/101/108/1070 with idempotency)
+Disaster Knowledge Architecture (Phase 4.1): PASS (Unified structured knowledge model, dynamic `/disasters/[slug]` with SSG for all 22 disaster types, `knowledge-service.ts`, category filters, and search portal on branch `phase-4`)
+Natural Disaster Knowledge Library (Phase 4.2): PASS (13 comprehensive ESE-aligned natural hazard guides: flood, urban-flood, cyclone, earthquake, tsunami, landslide, heat-wave, cold-wave, drought, lightning, forest-fire, avalanche, severe-storm)
+Man-Made Disaster Knowledge Library (Phase 4.3): PASS (9 comprehensive statutory-aligned man-made hazard guides: chemical-leak, industrial-accident, nuclear-emergency, biological-emergency, urban-fire, building-collapse, oil-spill, transport-accident, major-pollution)
+Disaster Preparedness & Precaution Guides (Phase 4.4): PASS (Interactive emergency kit checklist with state progress, Before/During/After phased SOP tabs, What NOT To Do callouts, official statutory helplines 112/1070/1078/1926/1554)
+Indian Disaster History Timeline (Phase 4.5): PASS (Interactive `/history` timeline featuring 17 major historical disasters from 1984 Bhopal Gas Tragedy to 2024 Wayanad Landslides, searchable by state, decade, type, and institutional reforms)
+Government Disaster Response Directory (Phase 4.6): PASS (Verified statutory `/government-response` directory with 11 national agencies: NDMA, NDRF, IMD, CWC, INCOIS, GSI, FSI, AERB, CPCB, ICG, Sachet + 14 State SDMAs + ITU-T X.1303 CAP platform documentation)
+ResQEarth ESE Project Information (Phase 4.7): PASS (Comprehensive `/about` documentation with 5 stages of disaster lifecycle, role of IT/GIS in DRR, environmental ecological vulnerabilities, and academic disclaimer)
+Privacy, Terms & Cookie Preferences (Phase 4.8): PASS (DPDP Act 2023 compliant `/privacy`, safety disclaimers `/terms`, and interactive `/cookies` preference center backed by `localStorage`)
 Deployment: NOT TESTED (Scheduled for Phase 5.7)
 ```
 
@@ -924,33 +932,32 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Completed the entire ResQEarth Phase 3 (Disaster Warning, Admin Control Center, Notification, and SMS System) across all 8 sub-phases (3.1 through 3.8) on branch `phase-3`. Executed all requirements with strict adherence to statutory provenance immutability and RESQEARTH CALCULATED RISK labeling.
+Completed the entire ResQEarth Phase 4 (Disaster Knowledge Portal, Preparedness Guides, Indian Disaster History, Government Response Directory, About & ESE Alignment, Privacy/Terms/Cookie Center) across all 8 sub-phases (4.1 through 4.8) on branch `phase-4`.
 
 8 Conventional Commits Created:
-1. `b0f6eef` - feat: add unified alert model and lifecycle (Phase 3.1)
-2. `5072219` - feat: add regional alert recipient matching (Phase 3.2)
-3. `8eb6cb7` - feat: add automatic disaster alert engine (Phase 3.3)
-4. `9b9e9a9` - feat: add Firebase disaster push notifications (Phase 3.4)
-5. `5ebf3f9` - feat: build disaster admin control center (Phase 3.5)
-6. `ade2daf` - feat: add manual regional disaster warnings (Phase 3.6)
-7. `239e963` - feat: integrate disaster SMS gateway (Phase 3.7)
-8. `978fc1f` - feat: add emergency two-message SMS workflow (Phase 3.8)
+1. `3d76eca` - feat: add disaster knowledge architecture (Phase 4.1)
+2. `8a05466` - feat: add natural disaster knowledge library (Phase 4.2)
+3. `ad6ee73` - feat: add man-made disaster knowledge library (Phase 4.3)
+4. `73ad67a` - feat: add disaster preparedness and precaution guides (Phase 4.4)
+5. `aa27814` - feat: add Indian disaster history timeline (Phase 4.5)
+6. `17d36c5` - feat: add government disaster response directory (Phase 4.6)
+7. `a9ecd63` - feat: add ResQEarth ESE project information (Phase 4.7)
+8. `9cb96a2` - feat: add privacy terms and cookie preferences (Phase 4.8)
 
 Summary of Features Delivered:
-- Canonical Firebase alert architecture with 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`).
-- Geospatial recipient targeting engine supporting `all`, `radius`, `city`, `state`, and `region` with Haversine distance calculations and privacy-preserving preview counts.
-- Automated disaster warning engine triggering on severe statutory alerts, major earthquakes, and deterministic risk score thresholds with cooldown suppression and strict `RESQEARTH CALCULATED RISK` provenance labeling.
-- Web Push notification system with FCM service worker (`Front-end/public/firebase-messaging-sw.js`), foreground message listeners, permission guards, and token management in Firestore `users/{uid}/notificationTokens`.
-- Protected Admin Control Center (`/admin`) featuring metric cards, active alert catalog with inline lifecycle actions, live disaster surveillance feeds, and real-time service health monitors.
-- Manual emergency warning workflow with live map boundary previews, citizen reach estimators, multi-channel dispatch (In-Site, FCM, SMS), and safety confirmation dialog.
-- SMS Gateway integration with E.164 phone normalization, consent verification, exponential backoff retries, and privacy-safe masked phone logging in `smsDeliveryLogs`.
-- Sequential Two-Message emergency workflow delivering Part 1 (hazard details + action precautions + slug link) and Part 2 (verified 112/100/101/108/1070 emergency helplines) with full idempotency.
+- Structured disaster knowledge architecture supporting 22 natural and man-made disasters with typed schema (`DisasterGuide`, `EmergencyKitItem`, `DisasterPhaseGuidance`, `OfficialHelplineItem`, `OfficialResourceLink`, `ScientificReference`).
+- Full Next.js SSG pre-rendering across all 22 disaster routes (`/disasters/[slug]`) with SEO metadata, breadcrumbs, and related guide recommendations.
+- Interactive disaster guide view (`DisasterGuideView`) with checkable emergency grab-bag progress counter, Before/During/After SOP tabs, What NOT To Do warnings, and verified statutory emergency helpline integration (112, 1070, 1077, 1078, 1926, 1554, 1033).
+- Chronological Indian Disaster History archive (`/history`) featuring 17 verified events (1984–2024), analyzing meteorological/geological triggers, human/economic impact, response highlights, policy reforms (DM Act 2005, NDMA/NDRF creation, building codes), and ESE curriculum relevance.
+- Statutory Government Response Directory (`/government-response`) with 11 national apex/scientific bodies, 14 State Disaster Management Authorities (SDMAs), and Common Alerting Protocol (CAP / Sachet) integration architecture.
+- ESE Project Information portal (`/about`) documenting the 5 stages of disaster lifecycle, role of IT/GIS in DRR, environmental ecological vulnerabilities, and academic prototype disclaimers.
+- Legal & Compliance Center (`/privacy`, `/terms`, `/cookies`) featuring DPDP Act 2023 compliance, geolocation usage safeguards, emergency SMS policies, and an interactive client-side Cookie Preference Center.
 
 Validation Suite Results:
 - TypeScript (`npm run type-check`): PASS (zero errors)
 - ESLint (`npm run lint`): PASS (zero errors, zero warnings)
-- Next.js Build (`npm run build`): PASS (all 24 routes successfully compiled with static optimization)
-- Unit Tests: PASS (456/456 tests passed across all 26 test suites in `Front-end/src`)
+- Next.js Production Build (`npm run build`): PASS (all 40 static & SSG routes successfully generated)
+- Unit Tests: PASS (100% passing across all 33 test suites in `Front-end/src`)
 
 Known Issues:
 None.
@@ -959,17 +966,17 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 4 — Historical Indian Disasters, Government Response Directory, Community Preparedness Guides, and Disaster Recovery.
+Phase 5 — Full Integration, End-to-End Testing, Audit, Polish & Final Academic Demonstration Readiness.
 ```
 
 ## 39. Immediate Next Action
 
 ```text
 Current State:
-Complete Phase 3 (3.1 to 3.8) is 100% complete (PASS) on branch `phase-3`.
+Complete Phase 4 (4.1 to 4.8) is 100% complete (PASS) on branch `phase-4`.
 
 Next Action:
-Proceed with safe integration into main or Phase 4 implementation.
+Proceed with safe integration of Phase 4 into main branch or initiate Phase 5.
 ```
 
 ## 40. Brain.md Maintenance Rule
