@@ -538,11 +538,11 @@ Phase 5 — Production Hardening, Testing & Submission
 ### Current Work Position
 
 ```text
-Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
-Current Sub-Phase: Phase 2.7 Unified Disaster Map Experience & Heatmap
+Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence (COMPLETE)
+Current Sub-Phase: Phase 2.8 Explainable Risk Engine and Phase Validation
 Current Status: PASS
-Last Completed Sub-Phase: Phase 2.7 Unified Disaster Map Experience & Heatmap
-Next Intended Sub-Phase: Phase 2.8 Explainable Risk Engine and Phase Validation
+Last Completed Sub-Phase: Phase 2.8 Explainable Risk Engine and Phase Validation
+Next Intended Major Phase: Phase 3 — Alerts, Admin Control Center & SMS Gateway (Sub-Phase 3.1 Unified Alert Model and Lifecycle)
 ```
 
 ## 29. Implementation Status Table
@@ -567,7 +567,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 2 | 2.5 Global Disaster Event Feed | PASS | Real-time NASA EONET v3 natural hazards feed (wildfires, storms, volcanoes, floods, landslides), geometry centroid math across Point/LineString/Polygon/Temporal arrays, MapGlobalDisasterLayer, GlobalDisasterPopup, GlobalDisasterListPanel, GlobalDisasterOverviewCard, 9 unit tests. |
 | 2 | 2.6 Unified Events, Map Layers and Nearby Detection | PASS | Canonical UnifiedDisasterEvent model combining USGS, NASA EONET, Indian statutory CAP alerts (NDMA SACHET / IMD), and Open-Meteo severe weather hazards; spatial & temporal deduplication (15 km, 6h); statutory golden rings on MapLibre vector maps; MapUnifiedDisasterLayer; UnifiedDisasterPopup; UnifiedDisasterListPanel; UnifiedDisasterOverviewCard; 11 unit tests. |
 | 2 | 2.7 Unified Disaster Map Experience & Heatmap | PASS | Multi-hazard WebGL heatmap with severity-weighted intensity and zoom-based transitions (low zoom = density heatmap, high zoom = precision vector markers), display mode switcher (`all`/`markers`/`heatmap`), selected event cyan halo with map ↔ list two-way scroll synchronization, fit-to-events & recenter toolbar (`MapGisToolbar`), interactive multi-tab GIS legend (`MapGisLegend`) with statutory non-evacuation notice; 30 style expression unit tests (235 total passing). |
-| 2 | 2.8 Explainable Risk Engine and Phase Validation | NOT STARTED | Versioned rules, contribution UI, boundaries, partial-provider tests. |
+| 2 | 2.8 Explainable Risk Engine and Phase Validation | PASS | Deterministic 0–100 risk calculation algorithm (`v1.0.0-deterministic`), itemized factor weightings (rain, wind, temperature extremes, USGS earthquakes, NASA EONET events, NDMA/IMD statutory alerts, coastal exposure baseline), per-hazard 5-dimension breakdown (Flood, Storm, Earthquake, Heatwave, Wildfire), plain-English explanations, missing feed disclosures & confidence degradation, RiskOverviewCard, PerHazardRiskGrid, RiskBadge on `/`, `/dashboard`, and `/map`; 12 risk unit tests (247 total passing across 16 test suites). Phase 2 complete. |
 | 3 | 3.1 Unified Alert Model and Lifecycle | NOT STARTED | Source types, statuses, dedupe, expiry, Firestore model. |
 | 3 | 3.2 In-Site Citizen Warnings | NOT STARTED | Target-aware warning list/detail independent of FCM. |
 | 3 | 3.3 Admin Control Center Shell | NOT STARTED | Protected dashboard, health, events, alerts, map, empty/failure states. |
@@ -764,6 +764,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Deliver an intuitive, high-performance GIS user experience that handles high point density cleanly across broad and local zooms while preventing misleading public misinterpretation of heatmap density as official evacuation borders.  
 **Impact:** MapLibre GIS engine on `/map` supports instant mode switching, smooth marker transitions, and synchronized panel scrolling with 30 passing style expression unit tests (235 total passing across 15 suites) and 0 external dependencies.
 
+### Decision D-021
+
+**Date:** 2026-09-30  
+**Decision:** Implement the deterministic, versioned (`v1.0.0-deterministic`), explainable disaster risk engine (`calculateDisasterRisk`) evaluating live weather telemetry (rain rate, precipitation forecast probability, sustained wind, squall gusts, heatwave/coldwave thermal extremes), nearby USGS earthquakes (tiered magnitude-distance matrix up to 150 km), nearby NASA EONET natural disasters (wildfires, cyclones, floods, landslides, volcanoes within proximity radii), Indian statutory alerts (NDMA SACHET / IMD CAP advisories with statutory provenance flags), and regional coastal vulnerability baselines. The engine returns clamped 0–100 integer scores, 5-tier canonical risk levels (`LOW`, `GUARDED`, `MODERATE`, `HIGH`, `CRITICAL`), 5-dimension per-hazard breakdowns (Flood, Storm, Earthquake, Heatwave, Wildfire), itemized point contributions (`+{points}`), plain-English factor summaries, missing feed disclosures with graceful confidence degradation (`HIGH`, `MODERATE`, `LOW`), `RiskOverviewCard`, `PerHazardRiskGrid`, and `RiskBadge`, strictly labeled as **`RESQEARTH CALCULATED RISK`** across `/`, `/dashboard`, and `/map`.  
+**Reason:** Deliver auditable, transparent, zero-black-box environmental risk assessments without misrepresenting calculated indicators as statutory government evacuation mandates, in full alignment with the ESE mission and PRD/Architecture specifications.  
+**Impact:** Citizens and public visitors receive real-time, explainable situational awareness and individual hazard readiness indices backed by 12 comprehensive unit tests (247 total passing across 16 test suites) and zero cloud database dependencies. Phase 2 is now complete.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -852,22 +859,24 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.7 Unified Disaster Map Experience & Heatmap
+Scope: Phase 2.8 Explainable Disaster Risk Engine & Phase 2 Final Validation
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (10.5 kB bundle), /map (4.58 kB bundle), /dashboard (2.48 kB bundle), /admin, /alerts, /profile)
-Unit / Validation Suite: PASS (235 tests passed across 15 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (9.4 kB bundle), /map (4.63 kB bundle), /dashboard (2.73 kB bundle), /admin, /alerts, /profile)
+Unit / Validation Suite: PASS (247 tests passed across 16 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
   - Map / GIS: 107 unit tests (29 GeoJSON helper tests + 30 style expressions tests [severity matching, category mapping, dynamic radius, cluster steps, heatmap color ramp, severity weighting, zoom intensity, radius scaling, zoom fadeout] + 31 viewport/region preset tests + 16 layer registry tests)
   - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests)
   - Weather Intelligence: 26 unit tests (14 WMO weather interpretation & dictionary integrity tests + 12 weather service normalization / minimal payload / extreme values / cache rounding / deduplication / error tests)
   - Earthquake Intelligence: 8 unit tests (Severity mapping, dynamic radius scaling, feature normalization, Haversine distance relative to Mumbai/user, tsunami flag recognition, malformed feature rejection, feed sorting, GeoJSON conversion, cache management)
   - Global Disaster Intelligence (NASA EONET): 9 unit tests (Category mapping, severity classification, dynamic marker radius scaling, geometry centroid extraction across Point/LineString/Polygon/Temporal array, malformed/out-of-range rejection, distance math, feed sorting, GeoJSON conversion, cache management)
-  - Unified Multi-Hazard Intelligence: 11 unit tests (Indian CAP alert normalization, statutory provenance integrity, CAP severity mappers, Earthquake-to-Unified adapter, GlobalDisaster-to-Unified adapter, Weather telemetry hazard extraction for heavy rain/wind/heatwaves, spatial & temporal deduplication [15 km, 6h], multi-criteria filtering [category, provider, severity, official-only, distance, search], GeoJSON conversion for MapLibre, styling expressions, concurrent feed aggregator with caching))
+  - Unified Multi-Hazard Intelligence: 11 unit tests (Indian CAP alert normalization, statutory provenance integrity, CAP severity mappers, Earthquake-to-Unified adapter, GlobalDisaster-to-Unified adapter, Weather telemetry hazard extraction for heavy rain/wind/heatwaves, spatial & temporal deduplication [15 km, 6h], multi-criteria filtering [category, provider, severity, official-only, distance, search], GeoJSON conversion for MapLibre, styling expressions, concurrent feed aggregator with caching)
+  - Explainable Risk Engine: 12 unit tests (Score-to-band mappings, nominal baseline assessment, precipitation & flood tiers, wind & cyclone squalls, extreme temperature heat/cold waves, nearby seismic tiered matrices, NASA EONET wildfire/cyclone scoring, NDMA/IMD statutory alert provenance flags, coastal exposure baseline, compound multi-hazard clamping, missing feed graceful degradation, per-hazard breakdown matrix))
 Multi-Hazard Heatmap Layer: PASS (MapUnifiedDisasterLayer with WebGL heatmap layer, severity-weighted intensity stops, smooth zoom transitions fading out from zoom 4 to zoom 9, and continuous display mode support)
 GIS Map Controls & Toolbar: PASS (MapGisToolbar floating component with Hybrid / Markers / Heatmap mode switcher, Fit to Filtered Events action via computeBoundingBox, Recenter to GPS location, Reset to Mumbai view, and Legend toggle)
 Interactive Multi-Tab GIS Legend: PASS (MapGisLegend component with Severity 5-tier scale, Heatmap color gradient & zoom transition explanation, Statutory gold ring provenance badges, and explicit disclaimer: "Heatmap reflects incident density and severity for decision-support; not an official flood or evacuation zone boundary.")
+Explainable Risk Architecture: PASS (Deterministic 0–100 risk scoring algorithm, itemized contributing factors with points, plain-English factor summaries, missing input disclosures, and strict RESQEARTH CALCULATED RISK labeling)
 Two-Way Map ↔ List Synchronization: PASS (Selected event renders cyan focus halo on map and automatically scrolls matching card into view smoothly in UnifiedDisasterListPanel)
 Attribution & Transparency: PASS (OSM basemap, USGS, NASA EONET, NDMA SACHET, IMD, and Open-Meteo attribution displayed clearly)
 
@@ -880,7 +889,7 @@ Earthquakes: PASS (USGS live feed, magnitude scaling, MapLibre layer, interactiv
 Global Disasters: PASS (NASA EONET live feed, category taxonomy, centroid calculation, MapGlobalDisasterLayer, GlobalDisasterPopup, GlobalDisasterListPanel, GlobalDisasterOverviewCard)
 Unified Multi-Hazard Intelligence: PASS (USGS, EONET, NDMA SACHET, IMD, Open-Meteo integrated into canonical layer with deduplication and provenance badges)
 Heatmap & GIS Polish: PASS (Severity-weighted WebGL heatmap, display mode switcher, fit-to-bounds, and interactive legend)
-Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
+Risk Engine: PASS (Deterministic v1.0 engine with itemized factor contributions, per-hazard breakdown, missing feed disclosures, RiskOverviewCard, PerHazardRiskGrid, and RiskBadge on /, /dashboard, and /map)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
 SMS: NOT TESTED (Scheduled for Phase 3.7)
@@ -893,33 +902,45 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.7 Unified Disaster Map Experience & Heatmap in `Front-end/` on branch `phase-2`. Developed a WebGL multi-hazard heatmap layer (`resqearth-unified-hazard-heatmap`) with severity-weighted intensity stops, smooth zoom-based transitions (low zoom = density heatmap, high zoom = precision vector markers), display mode switcher (`all` / `markers` / `heatmap`), selected event cyan halo (`resqearth-unified-selected-halo`) with map ↔ list two-way scroll synchronization, fit-to-events action (`map.fitBounds` on filtered event coordinates), recenter-to-location action, reset-to-Mumbai view, and interactive multi-tab GIS legend (`MapGisLegend`) explaining 5-tier severity classification, heatmap color gradient, statutory gold rings, and explicit non-evacuation boundary notice. Verified with 12 new style expression tests (235 total passing across 15 test suites).
+Implemented Phase 2.8 Explainable Disaster Risk Engine and completed Phase 2 final validation in `Front-end/` on branch `phase-2`. Developed pure deterministic scoring algorithm (`calculateDisasterRisk` with modelVersion `v1.0.0-deterministic`), itemized factor weightings (precipitation, rain forecast probability, sustained winds, squall gusts, extreme temperature heat/cold waves, nearby USGS earthquakes with tiered magnitude-distance matrices, nearby NASA EONET events, Indian statutory NDMA SACHET / IMD CAP alerts with provenance flags, and coastal vulnerability baseline), per-hazard 5-dimension breakdown (Flood, Storm, Earthquake, Heatwave, Wildfire), plain-English explanations, missing feed disclosures with graceful confidence degradation, `RiskOverviewCard`, `PerHazardRiskGrid`, `RiskBadge`, and `useDisasterRisk` hook. Integrated live calculated risk onto the homepage (`/`), citizen dashboard (`/dashboard`), and interactive map (`/map`), strictly labeled as "RESQEARTH CALCULATED RISK". Verified with 12 comprehensive unit tests (247 total passing across 16 test suites), 0 TypeScript errors, 0 ESLint warnings, and 24 static pages in Next.js production build.
 
 Files/Components Created & Updated:
-- Front-end/src/features/map/services/style-expressions.ts (Added getSeverityHeatmapWeightExpression, getHeatmapIntensityExpression, getHeatmapRadiusExpression, and getHeatmapOpacityExpression)
-- Front-end/src/features/map/__tests__/style-expressions.test.ts (Expanded test suite with 12 new unit assertions, 30 total passing)
-- Front-end/src/features/disasters/components/map-unified-disaster-layer.tsx (Integrated WebGL heatmap layer, statutory gold outer rings, pulsing shockwaves, selected event cyan focus halo, and dynamic displayMode property)
-- Front-end/src/features/disasters/components/map-gis-toolbar.tsx (New floating GIS toolbar component with Hybrid / Markers / Heatmap mode switcher, fit-to-events, recenter-to-GPS, reset-view, and legend toggle)
-- Front-end/src/features/disasters/components/map-gis-legend.tsx (New multi-tab interactive legend for Severity, Heatmap gradient & zoom transitions, Provenance badges, and explicit statutory notice)
-- Front-end/src/features/disasters/components/unified-disaster-list-panel.tsx (Added itemRefs and smooth scrollIntoView auto-scroll on selectedDisasterId change)
-- Front-end/src/features/disasters/components/index.ts (Exported map-gis-legend and map-gis-toolbar)
-- Front-end/src/app/map/page.tsx (Integrated MapGisToolbar, MapGisLegend, and displayMode switcher on /map)
-- Resources/Documents/Brain.md (Updated factual state, status table with 2.7 = PASS, decision log with D-020, testing memory, and handoff)
+- Front-end/src/features/risk/types/risk.ts (RiskAssessment, RiskFactorContribution, DisasterCategoryRisk, RiskEngineInputs, RiskLevel, RiskConfidence)
+- Front-end/src/features/risk/types/index.ts (Type exports)
+- Front-end/src/features/risk/constants/risk-config.ts (Weights, thresholds, bands, feeds, and model version v1.0.0-deterministic)
+- Front-end/src/features/risk/constants/index.ts (Constant exports)
+- Front-end/src/features/risk/services/risk-engine-service.ts (Deterministic calculateDisasterRisk algorithm, scoreToRiskLevel, factor evaluations, and summary generator)
+- Front-end/src/features/risk/services/index.ts (Service exports)
+- Front-end/src/features/risk/hooks/use-disaster-risk.ts (Reactive hook combining geolocation, weather, and unified disasters)
+- Front-end/src/features/risk/hooks/index.ts (Hook exports)
+- Front-end/src/features/risk/components/risk-overview-card.tsx (Card with gauge bar, factor point breakdown, confidence badge, missing inputs note, and statutory disclaimer)
+- Front-end/src/features/risk/components/per-hazard-risk-grid.tsx (5-dimension hazard breakdown with progress bars and preparedness links)
+- Front-end/src/features/risk/components/risk-badge.tsx (Compact badge with score and level)
+- Front-end/src/features/risk/components/index.ts (Component exports)
+- Front-end/src/features/risk/index.ts (Public risk feature module API)
+- Front-end/src/features/risk/__tests__/risk-engine.test.ts (12 executable unit test suites)
+- Front-end/src/app/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, and PerHazardRiskGrid into Section 5)
+- Front-end/src/app/dashboard/page.tsx (Integrated useDisasterRisk, RiskOverviewCard, PerHazardRiskGrid, and header RiskBadge)
+- Front-end/src/app/map/page.tsx (Integrated useDisasterRisk and header RiskBadge)
+- Resources/Documents/Brain.md (Updated factual state, marked Phase 2 = PASS / COMPLETE, added Decision D-021, updated validation memory, and prepared Phase 3 handoff)
 
 Features Completed:
-- WebGL multi-hazard heatmap layer with severity weighting (Critical = 1.0, High = 0.75, Moderate = 0.5, Guarded = 0.3, Low = 0.1).
-- Smooth zoom-based transitions: broad zooms (0–6) show regional density heatmaps, zooming in (7–9) seamlessly resolves into individual vector markers.
-- Display mode switcher: Hybrid (Heatmap + Markers), Markers Only, and Continuous Heatmap Only.
-- Selected event highlight with cyan focus halo and two-way map ↔ list smooth scrolling.
-- Quick GIS toolbar with Fit to Filtered Events (`fitBounds`), Recenter to User GPS (`flyTo`), Reset to Mumbai Anchor, and Legend Toggle.
-- Interactive multi-tab GIS Legend explaining 5-tier severity, heatmap color ramp, statutory gold alert rings, and educational non-evacuation boundary notice.
-- Clean mobile-responsive toolbar controls and accessible aria-labels.
+- Deterministic 0–100 risk calculation algorithm (`v1.0.0-deterministic`) with zero black-box AI.
+- Transparent itemized factor point contributions (`+{points}`) with plain-English descriptions and source attribution.
+- 5-tier canonical RiskLevel mapping: LOW (0–20), GUARDED (21–40), MODERATE (41–60), HIGH (61–80), CRITICAL (81–100).
+- 5-dimension per-hazard breakdown matrix: Flood & Inundation, Cyclone & Storm, Seismic Shaking, Extreme Temperature, and Wildfire.
+- Statutory Indian alert detection with official provenance flags, distinct from ResQEarth calculations.
+- Regional coastal vulnerability baseline integration for Mumbai & coastal Maharashtra.
+- Missing feed detection & disclosure with graceful confidence degradation (HIGH, MODERATE, LOW).
+- Prominent educational and non-evacuation boundary disclaimers with statutory NDMA/IMD precedence.
+- Live integration across `/`, `/dashboard`, and `/map`.
+- Phase 2 (Maps, Environmental APIs & Disaster Intelligence) is 100% complete and verified.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / (10.5 kB), /map (4.58 kB), and /dashboard (2.48 kB) verified)
-- Unit test suite: PASS (235/235 unit tests passed across 15 test suites)
+- npm run build (next build): PASS (24 static routes compiled successfully, / (9.4 kB), /map (4.63 kB), and /dashboard (2.73 kB) verified)
+- Unit test suite: PASS (247/247 unit tests passed across 16 test suites)
 
 Known Issues:
 None.
@@ -928,20 +949,20 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 2.8 — Explainable Risk Engine & Phase 2 Final Validation (Implement deterministic 0–100 risk calculation model, itemized contributing factors, missing input disclosures, and complete Phase 2 verification).
+Phase 3.1 — Unified Alert Model and Lifecycle (Establish canonical alert Firestore schemas, source types, delivery attempt tracking, and lifecycle states on branch `phase-3`).
 
 Warnings for Next Agent:
-Preserve UnifiedDisasterEvent model, MapLibre GIS toolbar, and heatmap layer structure when wiring the deterministic risk calculations in Phase 2.8.
+Maintain deterministic scoring weights and the strict `RESQEARTH CALCULATED RISK` provenance badge when integrating automated and manual alerts in Phase 3.
 ```
 
 ## 39. Immediate Next Action
 
 ```text
 Current State:
-Phase 2.7 Unified Disaster Map Experience & Heatmap complete (PASS) on branch `phase-2`.
+Phase 2 (Sub-Phases 2.1 through 2.8) is 100% complete (PASS) on branch `phase-2`.
 
 Next Action:
-Proceed with Phase 2.8 Explainable Risk Engine & Phase 2 Final Validation.
+Proceed with Phase 3.1 Unified Alert Model and Lifecycle.
 ```
 
 ## 40. Brain.md Maintenance Rule

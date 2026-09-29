@@ -15,6 +15,7 @@ import {
   type UnifiedDisasterEvent,
   type MapGisDisplayMode,
 } from "@/features/disasters";
+import { RiskBadge, useDisasterRisk } from "@/features/risk";
 import {
   Compass,
   Layers,
@@ -57,6 +58,8 @@ function MapPageContent() {
     refresh,
   } = useUnifiedDisasters();
 
+  const { assessment: riskAssessment } = useDisasterRisk();
+
   const handleSelectDisaster = React.useCallback(
     (disaster: UnifiedDisasterEvent | null) => {
       setSelectedDisaster(disaster);
@@ -76,6 +79,11 @@ function MapPageContent() {
               <Sparkles className="h-3 w-3 mr-1" />
               MapLibre GL JS 5.2
             </Badge>
+            <RiskBadge
+              score={riskAssessment.score}
+              level={riskAssessment.level}
+              size="sm"
+            />
             <Badge variant="secondary" className="font-mono text-[10px]">
               <Radio className="h-3 w-3 mr-1 text-primary animate-pulse" />
               {disasters.length} Monitored Hazards

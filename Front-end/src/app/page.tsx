@@ -48,9 +48,10 @@ import {
   type DisasterCardData,
 } from "@/components/common/disaster-card";
 import {
-  RiskIndicator,
-  type RiskAssessmentData,
-} from "@/components/common/risk-indicator";
+  RiskOverviewCard,
+  PerHazardRiskGrid,
+  useDisasterRisk,
+} from "@/features/risk";
 import {
   NotificationBanner,
   type WarningBannerData,
@@ -62,23 +63,6 @@ import {
   useGeolocation,
 } from "@/features/map";
 import { useAuth } from "@/features/auth";
-
-// Sample explainable calculated risk data matching architecture specification
-const SAMPLE_RISK_DATA: RiskAssessmentData = {
-  score: 68,
-  level: "HIGH",
-  disasterType: "Urban Flood & Inundation",
-  regionName: "Mithi River Catchment & Western Suburbs",
-  calculatedAt: new Date().toISOString(),
-  modelVersion: "v1.0.0-deterministic",
-  contributions: [
-    { name: "Heavy Rainfall (4.2 mm/hr)", points: 28, description: "Observed local precipitation rate" },
-    { name: "River Discharge Forecast (GloFAS)", points: 22, description: "Upstream basin saturation" },
-    { name: "Official Weather Advisory (IMD)", points: 14, description: "Yellow alert issued for coastal belt" },
-    { name: "Recent Proximity Incidents", points: 4, description: "Waterlogging reported within 15 km" },
-  ],
-  missingInputs: ["Tidal High-Water Gauge Telemetry"],
-};
 
 // Sample disaster preview events for monitored hazards
 const SAMPLE_DISASTER_EVENTS: DisasterCardData[] = [
@@ -164,6 +148,11 @@ function HomePageContent() {
     selectedDisaster,
     setSelectedDisaster,
   } = useUnifiedDisasters();
+  const {
+    assessment: riskAssessment,
+    isLoading: isRiskLoading,
+    refresh: handleRiskRefresh,
+  } = useDisasterRisk();
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
 
@@ -512,7 +501,7 @@ function HomePageContent() {
               />
             </div>
 
-            {/* Real RiskIndicator Component */}
+            {/* Explainable Risk Overview Card */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">
@@ -520,8 +509,24 @@ function HomePageContent() {
                 </span>
                 <span className="font-mono text-[11px]">ResQEarth v1.0</span>
               </div>
-              <RiskIndicator data={SAMPLE_RISK_DATA} showBreakdown={true} />
+              <RiskOverviewCard
+                assessment={riskAssessment}
+                isLoading={isRiskLoading}
+                onRefresh={handleRiskRefresh}
+                showBreakdown={true}
+              />
             </div>
+          </div>
+
+          {/* Per-Hazard Breakdown Grid */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span className="font-semibold uppercase tracking-wider text-[11px]">
+                Multi-Hazard Readiness Matrix
+              </span>
+              <span className="font-mono text-[11px]">5-Dimension Surveillance</span>
+            </div>
+            <PerHazardRiskGrid hazardBreakdown={riskAssessment.hazardBreakdown} />
           </div>
         </section>
 
