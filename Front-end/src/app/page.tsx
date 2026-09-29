@@ -42,6 +42,8 @@ import {
 import {
   MapEarthquakeLayer,
   useEarthquakes,
+  MapGlobalDisasterLayer,
+  useGlobalDisasters,
 } from "@/features/disasters";
 import {
   DisasterCard,
@@ -164,6 +166,12 @@ function HomePageContent() {
     selectedEarthquake,
     setSelectedEarthquake,
   } = useEarthquakes();
+  const {
+    disasters: globalDisasters,
+    geoJson: globalGeoJson,
+    selectedDisaster: selectedGlobalDisaster,
+    setSelectedDisaster: setSelectedGlobalDisaster,
+  } = useGlobalDisasters();
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
 
@@ -187,11 +195,34 @@ function HomePageContent() {
     }));
   }, [earthquakes]);
 
+  // Live global hazard cards from NASA EONET
+  const liveGlobalCards: DisasterCardData[] = React.useMemo(() => {
+    return globalDisasters.slice(0, 2).map((d) => ({
+      id: d.id,
+      type: d.categoryTitle,
+      title: d.title,
+      description: `${d.categoryTitle} tracked by ${d.primarySource.name || "NASA EONET"}.${d.description ? ` ${d.description}` : ""}`,
+      severity: d.severity,
+      sourceType: "automatic" as const,
+      sourceName: `NASA EONET (${d.primarySource.name || "NASA"})`,
+      sourceUrl: d.sourceUrl,
+      locationName: d.title,
+      latitude: d.latitude,
+      longitude: d.longitude,
+      distanceKm: d.distanceKm,
+      occurredAt: d.occurredAt,
+      slug: d.categoryKey === "wildfires" ? "wildfire" : d.categoryKey === "severeStorms" ? "cyclone" : d.categoryKey === "floods" ? "flood" : "earthquake",
+    }));
+  }, [globalDisasters]);
+
   const displayDisasterEvents = React.useMemo(() => {
-    if (liveEarthquakeCards.length === 0) return SAMPLE_DISASTER_EVENTS;
-    const nonQuakeEvents = SAMPLE_DISASTER_EVENTS.filter((e) => e.type !== "Earthquake");
-    return [...liveEarthquakeCards, ...nonQuakeEvents].slice(0, 3);
-  }, [liveEarthquakeCards]);
+    const liveItems = [...liveEarthquakeCards, ...liveGlobalCards];
+    if (liveItems.length === 0) return SAMPLE_DISASTER_EVENTS;
+    const sampleFill = SAMPLE_DISASTER_EVENTS.filter(
+      (s) => !liveItems.some((l) => l.type.toLowerCase() === s.type.toLowerCase())
+    );
+    return [...liveItems, ...sampleFill].slice(0, 3);
+  }, [liveEarthquakeCards, liveGlobalCards]);
 
   return (
     <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
@@ -292,7 +323,7 @@ function HomePageContent() {
                   Surveillance Nodes
                 </span>
                 <p className="font-mono font-bold text-foreground mt-0.5">
-                  USGS • Open-Meteo • IMD
+                  USGS • NASA EONET • Open-Meteo
                 </p>
               </div>
 
@@ -548,6 +579,13 @@ function HomePageContent() {
               earthquakes={earthquakes}
               selectedEarthquake={selectedEarthquake}
               onSelectEarthquake={setSelectedEarthquake}
+              visible={true}
+            />
+            <MapGlobalDisasterLayer
+              geoJson={globalGeoJson}
+              disasters={globalDisasters}
+              selectedDisaster={selectedGlobalDisaster}
+              onSelectDisaster={setSelectedGlobalDisaster}
               visible={true}
             />
           </MapView>

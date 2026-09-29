@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.4 Earthquake Intelligence complete (PASS); USGS Earthquake GeoJSON live feed integration with dynamic magnitude-scaled circle markers (5px to 24px), pulsing shockwave rings for M5.5+ events, MapLibre vector marker layer, interactive EarthquakePopup, search/filter panel (feed time window & magnitude chips), in-memory caching (5 min TTL), in-flight deduplication, stale cache fallback, EarthquakeOverviewCard on citizen `/dashboard`, and monitored hazard stream integration on homepage `/` and `/map`. Next step: Phase 2.5 Flood and Indian Source Evaluation.  
+**Current factual state:** Phase 2.5 Global Disaster Event Feed complete (PASS); NASA EONET v3 natural hazards live feed integration (wildfires, severe storms/cyclones, volcanoes, floods, landslides, extreme temperatures) with geometry centroid calculation (Points, LineString tracks, Polygon burn perimeters, temporal snapshots), transparent ResQEarth-derived severity classification, dynamic marker radius scaling, MapLibre vector layers (`MapGlobalDisasterLayer`), interactive popups (`GlobalDisasterPopup`), filterable multi-category feed panel (`GlobalDisasterListPanel`), 10-min in-memory cache with deduplication and stale fallback, `GlobalDisasterOverviewCard` on citizen `/dashboard`, and multi-hazard map integration across `/map` and homepage `/`. Next step: Phase 2.6 Unified Events, Multi-Hazard Map Layers & Indian Source Integration.  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
-Current Sub-Phase: Phase 2.4 Earthquake Intelligence
+Current Sub-Phase: Phase 2.5 Global Disaster Event Feed
 Current Status: PASS
-Last Completed Sub-Phase: Phase 2.4 Earthquake Intelligence
-Next Intended Sub-Phase: Phase 2.5 Flood and Indian Source Evaluation
+Last Completed Sub-Phase: Phase 2.5 Global Disaster Event Feed
+Next Intended Sub-Phase: Phase 2.6 Unified Events, Map Layers and Nearby Detection
 ```
 
 ## 29. Implementation Status Table
@@ -564,8 +564,8 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 2 | 2.2 Geolocation and Manual Location | PASS | Browser GPS request, permission states, accuracy buffer circle, OSM Nominatim reverse geocoder with throttling/caching/offline fallback, manual search dialog, session persistence, and location telemetry card. |
 | 2 | 2.3 Weather Intelligence Integration | PASS | Open-Meteo live weather API, WMO interpretation codes, coordinate rounding cache (~1km), deduplication, stale cache fallback, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard. |
 | 2 | 2.4 Earthquake Intelligence | PASS | Real-time USGS Earthquake GeoJSON feed integration, magnitude-scaled vector circles (5–24px), pulsing shockwave rings (M5.5+), interactive MapLibre click popup, filterable list panel, EarthquakeOverviewCard on /dashboard, monitored hazard stream on /, and 8 unit tests. |
-| 2 | 2.5 Flood and Indian Source Evaluation | NOT STARTED | Integrate only verified sources; label unavailable/curated data honestly. |
-| 2 | 2.6 Unified Events, Map Layers and Nearby Detection | NOT STARTED | Normalized GeoJSON, markers, clusters, filters, Haversine distance. |
+| 2 | 2.5 Global Disaster Event Feed | PASS | Real-time NASA EONET v3 natural hazards feed (wildfires, storms, volcanoes, floods, landslides), geometry centroid math across Point/LineString/Polygon/Temporal arrays, MapGlobalDisasterLayer, GlobalDisasterPopup, GlobalDisasterListPanel, GlobalDisasterOverviewCard, 9 unit tests. |
+| 2 | 2.6 Unified Events, Map Layers and Nearby Detection | NOT STARTED | Normalized GeoJSON, markers, clusters, multi-hazard layers, Haversine distance, and Indian hazard integration. |
 | 2 | 2.7 Provider Adapter Framework & Pipeline Hardening | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
 | 2 | 2.8 Explainable Risk Engine and Phase Validation | NOT STARTED | Versioned rules, contribution UI, boundaries, partial-provider tests. |
 | 3 | 3.1 Unified Alert Model and Lifecycle | NOT STARTED | Source types, statuses, dedupe, expiry, Firestore model. |
@@ -604,8 +604,8 @@ Allowed statuses: `PENDING`, `AVAILABLE`, `CONNECTED`, `TESTED`, `FAILED`, `NOT 
 | Open-Meteo | Weather | TESTED | No/Unknown | Live forecast endpoint connected; temperature, humidity, precipitation, wind, weather codes, and hourly forecasts normalized and tested. |
 | Open-Meteo Flood / GloFAS | Flood/river data | PENDING | No/Unknown | Access and MVP feasibility not yet verified. |
 | USGS | Earthquakes | TESTED | None required | Real-time USGS Earthquake GeoJSON feed connected, normalized, cached (5 min TTL), and tested with distance calculations. |
-| NASA EONET | Global natural events | PENDING | TBD | Candidate; final selection not made. |
-| GDACS | Global disaster events | PENDING | TBD | Candidate; final selection not made. |
+| NASA EONET | Global natural events | TESTED | None required | Live NASA EONET v3 GeoJSON feed connected, normalized, cached (10 min TTL), tested across wildfires, storms, volcanoes, floods, and landslides. |
+| GDACS | Global disaster events | PENDING | TBD | Secondary candidate for multi-hazard alert feeds. |
 | NDMA SACHET | Indian official alerts | PENDING | TBD | Endpoint/access/reuse details pending. |
 | IMD | Indian weather/official information | PENDING | TBD | Endpoint/access/reuse details pending. |
 | Map tile provider | OSM-compatible basemap | TESTED | None required | OpenStreetMap standard raster basemap tiles active and verified. |
@@ -750,6 +750,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Provide real-time global and Indian tectonic monitoring with zero API authentication requirements, standard WGS84 coordinates, and robust public endpoints.  
 **Impact:** Normalized seismic events (`NormalizedEarthquake`) are visualized on MapLibre vector maps with interactive click popups (`EarthquakePopup`), filterable by magnitude threshold and time window (`EarthquakeListPanel`), streamed into the homepage hazard list, and presented in the citizen dashboard telemetry grid (`EarthquakeOverviewCard`).
 
+### Decision D-018
+
+**Date:** 2026-09-30  
+**Decision:** Integrate NASA Earth Observatory Natural Event Tracker (EONET v3) GeoJSON API (`/api/v3/events/geojson`) with polymorphic centroid geometry extraction (GeoJSON Point, LineString storm tracks, Polygon wildfire perimeters, and chronological geometry snapshot arrays), transparent ResQEarth-derived severity classification (`severityScale: "ResQEarth / EONET classification"`), dynamic marker scaling (7px to 18px), MapLibre vector circle layers (`MapGlobalDisasterLayer`), interactive popups (`GlobalDisasterPopup`), filterable category list panel (`GlobalDisasterListPanel`), 10-minute in-memory caching with request deduplication and stale fallback, and `GlobalDisasterOverviewCard` on citizen dashboard.  
+**Reason:** Deliver global and regional natural hazard surveillance (wildfires, severe storms, tropical cyclones, volcanic eruptions, floods, landslides, extreme temperatures) with robust public endpoints and zero API key requirements while preserving strict provenance transparency without fabricating official government alert status.  
+**Impact:** Natural hazard events are visualized seamlessly across desktop and mobile MapLibre viewports on `/map` and `/`, filtered reactively by category or keyword search, merged into the homepage monitored hazards stream, and exposed to citizen dashboards without risking app crashes or cloud database dependencies.
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -838,23 +845,24 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.4 Earthquake Intelligence
+Scope: Phase 2.5 Global Disaster Event Feed
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (10.9 kB bundle), /map (4.21 kB bundle), /dashboard (2.38 kB bundle), /admin, /alerts, /profile)
-Unit / Validation Suite: PASS (203 tests passed across 13 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (11 kB bundle), /map (4.74 kB bundle), /dashboard (2.54 kB bundle), /admin, /alerts, /profile)
+Unit / Validation Suite: PASS (212 tests passed across 14 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
   - Map / GIS: 95 unit tests (29 GeoJSON helper tests + 18 style expressions tests + 31 viewport/region preset tests + 16 layer registry tests)
   - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests)
   - Weather Intelligence: 26 unit tests (14 WMO weather interpretation & dictionary integrity tests + 12 weather service normalization / minimal payload / extreme values / cache rounding / deduplication / error tests)
-  - Earthquake Intelligence: 8 unit tests (Severity mapping, dynamic radius scaling, feature normalization, Haversine distance relative to Mumbai/user, tsunami flag recognition, malformed feature rejection, feed sorting, GeoJSON conversion, cache management))
-USGS Integration: PASS (Real-time GeoJSON feed integration with dynamic magnitude-scaled circle markers 5–24px, pulsing shockwave rings for M5.5+, click popup, and distance calculation)
-Earthquake List & Filtering: PASS (Search filter, magnitude threshold chips M2.5+, M4.5+, M6.0+, and time window selection: Past hour, 24h, 7 days)
-Earthquake Dashboard Card: PASS (EarthquakeOverviewCard showing strongest recorded event, nearest event proximity, tsunami alerts, and external USGS link)
-Homepage Hazard Stream: PASS (Live earthquakes stream combined with monitored disaster advisories in Section 7)
-MapLibre Vector Integration: PASS (MapEarthquakeLayer embedded on both / and /map with interactive popups and hover cursors)
-Cache & Resilience: PASS (5-minute TTL in-memory cache, in-flight deduplication, stale cache fallback on network failure, zero Firebase cloud dependency)
+  - Earthquake Intelligence: 8 unit tests (Severity mapping, dynamic radius scaling, feature normalization, Haversine distance relative to Mumbai/user, tsunami flag recognition, malformed feature rejection, feed sorting, GeoJSON conversion, cache management)
+  - Global Disaster Intelligence (NASA EONET): 9 unit tests (Category mapping, severity classification, dynamic marker radius scaling, geometry centroid extraction across Point/LineString/Polygon/Temporal array, malformed/out-of-range rejection, distance math, feed sorting, GeoJSON conversion, cache management))
+NASA EONET Integration: PASS (Real-time GeoJSON feed integration with category icon badges, dynamic radius scaling 7–18px, pulsing shockwave rings for CRITICAL/HIGH events, click popup, and distance calculation)
+Global Disaster List & Filtering: PASS (Search filter, category filter tabs with live event count badges for All, Wildfires, Severe Storms, Volcanoes, Floods, Landslides, and open/all status toggle)
+Global Disaster Dashboard Card: PASS (GlobalDisasterOverviewCard on /dashboard showing highest severity event, proximity metrics, active category counts, and external NASA link)
+Homepage Hazard Stream: PASS (Live NASA EONET events and USGS earthquakes combined in Section 7 monitored hazard stream)
+MapLibre Vector Integration: PASS (MapGlobalDisasterLayer and MapEarthquakeLayer embedded on / and /map with active layer filter toggle and interactive popups)
+Cache & Resilience: PASS (10-minute TTL in-memory cache, in-flight deduplication, stale cache fallback on network failure, zero Firebase cloud dependency)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
@@ -862,6 +870,7 @@ Map: PASS (Interactive MapLibre GL JS engine, OSM basemap tiles, layer drawer, r
 Geolocation & Region Resolution: PASS (Live GPS layer, OSM Nominatim reverse geocoder, manual search dialog, session persistence)
 Weather: PASS (Open-Meteo live API integration, WMO interpretations, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard)
 Earthquakes: PASS (USGS live feed, magnitude scaling, MapLibre layer, interactive popup, EarthquakeListPanel, EarthquakeOverviewCard)
+Global Disasters: PASS (NASA EONET live feed, category taxonomy, centroid calculation, MapGlobalDisasterLayer, GlobalDisasterPopup, GlobalDisasterListPanel, GlobalDisasterOverviewCard)
 Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
@@ -875,41 +884,43 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.4 Earthquake Intelligence in `Front-end/` on branch `phase-2`. Integrated USGS Earthquake Hazards Program GeoJSON real-time feeds (`/earthquakes/feed/v1.0/summary/...`), built canonical earthquake normalization and caching service with Haversine distance calculation and in-flight deduplication, created responsive `MapEarthquakeLayer` with magnitude-scaled circle markers (5px to 24px) and pulsing shockwave rings for M5.5+ quakes, interactive `EarthquakePopup`, filterable `EarthquakeListPanel`, `EarthquakeOverviewCard` on citizen `/dashboard`, and live seismic stream in homepage `/` disaster card section.
+Implemented Phase 2.5 Global Disaster Event Feed in `Front-end/` on branch `phase-2`. Integrated NASA Earth Observatory Natural Event Tracker (EONET v3) GeoJSON live feeds (`/api/v3/events/geojson`), built canonical disaster event normalization, centroid geometry math (Points, LineStrings, Polygons, Temporal snapshot arrays), transparent ResQEarth-derived severity classification, 10-minute in-memory caching with in-flight request deduplication and stale fallback, created responsive `MapGlobalDisasterLayer` with dynamic radius-scaled circle markers (7px to 18px) and pulse rings for CRITICAL/HIGH events, interactive `GlobalDisasterPopup`, filterable `GlobalDisasterListPanel`, `GlobalDisasterOverviewCard` on citizen `/dashboard`, multi-hazard map layer toggles on `/map`, and live multi-hazard stream on homepage `/`.
 
 Files/Components Created & Updated:
-- Front-end/src/features/disasters/types/earthquake.ts & index.ts (Typed NormalizedEarthquake, UsgsEarthquakeFeature, UsgsEarthquakeFeedResponse, EarthquakeFeedTimeWindow, EarthquakeFilterOptions)
-- Front-end/src/features/disasters/constants/earthquake-config.ts & index.ts (USGS endpoint urls, 5-min TTL, magnitude-to-severity mapping, dynamic marker radius scaling formula)
-- Front-end/src/features/disasters/services/earthquake-service.ts & index.ts (USGS feature/feed normalizers, Haversine distance calculator relative to user GPS, GeoJSON generator for MapLibre, in-memory caching, deduplication, stale fallback)
-- Front-end/src/features/disasters/hooks/use-earthquakes.ts & index.ts (Reactive hook providing live feed state, magnitude/distance/search filtering, strongest/nearest quake resolution, selected event, and refresh triggers)
-- Front-end/src/features/disasters/components/map-earthquake-layer.tsx (MapLibre circles, pulsing shockwave rings, magnitude symbol labels, click/hover handlers, and popup trigger)
-- Front-end/src/features/disasters/components/earthquake-popup.tsx (Interactive MapLibre popup with magnitude badge, depth, proximity distance, tsunami flag, and USGS event link)
-- Front-end/src/features/disasters/components/earthquake-list-panel.tsx (Searchable, filterable list with magnitude badge pills, time window controls, and stale indicator)
-- Front-end/src/features/disasters/components/earthquake-overview-card.tsx (Citizen dashboard telemetry card for strongest recent quake, proximity metrics, and USGS external link)
-- Front-end/src/features/disasters/index.ts (Disasters feature module barrel export)
-- Front-end/src/features/disasters/__tests__/earthquake-service.test.ts (8 unit tests for earthquake normalization, severity, distance, and GeoJSON)
-- Front-end/src/app/map/page.tsx (Full integration of MapEarthquakeLayer and EarthquakeListPanel alongside MapLibre map)
-- Front-end/src/app/page.tsx (Embedded MapEarthquakeLayer in MapView and connected live earthquake cards to disaster preview stream)
-- Front-end/src/app/dashboard/page.tsx (Added live EarthquakeOverviewCard to citizen dashboard surveillance grid)
-- Resources/Documents/Brain.md (Updated factual state, status table with 2.4 = PASS, API table with USGS = TESTED, decision log with D-017, testing memory, and handoff)
+- Front-end/src/features/disasters/types/global-disaster.ts & index.ts (Typed NormalizedGlobalDisaster, EonetGeoJsonFeature, EonetGeoJsonResponse, EonetRawEvent, EonetRawGeometryItem, GlobalDisasterCategory, CanonicalDisasterType, GlobalDisasterFilterOptions)
+- Front-end/src/features/disasters/constants/global-disaster-config.ts & index.ts (NASA EONET v3 endpoints, 10-min TTL, category dictionary, category-to-canonical mappers, severity calculators, dynamic marker radius scaling formula)
+- Front-end/src/features/disasters/services/global-disaster-service.ts & index.ts (EONET feature/feed normalizers, polymorphic geometry centroid extractor, Haversine distance calculator, GeoJSON generator for MapLibre, in-memory cache, in-flight deduplication, stale fallback)
+- Front-end/src/features/disasters/hooks/use-global-disasters.ts & index.ts (Reactive hook providing live feed state, category filtering, search filtering, open/all status toggles, distance sorting, most severe/nearest event resolution, and refresh triggers)
+- Front-end/src/features/disasters/components/map-global-disaster-layer.tsx (MapLibre circles, pulsing shockwave rings for high-severity hazards, symbol labels, click/hover handlers, and popup trigger)
+- Front-end/src/features/disasters/components/global-disaster-popup.tsx (Interactive MapLibre popup with category icon, status badge, severity badge, distance from user, timestamp, coordinates, and NASA EONET / primary agency source links)
+- Front-end/src/features/disasters/components/global-disaster-list-panel.tsx (Searchable, filterable list with category tabs, live event count badges, status toggles, and click-to-select)
+- Front-end/src/features/disasters/components/global-disaster-overview-card.tsx (Citizen dashboard telemetry card for highest severity event, nearest event proximity, and NASA external link)
+- Front-end/src/features/disasters/components/index.ts & features/disasters/index.ts (Updated barrel exports)
+- Front-end/src/features/disasters/__tests__/global-disaster-service.test.ts (9 unit tests for NASA EONET normalization, centroid math across 4 geometry formats, severity classification, distance, and GeoJSON)
+- Front-end/src/app/map/page.tsx (Multi-hazard layer controls with 'All Hazards', 'USGS Quakes', and 'NASA Events' toggles, side panel switcher between EarthquakeListPanel and GlobalDisasterListPanel)
+- Front-end/src/app/page.tsx (Embedded MapGlobalDisasterLayer in MapView alongside MapEarthquakeLayer, merged live EONET natural hazards into monitored hazard stream in Section 7)
+- Front-end/src/app/dashboard/page.tsx (Integrated GlobalDisasterOverviewCard into citizen dashboard surveillance grid)
+- Resources/Documents/Brain.md (Updated factual state, status table with 2.5 = PASS, API table with NASA EONET = TESTED, decision log with D-018, testing memory, and handoff)
 
 Features Completed:
-- Live USGS earthquake feeds across multiple time windows (Past hour, Past 24h M2.5+, Past 24h All, Significant Today, Past 7 days).
-- Normalized earthquake model (id, magnitude, depth, place, coordinates, occurredAt, updatedAt, tsunamiAlert, severity, distanceKm, sourceUrl).
-- Moment/Richter magnitude mapped to standard ResQEarth RiskLevel (LOW <3.0, GUARDED 3.0–4.4, MODERATE 4.5–5.9, HIGH 6.0–6.9, CRITICAL >=7.0).
-- Dynamic circle marker radius (5px to 24px) based on magnitude on MapLibre vector canvas.
-- Pulsing red shockwave ring around major seismic events (M5.5+).
-- Interactive MapLibre popup on click displaying magnitude badge, depth, distance from user, tsunami alert, and USGS source link.
-- Search and filter panel with magnitude threshold chips (All, M2.5+, M4.5+, M6.0+) and keyword search.
-- In-memory cache with 5-minute TTL, in-flight request deduplication, and stale cache fallback on network failure.
-- EarthquakeOverviewCard on citizen `/dashboard` displaying strongest recorded quake and proximity to user.
-- Live earthquake stream integration in Section 7 of homepage `/`.
+- Real-time NASA EONET v3 natural hazards feed integration (wildfires, severe storms, volcanoes, floods, landslides, extreme temperatures).
+- Normalized global disaster model (id, provider, providerEventId, disasterType, categoryKey, categoryTitle, title, description, geometryType, coordinates, occurredAt, updatedAt, isOpen, sources, primarySource, sourceUrl, magnitudeValue, magnitudeUnit, severity, severityScale, distanceKm, isStale).
+- Polymorphic geometry centroid extraction supporting GeoJSON Point, LineString (storm paths), Polygon (burn areas), and chronological snapshot arrays.
+- Transparent ResQEarth/EONET-derived severity classification (never fabricated as official alerts).
+- Dynamic marker circle scaling (7px to 18px) based on severity and category.
+- Pulsing shockwave rings around CRITICAL and HIGH severity global events.
+- Interactive MapLibre popup on click displaying category icon, severity badge, distance from user, timestamps, coordinates, and direct NASA EONET & source agency links (e.g. JTWC, InciWeb).
+- Category filter tabs with live event counts (All, Wildfires, Severe Storms, Volcanoes, Floods, Landslides) and keyword search.
+- In-memory cache with 10-minute TTL, in-flight request deduplication, and stale cache fallback on network failure.
+- GlobalDisasterOverviewCard on citizen `/dashboard` displaying highest severity monitored event and proximity to user.
+- Multi-hazard map layer toggles on `/map` allowing users to view All Hazards, USGS Earthquakes only, or NASA Events only.
+- Live disaster stream on homepage `/` combining live seismic and global natural hazard feeds.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / (10.9 kB), /map (4.21 kB), and /dashboard (2.38 kB) verified)
-- Unit test suite: PASS (203/203 unit tests passed across 13 test suites)
+- npm run build (next build): PASS (24 static routes compiled successfully, / (11 kB), /map (4.74 kB), and /dashboard (2.54 kB) verified)
+- Unit test suite: PASS (212/212 unit tests passed across 14 test suites)
 
 Known Issues:
 None.
@@ -918,10 +929,10 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 2.5 — Flood and Indian Source Evaluation (GloFAS river discharge, CWC/IMD official advisories evaluation).
+Phase 2.6 — Unified Events, Map Layers and Nearby Detection (Multi-hazard aggregation, unified distance filtering, and Indian regional hazard pipelines).
 
 Warnings for Next Agent:
-Preserve NormalizedEarthquake and useEarthquakes hook for use in Phase 2.8 deterministic risk calculation.
+Preserve NormalizedGlobalDisaster alongside NormalizedEarthquake for unified multi-hazard risk calculations in Phase 2.8.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -930,10 +941,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 2.4 Earthquake Intelligence complete (PASS) on branch `phase-2`.
+Phase 2.5 Global Disaster Event Feed complete (PASS) on branch `phase-2`.
 
 Next Action:
-Proceed with Phase 2.5 Flood and Indian Source Evaluation.
+Proceed with Phase 2.6 Unified Events, Map Layers and Nearby Detection.
 ```
 
 ## 40. Brain.md Maintenance Rule
