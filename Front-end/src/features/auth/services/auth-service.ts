@@ -1,15 +1,18 @@
 import {
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   updateProfile,
   type User,
   type AuthError,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirebaseAuthSafe } from "@/lib/firebase/auth";
 import { getFirebaseFirestoreSafe, FIRESTORE_COLLECTIONS, FIRESTORE_SUBCOLLECTIONS } from "@/lib/firebase/firestore";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import type { UserProfile, UserPreferences } from "@/types";
 import { type SignupFormData, normalizePhoneNumber } from "../schemas/signup-schema";
+import { type LoginFormData } from "../schemas/login-schema";
 
 export interface SignupResult {
   success: boolean;
@@ -19,12 +22,19 @@ export interface SignupResult {
   partialSuccess?: boolean;
 }
 
+export interface LoginResult {
+  success: boolean;
+  user?: User;
+  profile?: UserProfile;
+  error?: string;
+}
+
 /**
  * Maps Firebase Auth error codes to user-friendly accessible messages.
  */
 export function mapFirebaseAuthErrorMessage(error: unknown): string {
   if (!error || typeof error !== "object") {
-    return "An unexpected error occurred during signup. Please try again.";
+    return "An unexpected authentication error occurred. Please try again.";
   }
 
   const authError = error as AuthError;
@@ -33,6 +43,14 @@ export function mapFirebaseAuthErrorMessage(error: unknown): string {
       return "An account with this email address already exists. Please sign in instead.";
     case "auth/invalid-email":
       return "The email address provided is not valid.";
+    case "auth/user-not-found":
+      return "No account found with this email address. Please check your email or sign up.";
+    case "auth/wrong-password":
+      return "Incorrect password. Please verify your password and try again.";
+    case "auth/invalid-credential":
+      return "Invalid email or password. Please verify your credentials and try again.";
+    case "auth/user-disabled":
+      return "This account has been disabled. Please contact the system administrator.";
     case "auth/operation-not-allowed":
       return "Email and password accounts are not enabled in Firebase Console. Please contact the administrator.";
     case "auth/weak-password":
@@ -40,12 +58,12 @@ export function mapFirebaseAuthErrorMessage(error: unknown): string {
     case "auth/network-request-failed":
       return "Network connection failed. Please check your internet connection and try again.";
     case "auth/too-many-requests":
-      return "Too many signup attempts have been made. Please try again after a few minutes.";
+      return "Access to this account has been temporarily disabled due to many failed attempts. Please try again later.";
     case "auth/invalid-api-key":
     case "auth/app-not-authorized":
       return "Firebase configuration is invalid. Please check your project settings.";
     default:
-      return authError.message || "Failed to create account. Please try again.";
+      return authError.message || "Authentication failed. Please try again.";
   }
 }
 
@@ -165,5 +183,80 @@ export async function registerCitizen(data: SignupFormData): Promise<SignupResul
       success: false,
       error: mapFirebaseAuthErrorMessage(error),
     };
+  }
+}
+
+/**
+ * Authenticates an existing user with Firebase Email and Password.
+ * Loads their Firestore profile and verifies session state.
+ */
+export async function signInCitizen(data: LoginFormData): Promise<LoginResult> {
+  if (!isFirebaseConfigured()) {
+    return {
+      success: false,
+      error:
+        "Firebase is not configured. Please define NEXT_PUBLIC_FIREBASE_* credentials in .env.local to enable real user authentication.",
+    };
+  }
+
+  const auth = getFirebaseAuthSafe();
+  if (!auth) {
+    return {
+      success: false,
+      error: "Firebase Auth could not be initialized. Please verify your environment configuration.",
+    };
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      data.email.trim().toLowerCase(),
+      data.password
+    );
+
+    const profile = await fetchUserProfile(userCredential.user.uid);
+
+    return {
+      success: true,
+      user: userCredential.user,
+      profile: profile || undefined,
+    };
+  } catch (error) {
+    console.error("[ResQEarth Auth] Login error:", error);
+    return {
+      success: false,
+      error: mapFirebaseAuthErrorMessage(error),
+    };
+  }
+}
+
+/**
+ * Fetches a user's profile document from Firestore `users/{uid}`.
+ */
+export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
+  const db = getFirebaseFirestoreSafe();
+  if (!db) return null;
+
+  try {
+    const userDocRef = doc(db, FIRESTORE_COLLECTIONS.USERS, uid);
+    const snapshot = await getDoc(userDocRef);
+
+    if (snapshot.exists()) {
+      return snapshot.data() as UserProfile;
+    }
+    return null;
+  } catch (error) {
+    console.error(`[ResQEarth Auth] Failed to fetch profile for user ${uid}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Signs out the currently authenticated user from Firebase Auth.
+ */
+export async function signOutCitizen(): Promise<void> {
+  const auth = getFirebaseAuthSafe();
+  if (auth) {
+    await firebaseSignOut(auth);
   }
 }

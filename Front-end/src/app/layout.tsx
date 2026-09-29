@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/features/auth";
 import { PageShell } from "@/components/layout/page-shell";
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
-        <PageShell>{children}</PageShell>
+        <AuthProvider>
+          <PageShell>{children}</PageShell>
+        </AuthProvider>
       </body>
     </html>
   );

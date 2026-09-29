@@ -27,14 +27,23 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { signupSchema, type SignupFormData } from "../schemas/signup-schema";
-import { registerCitizen } from "../services/auth-service";
+import { useAuth } from "../hooks/use-auth";
 
 export function SignupForm() {
   const router = useRouter();
+  const { signup, isAuthenticated, isLoading: authLoading } = useAuth();
+
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+
+  // Redirect away if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const {
     register,
@@ -68,7 +77,7 @@ export function SignupForm() {
     setServerError(null);
     setSuccessMessage(null);
 
-    const result = await registerCitizen(data);
+    const result = await signup(data);
 
     if (!result.success) {
       setServerError(result.error || "Failed to create account. Please check your inputs.");
@@ -82,8 +91,19 @@ export function SignupForm() {
     // Redirect to citizen dashboard after brief feedback
     setTimeout(() => {
       router.push("/dashboard");
-    }, 1500);
+    }, 1200);
   };
+
+  if (authLoading) {
+    return (
+      <Card className="shadow-lg border-border/80">
+        <CardContent className="py-12 text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground font-medium">Checking session...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-lg border-border/80">
