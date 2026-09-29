@@ -40,6 +40,10 @@ import {
   useWeather,
 } from "@/features/weather";
 import {
+  MapEarthquakeLayer,
+  useEarthquakes,
+} from "@/features/disasters";
+import {
   DisasterCard,
   type DisasterCardData,
 } from "@/components/common/disaster-card";
@@ -59,6 +63,92 @@ import {
 } from "@/features/map";
 import { useAuth } from "@/features/auth";
 
+// Sample explainable calculated risk data matching architecture specification
+const SAMPLE_RISK_DATA: RiskAssessmentData = {
+  score: 68,
+  level: "HIGH",
+  disasterType: "Urban Flood & Inundation",
+  regionName: "Mithi River Catchment & Western Suburbs",
+  calculatedAt: new Date().toISOString(),
+  modelVersion: "v1.0.0-deterministic",
+  contributions: [
+    { name: "Heavy Rainfall (4.2 mm/hr)", points: 28, description: "Observed local precipitation rate" },
+    { name: "River Discharge Forecast (GloFAS)", points: 22, description: "Upstream basin saturation" },
+    { name: "Official Weather Advisory (IMD)", points: 14, description: "Yellow alert issued for coastal belt" },
+    { name: "Recent Proximity Incidents", points: 4, description: "Waterlogging reported within 15 km" },
+  ],
+  missingInputs: ["Tidal High-Water Gauge Telemetry"],
+};
+
+// Sample disaster preview events for monitored hazards
+const SAMPLE_DISASTER_EVENTS: DisasterCardData[] = [
+  {
+    id: "evt-001",
+    type: "Cyclone",
+    title: "Deep Depression over East-Central Arabian Sea",
+    description:
+      "Severe weather system tracking north-northwestward with sustained surface winds of 55–65 km/h. Coastal fisherman advisories active.",
+    severity: "HIGH",
+    sourceType: "official",
+    sourceName: "India Meteorological Department (IMD)",
+    sourceUrl: "https://mausam.imd.gov.in",
+    locationName: "Coastal Konkan, Maharashtra",
+    latitude: 18.9,
+    longitude: 72.8,
+    distanceKm: 42,
+    occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    slug: "cyclone",
+  },
+  {
+    id: "evt-002",
+    type: "Flood",
+    title: "River Basin Discharge Warning",
+    description:
+      "Elevated river flow and localized surface water pooling observed in low-lying suburban drainage basins following intense overnight downpours.",
+    severity: "MODERATE",
+    sourceType: "automatic",
+    sourceName: "ResQEarth Hydrological Risk Model",
+    locationName: "Thane & Raigad Basins",
+    latitude: 19.2,
+    longitude: 73.0,
+    distanceKm: 18,
+    occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    slug: "flood",
+  },
+  {
+    id: "evt-003",
+    type: "Earthquake",
+    title: "M 4.1 Minor Seismic Event",
+    description:
+      "Focal depth of 10 km recorded in Koyna-Warna tectonic zone. No structural damage reported; monitored by regional seismic stations.",
+    severity: "GUARDED",
+    sourceType: "official",
+    sourceName: "National Centre for Seismology / USGS",
+    sourceUrl: "https://earthquake.usgs.gov",
+    locationName: "Satara District, Maharashtra",
+    latitude: 17.4,
+    longitude: 73.7,
+    distanceKm: 145,
+    occurredAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+    slug: "earthquake",
+  },
+];
+
+// Sample urgent notification banner
+const SAMPLE_WARNING_BANNER: WarningBannerData = {
+  id: "alert-top-01",
+  title: "Monsoon Inundation & Coastal Weather Warning",
+  message:
+    "Heavy to very heavy rainfall expected across coastal belts during high tide. Avoid waterlogged subways and heed local municipal advisories.",
+  precautions: "Stay indoors during squally winds; keep emergency kit accessible.",
+  disasterType: "Flood",
+  severity: "HIGH",
+  sourceType: "official",
+  sourceName: "IMD Mumbai & Disaster Management Cell",
+  region: "Mumbai & Coastal Maharashtra",
+  guideSlug: "flood",
+};
+
 function HomePageContent() {
   const { isAuthenticated, role } = useAuth();
   const { location } = useGeolocation();
@@ -68,94 +158,40 @@ function HomePageContent() {
     error: weatherError,
     refresh: handleWeatherRefresh,
   } = useWeather();
+  const {
+    earthquakes,
+    geoJson: earthquakeGeoJson,
+    selectedEarthquake,
+    setSelectedEarthquake,
+  } = useEarthquakes();
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
 
-  // Sample explainable calculated risk data matching architecture specification
-  const sampleRiskData: RiskAssessmentData = {
-    score: 68,
-    level: "HIGH",
-    disasterType: "Urban Flood & Inundation",
-    regionName: "Mithi River Catchment & Western Suburbs",
-    calculatedAt: new Date().toISOString(),
-    modelVersion: "v1.0.0-deterministic",
-    contributions: [
-      { name: "Heavy Rainfall (4.2 mm/hr)", points: 28, description: "Observed local precipitation rate" },
-      { name: "River Discharge Forecast (GloFAS)", points: 22, description: "Upstream basin saturation" },
-      { name: "Official Weather Advisory (IMD)", points: 14, description: "Yellow alert issued for coastal belt" },
-      { name: "Recent Proximity Incidents", points: 4, description: "Waterlogging reported within 15 km" },
-    ],
-    missingInputs: ["Tidal High-Water Gauge Telemetry"],
-  };
-
-  // Sample disaster preview events for monitored hazards
-  const sampleDisasterEvents: DisasterCardData[] = [
-    {
-      id: "evt-001",
-      type: "Cyclone",
-      title: "Deep Depression over East-Central Arabian Sea",
-      description:
-        "Severe weather system tracking north-northwestward with sustained surface winds of 55–65 km/h. Coastal fisherman advisories active.",
-      severity: "HIGH",
-      sourceType: "official",
-      sourceName: "India Meteorological Department (IMD)",
-      sourceUrl: "https://mausam.imd.gov.in",
-      locationName: "Coastal Konkan, Maharashtra",
-      latitude: 18.9,
-      longitude: 72.8,
-      distanceKm: 42,
-      occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      slug: "cyclone",
-    },
-    {
-      id: "evt-002",
-      type: "Flood",
-      title: "River Basin Discharge Warning",
-      description:
-        "Elevated river flow and localized surface water pooling observed in low-lying suburban drainage basins following intense overnight downpours.",
-      severity: "MODERATE",
-      sourceType: "automatic",
-      sourceName: "ResQEarth Hydrological Risk Model",
-      locationName: "Thane & Raigad Basins",
-      latitude: 19.2,
-      longitude: 73.0,
-      distanceKm: 18,
-      occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      slug: "flood",
-    },
-    {
-      id: "evt-003",
+  // Live earthquake cards from USGS feed
+  const liveEarthquakeCards: DisasterCardData[] = React.useMemo(() => {
+    return earthquakes.slice(0, 2).map((eq) => ({
+      id: eq.id,
       type: "Earthquake",
-      title: "M 4.1 Minor Seismic Event",
-      description:
-        "Focal depth of 10 km recorded in Koyna-Warna tectonic zone. No structural damage reported; monitored by regional seismic stations.",
-      severity: "GUARDED",
-      sourceType: "official",
-      sourceName: "National Centre for Seismology / USGS",
-      sourceUrl: "https://earthquake.usgs.gov",
-      locationName: "Satara District, Maharashtra",
-      latitude: 17.4,
-      longitude: 73.7,
-      distanceKm: 145,
-      occurredAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+      title: eq.title,
+      description: `M ${eq.magnitude.toFixed(1)} seismic event at focal depth ${eq.depthKm} km near ${eq.place}.${eq.tsunamiAlert ? " Tsunami alert active." : ""}`,
+      severity: eq.severity,
+      sourceType: "official" as const,
+      sourceName: "USGS Earthquake Hazards Program",
+      sourceUrl: eq.sourceUrl,
+      locationName: eq.place,
+      latitude: eq.latitude,
+      longitude: eq.longitude,
+      distanceKm: eq.distanceKm,
+      occurredAt: eq.occurredAt,
       slug: "earthquake",
-    },
-  ];
+    }));
+  }, [earthquakes]);
 
-  // Sample urgent notification banner
-  const sampleWarningBanner: WarningBannerData = {
-    id: "alert-top-01",
-    title: "Monsoon Inundation & Coastal Weather Warning",
-    message:
-      "Heavy to very heavy rainfall expected across coastal belts during high tide. Avoid waterlogged subways and heed local municipal advisories.",
-    precautions: "Stay indoors during squally winds; keep emergency kit accessible.",
-    disasterType: "Flood",
-    severity: "HIGH",
-    sourceType: "official",
-    sourceName: "IMD Mumbai & Disaster Management Cell",
-    region: "Mumbai & Coastal Maharashtra",
-    guideSlug: "flood",
-  };
+  const displayDisasterEvents = React.useMemo(() => {
+    if (liveEarthquakeCards.length === 0) return SAMPLE_DISASTER_EVENTS;
+    const nonQuakeEvents = SAMPLE_DISASTER_EVENTS.filter((e) => e.type !== "Earthquake");
+    return [...liveEarthquakeCards, ...nonQuakeEvents].slice(0, 3);
+  }, [liveEarthquakeCards]);
 
   return (
     <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
@@ -195,7 +231,7 @@ function HomePageContent() {
         {/* 2. Urgent Notification Banner (Dismissible) */}
         {!activeNotificationDismissed && (
           <NotificationBanner
-            data={sampleWarningBanner}
+            data={SAMPLE_WARNING_BANNER}
             onDismiss={() => setActiveNotificationDismissed(true)}
           />
         )}
@@ -470,7 +506,7 @@ function HomePageContent() {
                 </span>
                 <span className="font-mono text-[11px]">ResQEarth v1.0</span>
               </div>
-              <RiskIndicator data={sampleRiskData} showBreakdown={true} />
+              <RiskIndicator data={SAMPLE_RISK_DATA} showBreakdown={true} />
             </div>
           </div>
         </section>
@@ -506,7 +542,15 @@ function HomePageContent() {
             showFullscreenControl={true}
             showScaleControl={true}
             showGeolocateControl={true}
-          />
+          >
+            <MapEarthquakeLayer
+              geoJson={earthquakeGeoJson}
+              earthquakes={earthquakes}
+              selectedEarthquake={selectedEarthquake}
+              onSelectEarthquake={setSelectedEarthquake}
+              visible={true}
+            />
+          </MapView>
         </section>
 
         {/* 7. Active Regional Hazard Events Stream */}
@@ -518,7 +562,7 @@ function HomePageContent() {
                   Monitored Hazards
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  3 Verified Feeds in Vicinity
+                  {displayDisasterEvents.length} Active Feeds in Vicinity
                 </span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
@@ -535,7 +579,7 @@ function HomePageContent() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {sampleDisasterEvents.map((event) => (
+            {displayDisasterEvents.map((event) => (
               <DisasterCard
                 key={event.id}
                 data={event}

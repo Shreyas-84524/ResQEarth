@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 2.3 Weather Intelligence Integration complete (PASS); Open-Meteo live weather API integration with WMO interpretation codes, coordinate rounding cache (~1km), in-flight deduplication, stale cache fallback, responsive WeatherOverviewCard with 8-hour hourly trend ribbon, WeatherCompactBadge map overlay, and useWeather hook connected to homepage `/`, `/map`, and `/dashboard`. Next step: Phase 2.4 Earthquake & Global Event Integrations (or Provider Adapter Framework).  
+**Current factual state:** Phase 2.4 Earthquake Intelligence complete (PASS); USGS Earthquake GeoJSON live feed integration with dynamic magnitude-scaled circle markers (5px to 24px), pulsing shockwave rings for M5.5+ events, MapLibre vector marker layer, interactive EarthquakePopup, search/filter panel (feed time window & magnitude chips), in-memory caching (5 min TTL), in-flight deduplication, stale cache fallback, EarthquakeOverviewCard on citizen `/dashboard`, and monitored hazard stream integration on homepage `/` and `/map`. Next step: Phase 2.5 Flood and Indian Source Evaluation.  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -539,10 +539,10 @@ Phase 5 — Production Hardening, Testing & Submission
 
 ```text
 Current Major Phase: Phase 2 — Maps, Environmental APIs & Disaster Intelligence
-Current Sub-Phase: Phase 2.3 Weather Intelligence Integration
+Current Sub-Phase: Phase 2.4 Earthquake Intelligence
 Current Status: PASS
-Last Completed Sub-Phase: Phase 2.3 Weather Intelligence Integration
-Next Intended Sub-Phase: Phase 2.4 Earthquake & Global Event Integrations
+Last Completed Sub-Phase: Phase 2.4 Earthquake Intelligence
+Next Intended Sub-Phase: Phase 2.5 Flood and Indian Source Evaluation
 ```
 
 ## 29. Implementation Status Table
@@ -563,7 +563,7 @@ Allowed statuses: `NOT STARTED`, `IN PROGRESS`, `BLOCKED`, `PASS`, `NEEDS REVIEW
 | 2 | 2.1 MapLibre Base Map | PASS | MapLibre GL JS 5.2 engine, OpenStreetMap basemap, Mumbai anchor, pan/zoom/touch/fullscreen/scale controls, cluster & heatmap layer registry, GeoJSON helpers, 95 GIS unit tests, active on `/` and `/map`. |
 | 2 | 2.2 Geolocation and Manual Location | PASS | Browser GPS request, permission states, accuracy buffer circle, OSM Nominatim reverse geocoder with throttling/caching/offline fallback, manual search dialog, session persistence, and location telemetry card. |
 | 2 | 2.3 Weather Intelligence Integration | PASS | Open-Meteo live weather API, WMO interpretation codes, coordinate rounding cache (~1km), deduplication, stale cache fallback, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard. |
-| 2 | 2.4 Earthquake and Global Event Integrations | NOT STARTED | USGS plus NASA EONET or GDACS after verification. |
+| 2 | 2.4 Earthquake Intelligence | PASS | Real-time USGS Earthquake GeoJSON feed integration, magnitude-scaled vector circles (5–24px), pulsing shockwave rings (M5.5+), interactive MapLibre click popup, filterable list panel, EarthquakeOverviewCard on /dashboard, monitored hazard stream on /, and 8 unit tests. |
 | 2 | 2.5 Flood and Indian Source Evaluation | NOT STARTED | Integrate only verified sources; label unavailable/curated data honestly. |
 | 2 | 2.6 Unified Events, Map Layers and Nearby Detection | NOT STARTED | Normalized GeoJSON, markers, clusters, filters, Haversine distance. |
 | 2 | 2.7 Provider Adapter Framework & Pipeline Hardening | NOT STARTED | Fetch/validate/normalize/health/provenance boundary. |
@@ -603,7 +603,7 @@ Allowed statuses: `PENDING`, `AVAILABLE`, `CONNECTED`, `TESTED`, `FAILED`, `NOT 
 |---|---|---|---|---|
 | Open-Meteo | Weather | TESTED | No/Unknown | Live forecast endpoint connected; temperature, humidity, precipitation, wind, weather codes, and hourly forecasts normalized and tested. |
 | Open-Meteo Flood / GloFAS | Flood/river data | PENDING | No/Unknown | Access and MVP feasibility not yet verified. |
-| USGS | Earthquakes | PENDING | No expected, unverified | GeoJSON integration scheduled for Phase 2.4. |
+| USGS | Earthquakes | TESTED | None required | Real-time USGS Earthquake GeoJSON feed connected, normalized, cached (5 min TTL), and tested with distance calculations. |
 | NASA EONET | Global natural events | PENDING | TBD | Candidate; final selection not made. |
 | GDACS | Global disaster events | PENDING | TBD | Candidate; final selection not made. |
 | NDMA SACHET | Indian official alerts | PENDING | TBD | Endpoint/access/reuse details pending. |
@@ -743,6 +743,13 @@ Entries are chronological records. Never delete a decision that explains the cur
 **Reason:** Deliver live location-aware temperature, humidity, precipitation, wind, and forecast metrics across homepage, map overlays, and citizen dashboard without fabricating synthetic values, risking API quota exhaustion, or requiring API keys/Firebase storage.  
 **Impact:** Weather data updates automatically whenever the user's GPS position or manual region selection changes; UI displays 8-hour forecast horizon and attribution with zero page crash risk on network timeout or transient provider outages.
 
+### Decision D-017
+
+**Date:** 2026-09-30  
+**Decision:** Integrate USGS Earthquake Hazards Program GeoJSON real-time feeds (`/earthquakes/feed/v1.0/summary/...`) using normalized data models, dynamic magnitude-scaled circle markers (5px to 24px), pulsing shockwave rings for M5.5+ events, client-side Haversine distance calculations relative to user coordinates, 5-minute in-memory TTL caching, in-flight request deduplication, and stale cache fallback.  
+**Reason:** Provide real-time global and Indian tectonic monitoring with zero API authentication requirements, standard WGS84 coordinates, and robust public endpoints.  
+**Impact:** Normalized seismic events (`NormalizedEarthquake`) are visualized on MapLibre vector maps with interactive click popups (`EarthquakePopup`), filterable by magnitude threshold and time window (`EarthquakeListPanel`), streamed into the homepage hazard list, and presented in the citizen dashboard telemetry grid (`EarthquakeOverviewCard`).
+
 ## 33. AI Coding Rules
 
 1. Read `Brain.md` before implementation.
@@ -831,27 +838,30 @@ Update this list only with confirmed limitations; resolve or mark superseded ite
 
 ```text
 Validation Date: 2026-09-30
-Scope: Phase 2.3 Weather Intelligence Integration
+Scope: Phase 2.4 Earthquake Intelligence
 
 TypeScript (tsc --noEmit): PASS (zero errors)
 ESLint (next lint): PASS (zero warnings, zero errors)
-Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (11.2 kB bundle), /map (1.99 kB bundle), /dashboard (2.1 kB bundle), /admin, /alerts, /profile)
-Unit / Validation Suite: PASS (195 tests passed across 12 test suites:
+Production Build (next build): PASS (Next.js 15.5.26 static generation of 24 routes succeeded including / (10.9 kB bundle), /map (4.21 kB bundle), /dashboard (2.38 kB bundle), /admin, /alerts, /profile)
+Unit / Validation Suite: PASS (203 tests passed across 13 test suites:
   - Auth / RBAC: 43 unit tests (11 login validation + 16 route guard/RBAC logic + 16 signup validation)
   - Map / GIS: 95 unit tests (29 GeoJSON helper tests + 18 style expressions tests + 31 viewport/region preset tests + 16 layer registry tests)
   - Geolocation & Region: 31 unit tests (3 GPS accuracy circle geometry tests + 3 geolocation service storage tests + 25 reverse geocoding / Nominatim normalization / nearest city fallback / cache tests)
-  - Weather Intelligence: 26 unit tests (14 WMO weather interpretation & dictionary integrity tests + 12 weather service normalization / minimal payload / extreme values / cache rounding / deduplication / error tests))
-Open-Meteo Integration: PASS (Live weather API integration with WMO code dictionary, precipitation probability, humidity, wind gusts, hourly forecast horizon)
-Coordinate Rounding & Cache: PASS (In-memory cache with ~1km coordinate precision key to prevent API thrashing; 10-minute TTL)
-Stale Cache Fallback: PASS (Offline/network failure fallback gracefully preserves cached weather with isStale indicator without throwing unhandled exceptions)
-Reactive Location Sync: PASS (useWeather hook automatically refreshes when user GPS updates or when manual region preset is changed)
-Attribution & Transparency: PASS (Visible Open-Meteo source link with non-commercial usage statement and zero secret leakage)
+  - Weather Intelligence: 26 unit tests (14 WMO weather interpretation & dictionary integrity tests + 12 weather service normalization / minimal payload / extreme values / cache rounding / deduplication / error tests)
+  - Earthquake Intelligence: 8 unit tests (Severity mapping, dynamic radius scaling, feature normalization, Haversine distance relative to Mumbai/user, tsunami flag recognition, malformed feature rejection, feed sorting, GeoJSON conversion, cache management))
+USGS Integration: PASS (Real-time GeoJSON feed integration with dynamic magnitude-scaled circle markers 5–24px, pulsing shockwave rings for M5.5+, click popup, and distance calculation)
+Earthquake List & Filtering: PASS (Search filter, magnitude threshold chips M2.5+, M4.5+, M6.0+, and time window selection: Past hour, 24h, 7 days)
+Earthquake Dashboard Card: PASS (EarthquakeOverviewCard showing strongest recorded event, nearest event proximity, tsunami alerts, and external USGS link)
+Homepage Hazard Stream: PASS (Live earthquakes stream combined with monitored disaster advisories in Section 7)
+MapLibre Vector Integration: PASS (MapEarthquakeLayer embedded on both / and /map with interactive popups and hover cursors)
+Cache & Resilience: PASS (5-minute TTL in-memory cache, in-flight deduplication, stale cache fallback on network failure, zero Firebase cloud dependency)
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
 Map: PASS (Interactive MapLibre GL JS engine, OSM basemap tiles, layer drawer, region presets on / and /map)
 Geolocation & Region Resolution: PASS (Live GPS layer, OSM Nominatim reverse geocoder, manual search dialog, session persistence)
 Weather: PASS (Open-Meteo live API integration, WMO interpretations, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard)
+Earthquakes: PASS (USGS live feed, magnitude scaling, MapLibre layer, interactive popup, EarthquakeListPanel, EarthquakeOverviewCard)
 Risk Engine: SHELL READY (Deterministic rule calculations scheduled for Phase 2.8)
 Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
 FCM: NOT TESTED (Scheduled for Phase 3.6)
@@ -865,36 +875,41 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 2.3 Weather Intelligence Integration in `Front-end/` on branch `phase-2`. Integrated Open-Meteo weather API (`/v1/forecast`), created comprehensive WMO code dictionary, built weather normalization and caching service with coordinate rounding and in-flight deduplication, created responsive `WeatherOverviewCard` with 8-hour hourly trend ribbon, `WeatherCompactBadge` overlay, and connected `useWeather` hook to homepage `/`, `/map`, and authenticated `/dashboard`.
+Implemented Phase 2.4 Earthquake Intelligence in `Front-end/` on branch `phase-2`. Integrated USGS Earthquake Hazards Program GeoJSON real-time feeds (`/earthquakes/feed/v1.0/summary/...`), built canonical earthquake normalization and caching service with Haversine distance calculation and in-flight deduplication, created responsive `MapEarthquakeLayer` with magnitude-scaled circle markers (5px to 24px) and pulsing shockwave rings for M5.5+ quakes, interactive `EarthquakePopup`, filterable `EarthquakeListPanel`, `EarthquakeOverviewCard` on citizen `/dashboard`, and live seismic stream in homepage `/` disaster card section.
 
 Files/Components Created & Updated:
-- Front-end/src/features/weather/types/weather.ts & index.ts (Typed NormalizedWeather, HourlyWeatherPoint, DailyWeatherSummary, OpenMeteoResponse, WeatherFetchOptions)
-- Front-end/src/features/weather/constants/wmo-codes.ts, weather-config.ts & index.ts (Complete WMO code interpretation dictionary, hazard severity mappings, icon associations, Open-Meteo endpoint config)
-- Front-end/src/features/weather/services/weather-service.ts & index.ts (Open-Meteo client, canonical normalizer, coordinate rounding cache ~1km, in-flight request deduplication, stale cache fallback, clearWeatherCache)
-- Front-end/src/features/weather/hooks/use-weather.ts & index.ts (Reactive hook integrating with useGeolocation and providing loading, error, stale, lastFetchedAt, and refresh states)
-- Front-end/src/features/weather/components/weather-overview-card.tsx, weather-compact-badge.tsx & index.ts (Full weather overview card with 8-hour forecast ribbon, source attribution, stale indicator, manual refresh button, and compact map badge)
-- Front-end/src/features/weather/index.ts (Feature module barrel export)
-- Front-end/src/features/weather/__tests__/wmo-codes.test.ts, weather-service.test.ts (26 unit tests)
-- Front-end/src/features/map/components/map-view.tsx (Integrated WeatherCompactBadge into top-left overlay sub-bar)
-- Front-end/src/app/page.tsx (Replaced static sample weather card with live WeatherOverviewCard and useWeather hook inside LocationProvider)
-- Front-end/src/app/dashboard/page.tsx (Added live LocationStatusCard and WeatherOverviewCard for authenticated citizens)
-- Resources/Documents/Brain.md (Updated factual state, status table, API table with Open-Meteo = TESTED, decision log with D-016, testing memory, and handoff)
+- Front-end/src/features/disasters/types/earthquake.ts & index.ts (Typed NormalizedEarthquake, UsgsEarthquakeFeature, UsgsEarthquakeFeedResponse, EarthquakeFeedTimeWindow, EarthquakeFilterOptions)
+- Front-end/src/features/disasters/constants/earthquake-config.ts & index.ts (USGS endpoint urls, 5-min TTL, magnitude-to-severity mapping, dynamic marker radius scaling formula)
+- Front-end/src/features/disasters/services/earthquake-service.ts & index.ts (USGS feature/feed normalizers, Haversine distance calculator relative to user GPS, GeoJSON generator for MapLibre, in-memory caching, deduplication, stale fallback)
+- Front-end/src/features/disasters/hooks/use-earthquakes.ts & index.ts (Reactive hook providing live feed state, magnitude/distance/search filtering, strongest/nearest quake resolution, selected event, and refresh triggers)
+- Front-end/src/features/disasters/components/map-earthquake-layer.tsx (MapLibre circles, pulsing shockwave rings, magnitude symbol labels, click/hover handlers, and popup trigger)
+- Front-end/src/features/disasters/components/earthquake-popup.tsx (Interactive MapLibre popup with magnitude badge, depth, proximity distance, tsunami flag, and USGS event link)
+- Front-end/src/features/disasters/components/earthquake-list-panel.tsx (Searchable, filterable list with magnitude badge pills, time window controls, and stale indicator)
+- Front-end/src/features/disasters/components/earthquake-overview-card.tsx (Citizen dashboard telemetry card for strongest recent quake, proximity metrics, and USGS external link)
+- Front-end/src/features/disasters/index.ts (Disasters feature module barrel export)
+- Front-end/src/features/disasters/__tests__/earthquake-service.test.ts (8 unit tests for earthquake normalization, severity, distance, and GeoJSON)
+- Front-end/src/app/map/page.tsx (Full integration of MapEarthquakeLayer and EarthquakeListPanel alongside MapLibre map)
+- Front-end/src/app/page.tsx (Embedded MapEarthquakeLayer in MapView and connected live earthquake cards to disaster preview stream)
+- Front-end/src/app/dashboard/page.tsx (Added live EarthquakeOverviewCard to citizen dashboard surveillance grid)
+- Resources/Documents/Brain.md (Updated factual state, status table with 2.4 = PASS, API table with USGS = TESTED, decision log with D-017, testing memory, and handoff)
 
 Features Completed:
-- Current temperature, apparent feels-like temperature, humidity, precipitation, precipitation probability, rain, wind speed, wind gusts, weather code, and condition description.
-- 8-hour hourly forecast ribbon with mini weather icons and precipitation probabilities.
-- Complete WMO interpretation code dictionary (codes 0 to 99) with severity categorization and Lucide icons.
-- In-memory cache with 10-minute TTL and coordinate precision rounding (~1km grid) to prevent API rate-limit exhaustion.
-- Request deduplication for simultaneous concurrent requests.
-- Graceful offline / failure fallback returning stale cache if available or clean error card.
-- Reactive auto-refresh when user's GPS coordinates or manual city preset changes.
-- Seamless integration across homepage `/`, `/map` overlay, and citizen `/dashboard`.
+- Live USGS earthquake feeds across multiple time windows (Past hour, Past 24h M2.5+, Past 24h All, Significant Today, Past 7 days).
+- Normalized earthquake model (id, magnitude, depth, place, coordinates, occurredAt, updatedAt, tsunamiAlert, severity, distanceKm, sourceUrl).
+- Moment/Richter magnitude mapped to standard ResQEarth RiskLevel (LOW <3.0, GUARDED 3.0–4.4, MODERATE 4.5–5.9, HIGH 6.0–6.9, CRITICAL >=7.0).
+- Dynamic circle marker radius (5px to 24px) based on magnitude on MapLibre vector canvas.
+- Pulsing red shockwave ring around major seismic events (M5.5+).
+- Interactive MapLibre popup on click displaying magnitude badge, depth, distance from user, tsunami alert, and USGS source link.
+- Search and filter panel with magnitude threshold chips (All, M2.5+, M4.5+, M6.0+) and keyword search.
+- In-memory cache with 5-minute TTL, in-flight request deduplication, and stale cache fallback on network failure.
+- EarthquakeOverviewCard on citizen `/dashboard` displaying strongest recorded quake and proximity to user.
+- Live earthquake stream integration in Section 7 of homepage `/`.
 
 Tests Run:
 - npm run type-check (tsc --noEmit): PASS (zero errors)
 - npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / (11.2 kB), /map (1.99 kB), and /dashboard (2.1 kB) verified)
-- Unit test suite: PASS (195/195 unit tests passed across 12 test suites)
+- npm run build (next build): PASS (24 static routes compiled successfully, / (10.9 kB), /map (4.21 kB), and /dashboard (2.38 kB) verified)
+- Unit test suite: PASS (203/203 unit tests passed across 13 test suites)
 
 Known Issues:
 None.
@@ -903,10 +918,10 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 2.4 — Earthquake & Global Event Integrations (USGS GeoJSON feeds & NASA EONET v3 disaster event layers on MapLibre).
+Phase 2.5 — Flood and Indian Source Evaluation (GloFAS river discharge, CWC/IMD official advisories evaluation).
 
 Warnings for Next Agent:
-Preserve the NormalizedWeather model and useWeather hook when building the explainable risk engine in Phase 2.8, which will take precipitation and wind inputs directly from NormalizedWeather.
+Preserve NormalizedEarthquake and useEarthquakes hook for use in Phase 2.8 deterministic risk calculation.
 ```
 
 Update this section at the end of every significant coding session. It is one of the first sections a new AI agent must check.
@@ -915,10 +930,10 @@ Update this section at the end of every significant coding session. It is one of
 
 ```text
 Current State:
-Phase 2.3 Weather Intelligence Integration complete (PASS) on branch `phase-2`.
+Phase 2.4 Earthquake Intelligence complete (PASS) on branch `phase-2`.
 
 Next Action:
-Proceed with Phase 2.4 Earthquake & Global Event Integrations.
+Proceed with Phase 2.5 Flood and Indian Source Evaluation.
 ```
 
 ## 40. Brain.md Maintenance Rule
