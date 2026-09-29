@@ -24,7 +24,6 @@ import {
   LayoutDashboard,
   UserPlus,
   RefreshCw,
-  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,21 +48,14 @@ import {
   type RiskAssessmentData,
 } from "@/components/common/risk-indicator";
 import {
-  MapOverlayControls,
-  MapFilterChips,
-  MapLegend,
-  MapAttribution,
-  type FilterChipOption,
-} from "@/components/common/map-overlay";
-import {
   NotificationBanner,
   type WarningBannerData,
 } from "@/components/common/notification-banner";
+import { MapView } from "@/features/map";
 import { useAuth } from "@/features/auth";
 
 export default function HomePage() {
   const { isAuthenticated, role } = useAuth();
-  const [selectedMapFilter, setSelectedMapFilter] = React.useState("all");
   const [isRefreshingWeather, setIsRefreshingWeather] = React.useState(false);
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
@@ -169,14 +161,6 @@ export default function HomePage() {
     region: "Mumbai & Coastal Maharashtra",
     guideSlug: "flood",
   };
-
-  const mapFilterOptions: FilterChipOption[] = [
-    { id: "all", label: "All Events", count: 6 },
-    { id: "flood", label: "Floods", icon: Waves, count: 2 },
-    { id: "cyclone", label: "Cyclones", icon: Wind, count: 1 },
-    { id: "earthquake", label: "Earthquakes", icon: Activity, count: 2 },
-    { id: "wildfire", label: "Wildfires", icon: Flame, count: 1 },
-  ];
 
   const handleWeatherRefresh = () => {
     setIsRefreshingWeather(true);
@@ -499,7 +483,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 6. Live-Map Preview Shell (MapLibre Ready Container) */}
+        {/* 6. Live-Map Geospatial Hazard Surveillance Map */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -507,7 +491,7 @@ export default function HomePage() {
                 Geospatial Hazard Surveillance Map
               </h2>
               <p className="text-xs text-muted-foreground">
-                MapLibre GL JS container with interactive category filtering, proximity clustering, and OpenStreetMap baseline.
+                Interactive MapLibre GL JS engine with OpenStreetMap basemap, category filtering, and Mumbai anchor.
               </p>
             </div>
 
@@ -520,57 +504,17 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Interactive Map Shell Preview Box */}
-          <div className="relative h-[380px] sm:h-[440px] w-full overflow-hidden rounded-xl border border-border/80 bg-slate-950 text-slate-100 shadow-md">
-            {/* Simulated GIS Grid / Background Texture */}
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]" />
-
-            {/* Map Category Filter Chips Overlay */}
-            <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-80px)]">
-              <MapFilterChips
-                options={mapFilterOptions}
-                selectedId={selectedMapFilter}
-                onSelect={(id) => setSelectedMapFilter(id)}
-              />
-            </div>
-
-            {/* Map Overlay Zoom & Navigation Controls */}
-            <MapOverlayControls
-              onZoomIn={() => {}}
-              onZoomOut={() => {}}
-              onLocateMe={() => {}}
-            />
-
-            {/* Centered Map Simulation Notice & Pin Mockup */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <div className="relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-lg border border-primary/40 backdrop-blur">
-                <Compass className="h-8 w-8 text-sky-400 animate-spin-slow" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-slate-950">
-                  6
-                </span>
-              </div>
-
-              <h3 className="text-lg font-bold text-slate-100 max-w-md">
-                Interactive MapLibre GL JS Container Ready
-              </h3>
-
-              <p className="mt-1 text-xs text-slate-400 max-w-sm leading-relaxed">
-                Vector tile rendering, dynamic bounding boxes, and real-time hazard marker feeds will be connected in <strong>Phase 2.1</strong>.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                <Button variant="secondary" size="sm" asChild className="text-xs">
-                  <Link href="/map">View Active Map</Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Map Legend Overlay */}
-            <MapLegend />
-
-            {/* Map Attribution */}
-            <MapAttribution />
-          </div>
+          {/* Interactive MapLibre Container */}
+          <MapView
+            className="h-[380px] sm:h-[440px] w-full"
+            showFilterChips={true}
+            showRegionPicker={true}
+            showLegend={true}
+            showNavigationControls={true}
+            showFullscreenControl={true}
+            showScaleControl={true}
+            showGeolocateControl={true}
+          />
         </section>
 
         {/* 7. Active Regional Hazard Events Stream */}
