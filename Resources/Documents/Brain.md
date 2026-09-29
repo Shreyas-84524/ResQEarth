@@ -4,7 +4,7 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phase 3.1 Unified Alert Model & Lifecycle complete (PASS); canonical Firebase-backed alert schema, Firestore converters, lifecycle state machine (`draft` -> `active` -> `expired` / `cancelled` / `superseded`), deterministic deduplication-key generator, delivery-attempt tracking foundation, append-only audit-log recorder, hardened Firestore security rules with statutory provenance immutability, composite Firestore indexes (`firestore.indexes.json`), and comprehensive 101-assertion unit test suite across schemas, lifecycles, deduplication, service operations, and citizen/admin authorization boundaries (348 total passing tests across 21 suites). Next step: Phase 3.2 Automated Risk-Triggered Warning Flow.  
+**Current factual state:** Phase 3 Disaster Warning, Admin Control Center, Notification & SMS System COMPLETE (PASS across all 8 sub-phases: 3.1 Unified Alert Model & Lifecycle, 3.2 Regional Recipient Matching, 3.3 Automatic Alert Engine, 3.4 Firebase Cloud Messaging, 3.5 Admin Control Center, 3.6 Manual Regional Warning Workflow, 3.7 SMS Gateway Integration, and 3.8 Two-Message Emergency Workflow). Built canonical Firebase-backed alert architecture, geospatial recipient targeting, automatic risk-triggered warning engine with strict RESQEARTH CALCULATED RISK provenance separation, Web Push (FCM) service with background service worker, full Admin Control Center dashboard at `/admin`, manual warning dispatch workflow with live targeting preview, secure SMS gateway client, and sequential two-message emergency workflow. Validated with 456 passing unit tests across 26 test suites, 0 TypeScript errors, 0 ESLint warnings, and clean Next.js production build on branch `phase-3`. Next step: Phase 4 (Historical Disasters, Preparedness Guides & Recovery).  
 **Last context update:** 2026-09-30  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
@@ -900,10 +900,14 @@ Global Disasters: PASS (NASA EONET live feed, category taxonomy, centroid calcul
 Unified Multi-Hazard Intelligence: PASS (USGS, EONET, NDMA SACHET, IMD, Open-Meteo integrated into canonical layer with deduplication and provenance badges)
 Heatmap & GIS Polish: PASS (Severity-weighted WebGL heatmap, display mode switcher, fit-to-bounds, and interactive legend)
 Risk Engine: PASS (Deterministic v1.0 engine with itemized factor contributions, per-hazard breakdown, missing feed disclosures, RiskOverviewCard, PerHazardRiskGrid, and RiskBadge on /, /dashboard, and /map)
-Alerts & Lifecycle: PASS (Canonical typed model, lifecycle state machine, deterministic deduplication key, delivery attempt tracking foundation, audit logging, and security rules on branch `phase-3`)
-Admin: PROTECTED / SHELL READY (Detailed dashboard & tools scheduled for Phase 3.3)
-FCM: NOT TESTED (Scheduled for Phase 3.6)
-SMS: NOT TESTED (Scheduled for Phase 3.7)
+Alerts & Lifecycle (Phase 3.1): PASS (Canonical typed model, lifecycle state machine, deterministic deduplication key, delivery attempt tracking foundation, audit logging, and security rules on branch `phase-3`)
+Regional Recipient Matching (Phase 3.2): PASS (Haversine/geospatial matching for all, radius, city, state, region, with privacy-preserving preview counts and consent guards)
+Automatic Alert Engine (Phase 3.3): PASS (Connected risk engine & disaster feeds, statutory NDMA/IMD official alert preservation, strict RESQEARTH CALCULATED RISK provenance separation, cooldown suppression, expiration derivation)
+Firebase Cloud Messaging (Phase 3.4): PASS (Background service worker `firebase-messaging-sw.js`, token registration in Firestore, foreground listeners, permission guards, token cleanup)
+Admin Control Center (Phase 3.5): PASS (Protected `/admin` dashboard with stats overview, alert catalog table, service health monitors, and action handlers)
+Manual Regional Warning (Phase 3.6): PASS (Interactive warning creation dialog, live targeting preview with affected citizen counts, multi-channel dispatch, and audit logging)
+SMS Gateway Integration (Phase 3.7): PASS (SMS Gateway Free integration, E.164 phone sanitization, consent validation, exponential backoff retries, and masked phone logging in `smsDeliveryLogs`)
+Two-Message Emergency Workflow (Phase 3.8): PASS (Sequential Part 1 hazard warning with deep link + Part 2 verified SOS helplines 112/100/101/108/1070 with idempotency)
 Deployment: NOT TESTED (Scheduled for Phase 5.7)
 ```
 
@@ -913,49 +917,33 @@ Never convert `NOT RUN` or `NOT TESTED` to `PASS` without actual evidence. Futur
 
 ```text
 Last Work Performed:
-Implemented Phase 3.1 Unified Alert Model & Lifecycle in `Front-end/` on branch `phase-3`. Built the canonical Firebase-backed alert architecture supporting official, automatic, and manual-admin alert sources across a 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`). Created typed models, Zod validation schemas (`createAlertSchema`, `updateAlertSchema`, `supersedeAlertSchema`, `cancelAlertSchema`, `recordDeliveryAttemptSchema`, `createAuditLogSchema`), deterministic deduplication key generator (`generateAlertDeduplicationKey`), alert lifecycle helpers (`validateStatusTransition`, `computeEffectiveStatus`, `deriveDefaultExpiration`), alert service repository (`createAlert`, `getAlertById`, `getAlerts`, `updateAlert`, `activateAlert`, `expireAlert`, `cancelAlert`, `supersedeAlert`, `recordDeliveryAttempt`), and reactive React hook (`useAlerts`, `useAlertDetails`). Updated Firestore security rules with statutory provenance immutability and citizen draft isolation, and configured composite indexes in `firestore.indexes.json`. Validated with 101 new unit tests (348 total passing across 21 test suites), 0 TypeScript errors, 0 ESLint warnings, and clean Next.js production build.
+Completed the entire ResQEarth Phase 3 (Disaster Warning, Admin Control Center, Notification, and SMS System) across all 8 sub-phases (3.1 through 3.8) on branch `phase-3`. Executed all requirements with strict adherence to statutory provenance immutability and RESQEARTH CALCULATED RISK labeling.
 
-Files/Components Created & Updated:
-- Front-end/src/types/firebase.ts (Enriched AlertDoc with isOfficialAlert, updatedAt, deduplicationKey, relatedDisasterEventId, riskScoreSnapshot, supersededById, supersedesAlertId, cancellationReason, metadata; added DeliveryAttemptDoc)
-- Front-end/src/features/alerts/types/alert.ts (UnifiedAlert, CreateAlertInput, UpdateAlertInput, SupersedeAlertInput, AlertFilterOptions, AlertStatus, TargetMode)
-- Front-end/src/features/alerts/types/delivery-attempt.ts (DeliveryAttempt, RecordDeliveryAttemptInput, DeliveryChannel, DeliveryStatus)
-- Front-end/src/features/alerts/types/audit-log.ts (AlertAuditLogEntry, CreateAlertAuditLogInput, AlertAuditAction, AuditOutcome)
-- Front-end/src/features/alerts/types/index.ts (Type exports)
-- Front-end/src/features/alerts/constants/alert-config.ts (ALERT_SOURCE_TYPES, ALERT_STATUSES, ALERT_SEVERITIES, TARGET_MODES, DELIVERY_CHANNELS, STATUTORY_OFFICIAL_SOURCES, DEFAULT_ALERT_EXPIRY_HOURS, ALERT_CONFIG, ALLOWED_STATUS_TRANSITIONS)
-- Front-end/src/features/alerts/constants/index.ts (Constant exports)
-- Front-end/src/features/alerts/schemas/alert-schema.ts (Zod schemas with statutory provenance invariants and strict update restrictions)
-- Front-end/src/features/alerts/schemas/index.ts (Schema exports)
-- Front-end/src/features/alerts/services/deduplication-service.ts (Deterministic 0.05-degree spatial grid + 6-hour temporal bucket deduplication key generator)
-- Front-end/src/features/alerts/services/alert-lifecycle.ts (State machine transition validator, time-based expiration computation, default expiration derivation)
-- Front-end/src/features/alerts/services/alert-service.ts (Alert repository operations, in-memory test store fallback, Firestore synchronization, delivery attempt recorder, audit logger)
-- Front-end/src/features/alerts/services/index.ts (Service exports)
-- Front-end/src/features/alerts/hooks/use-alerts.ts (useAlerts and useAlertDetails React hooks)
-- Front-end/src/features/alerts/hooks/index.ts (Hook exports)
-- Front-end/src/features/alerts/index.ts (Public alerts feature module barrel)
-- Front-end/firestore.rules (Updated with isValidAlert statutory invariants, draft alert isolation, and immutable update checks)
-- Front-end/firestore.indexes.json (Composite indexes for alerts queries)
-- Front-end/firebase.json (Mapped rules and indexes)
-- Front-end/src/features/alerts/__tests__/alert-schema.test.ts (15 unit test assertions)
-- Front-end/src/features/alerts/__tests__/alert-lifecycle.test.ts (25 unit test assertions)
-- Front-end/src/features/alerts/__tests__/alert-deduplication.test.ts (11 unit test assertions)
-- Front-end/src/features/alerts/__tests__/alert-service.test.ts (30 unit test assertions)
-- Front-end/src/features/alerts/__tests__/alert-authorization.test.ts (20 unit test assertions)
-- Resources/Documents/Brain.md (Updated factual state, marked Phase 3.1 = PASS, recorded Decision D-022, updated validation memory, and prepared Phase 3.2 handoff)
+8 Conventional Commits Created:
+1. `b0f6eef` - feat: add unified alert model and lifecycle (Phase 3.1)
+2. `5072219` - feat: add regional alert recipient matching (Phase 3.2)
+3. `8eb6cb7` - feat: add automatic disaster alert engine (Phase 3.3)
+4. `9b9e9a9` - feat: add Firebase disaster push notifications (Phase 3.4)
+5. `5ebf3f9` - feat: build disaster admin control center (Phase 3.5)
+6. `ade2daf` - feat: add manual regional disaster warnings (Phase 3.6)
+7. `239e963` - feat: integrate disaster SMS gateway (Phase 3.7)
+8. `978fc1f` - feat: add emergency two-message SMS workflow (Phase 3.8)
 
-Features Completed:
-- Typed unified alert data model supporting `official`, `automatic`, and `manual-admin` source types.
-- 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`) with strict transition enforcement.
-- Deterministic deduplication key generator combining source type, source, hazard type, quantized coordinates (~5km grid), and quantized 6-hour time window.
-- In-memory store and Firestore repository with CRUD, lifecycle actions, delivery attempt logging, and audit trail emission.
-- Role-based authorization isolating draft alerts and all mutation actions from citizens and unauthenticated guests.
-- Statutory official provenance immutability preventing tampering with official alerts or fake official labeling.
-- Delivery-attempt tracking foundation and audit-log foundation ready for notification dispatch phases.
+Summary of Features Delivered:
+- Canonical Firebase alert architecture with 5-stage lifecycle state machine (`draft`, `active`, `expired`, `cancelled`, `superseded`).
+- Geospatial recipient targeting engine supporting `all`, `radius`, `city`, `state`, and `region` with Haversine distance calculations and privacy-preserving preview counts.
+- Automated disaster warning engine triggering on severe statutory alerts, major earthquakes, and deterministic risk score thresholds with cooldown suppression and strict `RESQEARTH CALCULATED RISK` provenance labeling.
+- Web Push notification system with FCM service worker (`Front-end/public/firebase-messaging-sw.js`), foreground message listeners, permission guards, and token management in Firestore `users/{uid}/notificationTokens`.
+- Protected Admin Control Center (`/admin`) featuring metric cards, active alert catalog with inline lifecycle actions, live disaster surveillance feeds, and real-time service health monitors.
+- Manual emergency warning workflow with live map boundary previews, citizen reach estimators, multi-channel dispatch (In-Site, FCM, SMS), and safety confirmation dialog.
+- SMS Gateway integration with E.164 phone normalization, consent verification, exponential backoff retries, and privacy-safe masked phone logging in `smsDeliveryLogs`.
+- Sequential Two-Message emergency workflow delivering Part 1 (hazard details + action precautions + slug link) and Part 2 (verified 112/100/101/108/1070 emergency helplines) with full idempotency.
 
-Tests Run:
-- npm run type-check (tsc --noEmit): PASS (zero errors)
-- npm run lint (next lint): PASS (zero warnings, zero errors)
-- npm run build (next build): PASS (24 static routes compiled successfully, / (9.4 kB), /map (4.65 kB), and /dashboard (2.73 kB) verified)
-- Unit test suite: PASS (348/348 unit tests passed across 21 test suites, including 101 new alert assertions)
+Validation Suite Results:
+- TypeScript (`npm run type-check`): PASS (zero errors)
+- ESLint (`npm run lint`): PASS (zero errors, zero warnings)
+- Next.js Build (`npm run build`): PASS (all 24 routes successfully compiled with static optimization)
+- Unit Tests: PASS (456/456 tests passed across all 26 test suites in `Front-end/src`)
 
 Known Issues:
 None.
@@ -964,20 +952,17 @@ Current Blockers:
 None.
 
 Next Recommended Task:
-Phase 3.2 — Automated Risk-Triggered Warning Flow (Connect deterministic risk engine and severe multi-hazard events to automatic alert candidate evaluation, deduplication suppression, and draft/active alert generation).
-
-Warnings for Next Agent:
-Preserve deterministic scoring weights, strict `RESQEARTH CALCULATED RISK` labeling, and statutory official provenance immutability when triggering automated alerts in Phase 3.2.
+Phase 4 — Historical Indian Disasters, Government Response Directory, Community Preparedness Guides, and Disaster Recovery.
 ```
 
 ## 39. Immediate Next Action
 
 ```text
 Current State:
-Phase 3.1 Unified Alert Model & Lifecycle is 100% complete (PASS) on branch `phase-3`.
+Complete Phase 3 (3.1 to 3.8) is 100% complete (PASS) on branch `phase-3`.
 
 Next Action:
-Proceed with Phase 3.2 Automated Risk-Triggered Warning Flow.
+Proceed with safe integration into main or Phase 4 implementation.
 ```
 
 ## 40. Brain.md Maintenance Rule
