@@ -24,7 +24,6 @@ import {
   LayoutDashboard,
   UserPlus,
   RefreshCw,
-  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,157 +36,169 @@ import {
 } from "@/components/ui/card";
 import { RouteContainer } from "@/components/layout/route-container";
 import {
-  WeatherCard,
-  type WeatherData,
-} from "@/components/common/weather-card";
+  WeatherOverviewCard,
+  useWeather,
+} from "@/features/weather";
+import {
+  MapUnifiedDisasterLayer,
+  useUnifiedDisasters,
+} from "@/features/disasters";
 import {
   DisasterCard,
   type DisasterCardData,
 } from "@/components/common/disaster-card";
 import {
-  RiskIndicator,
-  type RiskAssessmentData,
-} from "@/components/common/risk-indicator";
-import {
-  MapOverlayControls,
-  MapFilterChips,
-  MapLegend,
-  MapAttribution,
-  type FilterChipOption,
-} from "@/components/common/map-overlay";
+  RiskOverviewCard,
+  PerHazardRiskGrid,
+  useDisasterRisk,
+} from "@/features/risk";
 import {
   NotificationBanner,
   type WarningBannerData,
 } from "@/components/common/notification-banner";
+import {
+  MapView,
+  LocationProvider,
+  LocationStatusCard,
+  useGeolocation,
+} from "@/features/map";
 import { useAuth } from "@/features/auth";
 
-export default function HomePage() {
+// Sample disaster preview events for monitored hazards
+const SAMPLE_DISASTER_EVENTS: DisasterCardData[] = [
+  {
+    id: "evt-001",
+    type: "Cyclone",
+    title: "Deep Depression over East-Central Arabian Sea",
+    description:
+      "Severe weather system tracking north-northwestward with sustained surface winds of 55–65 km/h. Coastal fisherman advisories active.",
+    severity: "HIGH",
+    sourceType: "official",
+    sourceName: "India Meteorological Department (IMD)",
+    sourceUrl: "https://mausam.imd.gov.in",
+    locationName: "Coastal Konkan, Maharashtra",
+    latitude: 18.9,
+    longitude: 72.8,
+    distanceKm: 42,
+    occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    slug: "cyclone",
+  },
+  {
+    id: "evt-002",
+    type: "Flood",
+    title: "River Basin Discharge Warning",
+    description:
+      "Elevated river flow and localized surface water pooling observed in low-lying suburban drainage basins following intense overnight downpours.",
+    severity: "MODERATE",
+    sourceType: "automatic",
+    sourceName: "ResQEarth Hydrological Risk Model",
+    locationName: "Thane & Raigad Basins",
+    latitude: 19.2,
+    longitude: 73.0,
+    distanceKm: 18,
+    occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    slug: "flood",
+  },
+  {
+    id: "evt-003",
+    type: "Earthquake",
+    title: "M 4.1 Minor Seismic Event",
+    description:
+      "Focal depth of 10 km recorded in Koyna-Warna tectonic zone. No structural damage reported; monitored by regional seismic stations.",
+    severity: "GUARDED",
+    sourceType: "official",
+    sourceName: "National Centre for Seismology / USGS",
+    sourceUrl: "https://earthquake.usgs.gov",
+    locationName: "Satara District, Maharashtra",
+    latitude: 17.4,
+    longitude: 73.7,
+    distanceKm: 145,
+    occurredAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+    slug: "earthquake",
+  },
+];
+
+// Sample urgent notification banner
+const SAMPLE_WARNING_BANNER: WarningBannerData = {
+  id: "alert-top-01",
+  title: "Monsoon Inundation & Coastal Weather Warning",
+  message:
+    "Heavy to very heavy rainfall expected across coastal belts during high tide. Avoid waterlogged subways and heed local municipal advisories.",
+  precautions: "Stay indoors during squally winds; keep emergency kit accessible.",
+  disasterType: "Flood",
+  severity: "HIGH",
+  sourceType: "official",
+  sourceName: "IMD Mumbai & Disaster Management Cell",
+  region: "Mumbai & Coastal Maharashtra",
+  guideSlug: "flood",
+};
+
+function HomePageContent() {
   const { isAuthenticated, role } = useAuth();
-  const [selectedMapFilter, setSelectedMapFilter] = React.useState("all");
-  const [isRefreshingWeather, setIsRefreshingWeather] = React.useState(false);
+  const { location } = useGeolocation();
+  const {
+    weather,
+    isLoading: isRefreshingWeather,
+    error: weatherError,
+    refresh: handleWeatherRefresh,
+  } = useWeather();
+  const {
+    disasters: unifiedDisasters,
+    geoJson: unifiedGeoJson,
+    selectedDisaster,
+    setSelectedDisaster,
+  } = useUnifiedDisasters();
+  const {
+    assessment: riskAssessment,
+    isLoading: isRiskLoading,
+    refresh: handleRiskRefresh,
+  } = useDisasterRisk();
   const [activeNotificationDismissed, setActiveNotificationDismissed] =
     React.useState(false);
 
-  // Sample real-world ambient weather state ready for Phase 2 API connection
-  const sampleWeatherData: WeatherData = {
-    temperature: 29.4,
-    apparentTemperature: 33.2,
-    humidity: 78,
-    windSpeed: 18,
-    windGusts: 26,
-    precipitation: 4.2,
-    precipitationProbability: 65,
-    weatherCode: 61, // Rain
-    locationName: "Mumbai Region (19.0760° N, 72.8777° E)",
-    source: "Open-Meteo Weather API (Phase 2 Pipeline)",
-    updatedAt: new Date().toISOString(),
-    isStale: false,
-  };
-
-  // Sample explainable calculated risk data matching architecture specification
-  const sampleRiskData: RiskAssessmentData = {
-    score: 68,
-    level: "HIGH",
-    disasterType: "Urban Flood & Inundation",
-    regionName: "Mithi River Catchment & Western Suburbs",
-    calculatedAt: new Date().toISOString(),
-    modelVersion: "v1.0.0-deterministic",
-    contributions: [
-      { name: "Heavy Rainfall (4.2 mm/hr)", points: 28, description: "Observed local precipitation rate" },
-      { name: "River Discharge Forecast (GloFAS)", points: 22, description: "Upstream basin saturation" },
-      { name: "Official Weather Advisory (IMD)", points: 14, description: "Yellow alert issued for coastal belt" },
-      { name: "Recent Proximity Incidents", points: 4, description: "Waterlogging reported within 15 km" },
-    ],
-    missingInputs: ["Tidal High-Water Gauge Telemetry"],
-  };
-
-  // Sample disaster preview events for monitored hazards
-  const sampleDisasterEvents: DisasterCardData[] = [
-    {
-      id: "evt-001",
-      type: "Cyclone",
-      title: "Deep Depression over East-Central Arabian Sea",
+  // Live unified multi-hazard cards across USGS, NASA EONET, NDMA SACHET, IMD & Open-Meteo
+  const liveUnifiedCards: DisasterCardData[] = React.useMemo(() => {
+    return unifiedDisasters.slice(0, 3).map((d) => ({
+      id: d.id,
+      type: d.categoryTitle,
+      title: d.title,
       description:
-        "Severe weather system tracking north-northwestward with sustained surface winds of 55–65 km/h. Coastal fisherman advisories active.",
-      severity: "HIGH",
-      sourceType: "official",
-      sourceName: "India Meteorological Department (IMD)",
-      sourceUrl: "https://mausam.imd.gov.in",
-      locationName: "Coastal Konkan, Maharashtra",
-      latitude: 18.9,
-      longitude: 72.8,
-      distanceKm: 42,
-      occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      slug: "cyclone",
-    },
-    {
-      id: "evt-002",
-      type: "Flood",
-      title: "River Basin Discharge Warning",
-      description:
-        "Elevated river flow and localized surface water pooling observed in low-lying suburban drainage basins following intense overnight downpours.",
-      severity: "MODERATE",
-      sourceType: "automatic",
-      sourceName: "ResQEarth Hydrological Risk Model",
-      locationName: "Thane & Raigad Basins",
-      latitude: 19.2,
-      longitude: 73.0,
-      distanceKm: 18,
-      occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-      slug: "flood",
-    },
-    {
-      id: "evt-003",
-      type: "Earthquake",
-      title: "M 4.1 Minor Seismic Event",
-      description:
-        "Focal depth of 10 km recorded in Koyna-Warna tectonic zone. No structural damage reported; monitored by regional seismic stations.",
-      severity: "GUARDED",
-      sourceType: "official",
-      sourceName: "National Centre for Seismology / USGS",
-      sourceUrl: "https://earthquake.usgs.gov",
-      locationName: "Satara District, Maharashtra",
-      latitude: 17.4,
-      longitude: 73.7,
-      distanceKm: 145,
-      occurredAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-      slug: "earthquake",
-    },
-  ];
+        d.description ||
+        `${d.categoryTitle} monitored by ${d.sourceName}.${d.isOfficialAlert ? " Official statutory warning." : ""}`,
+      severity: d.severity,
+      sourceType: d.sourceType,
+      sourceName: d.sourceName,
+      sourceUrl: d.sourceUrl,
+      locationName: d.region,
+      latitude: d.latitude,
+      longitude: d.longitude,
+      distanceKm: d.distanceKm,
+      occurredAt: d.occurredAt,
+      slug:
+        d.disasterType === "flood" || d.disasterType === "urban-flood"
+          ? "flood"
+          : d.disasterType === "cyclone" || d.disasterType === "severe-storm" || d.disasterType === "high-wind"
+          ? "cyclone"
+          : d.disasterType === "earthquake"
+          ? "earthquake"
+          : d.disasterType === "landslide"
+          ? "landslide"
+          : d.disasterType === "heat-wave" || d.disasterType === "cold-wave"
+          ? "heat-wave"
+          : d.disasterType === "chemical-leak"
+          ? "chemical-leak"
+          : "earthquake",
+    }));
+  }, [unifiedDisasters]);
 
-  // Sample urgent notification banner
-  const sampleWarningBanner: WarningBannerData = {
-    id: "alert-top-01",
-    title: "Monsoon Inundation & Coastal Weather Warning",
-    message:
-      "Heavy to very heavy rainfall expected across coastal belts during high tide. Avoid waterlogged subways and heed local municipal advisories.",
-    precautions: "Stay indoors during squally winds; keep emergency kit accessible.",
-    disasterType: "Flood",
-    severity: "HIGH",
-    sourceType: "official",
-    sourceName: "IMD Mumbai & Disaster Management Cell",
-    region: "Mumbai & Coastal Maharashtra",
-    guideSlug: "flood",
-  };
-
-  const mapFilterOptions: FilterChipOption[] = [
-    { id: "all", label: "All Events", count: 6 },
-    { id: "flood", label: "Floods", icon: Waves, count: 2 },
-    { id: "cyclone", label: "Cyclones", icon: Wind, count: 1 },
-    { id: "earthquake", label: "Earthquakes", icon: Activity, count: 2 },
-    { id: "wildfire", label: "Wildfires", icon: Flame, count: 1 },
-  ];
-
-  const handleWeatherRefresh = () => {
-    setIsRefreshingWeather(true);
-    setTimeout(() => {
-      setIsRefreshingWeather(false);
-    }, 600);
-  };
+  const displayDisasterEvents = React.useMemo(() => {
+    if (liveUnifiedCards.length === 0) return SAMPLE_DISASTER_EVENTS;
+    return liveUnifiedCards;
+  }, [liveUnifiedCards]);
 
   return (
     <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
-      {/* 1. Emergency Helpline & Provenance Bar */}
+        {/* 1. Emergency Helpline & Provenance Bar */}
       <div className="border-b border-border/80 bg-muted/40 py-2.5 px-4 text-xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -223,7 +234,7 @@ export default function HomePage() {
         {/* 2. Urgent Notification Banner (Dismissible) */}
         {!activeNotificationDismissed && (
           <NotificationBanner
-            data={sampleWarningBanner}
+            data={SAMPLE_WARNING_BANNER}
             onDismiss={() => setActiveNotificationDismissed(true)}
           />
         )}
@@ -284,7 +295,7 @@ export default function HomePage() {
                   Surveillance Nodes
                 </span>
                 <p className="font-mono font-bold text-foreground mt-0.5">
-                  USGS • Open-Meteo • IMD
+                  USGS • NASA EONET • Open-Meteo
                 </p>
               </div>
 
@@ -431,6 +442,9 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* 4.5. Real-Time Location Telemetry Card */}
+        <LocationStatusCard />
+
         {/* 5. Live Surveillance & Local Risk Assessment Dashboard */}
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/80 pb-4">
@@ -441,14 +455,14 @@ export default function HomePage() {
                 </Badge>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5 text-primary" />
-                  Selected Region: <strong>Mumbai Metropolitan (MH)</strong>
+                  Selected Region: <strong>{location.city || "Mumbai"}, {location.state || "Maharashtra"}</strong>
                 </span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
                 Regional Environmental & Risk Overview
               </h2>
               <p className="text-xs text-muted-foreground">
-                Near-live telemetry and explainable deterministic calculations prepared for Phase 2 provider integration.
+                Near-live telemetry from Open-Meteo and explainable deterministic calculations.
               </p>
             </div>
 
@@ -471,7 +485,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* Real WeatherCard Component */}
+            {/* Live Open-Meteo WeatherOverviewCard Component */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">
@@ -479,14 +493,15 @@ export default function HomePage() {
                 </span>
                 <span className="font-mono text-[11px]">Source: Open-Meteo</span>
               </div>
-              <WeatherCard
-                data={sampleWeatherData}
+              <WeatherOverviewCard
+                data={weather}
                 isLoading={isRefreshingWeather}
+                error={weatherError}
                 onRefresh={handleWeatherRefresh}
               />
             </div>
 
-            {/* Real RiskIndicator Component */}
+            {/* Explainable Risk Overview Card */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">
@@ -494,12 +509,28 @@ export default function HomePage() {
                 </span>
                 <span className="font-mono text-[11px]">ResQEarth v1.0</span>
               </div>
-              <RiskIndicator data={sampleRiskData} showBreakdown={true} />
+              <RiskOverviewCard
+                assessment={riskAssessment}
+                isLoading={isRiskLoading}
+                onRefresh={handleRiskRefresh}
+                showBreakdown={true}
+              />
             </div>
+          </div>
+
+          {/* Per-Hazard Breakdown Grid */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span className="font-semibold uppercase tracking-wider text-[11px]">
+                Multi-Hazard Readiness Matrix
+              </span>
+              <span className="font-mono text-[11px]">5-Dimension Surveillance</span>
+            </div>
+            <PerHazardRiskGrid hazardBreakdown={riskAssessment.hazardBreakdown} />
           </div>
         </section>
 
-        {/* 6. Live-Map Preview Shell (MapLibre Ready Container) */}
+        {/* 6. Live-Map Geospatial Hazard Surveillance Map */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -507,7 +538,7 @@ export default function HomePage() {
                 Geospatial Hazard Surveillance Map
               </h2>
               <p className="text-xs text-muted-foreground">
-                MapLibre GL JS container with interactive category filtering, proximity clustering, and OpenStreetMap baseline.
+                Interactive MapLibre GL JS engine with OpenStreetMap basemap, category filtering, and Mumbai anchor.
               </p>
             </div>
 
@@ -520,57 +551,25 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Interactive Map Shell Preview Box */}
-          <div className="relative h-[380px] sm:h-[440px] w-full overflow-hidden rounded-xl border border-border/80 bg-slate-950 text-slate-100 shadow-md">
-            {/* Simulated GIS Grid / Background Texture */}
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]" />
-
-            {/* Map Category Filter Chips Overlay */}
-            <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-80px)]">
-              <MapFilterChips
-                options={mapFilterOptions}
-                selectedId={selectedMapFilter}
-                onSelect={(id) => setSelectedMapFilter(id)}
-              />
-            </div>
-
-            {/* Map Overlay Zoom & Navigation Controls */}
-            <MapOverlayControls
-              onZoomIn={() => {}}
-              onZoomOut={() => {}}
-              onLocateMe={() => {}}
+          {/* Interactive MapLibre Container */}
+          <MapView
+            className="h-[380px] sm:h-[440px] w-full"
+            showFilterChips={true}
+            showRegionPicker={true}
+            showLegend={true}
+            showNavigationControls={true}
+            showFullscreenControl={true}
+            showScaleControl={true}
+            showGeolocateControl={true}
+          >
+            <MapUnifiedDisasterLayer
+              geoJson={unifiedGeoJson}
+              disasters={unifiedDisasters}
+              selectedDisaster={selectedDisaster}
+              onSelectDisaster={setSelectedDisaster}
+              visible={true}
             />
-
-            {/* Centered Map Simulation Notice & Pin Mockup */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <div className="relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-lg border border-primary/40 backdrop-blur">
-                <Compass className="h-8 w-8 text-sky-400 animate-spin-slow" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-slate-950">
-                  6
-                </span>
-              </div>
-
-              <h3 className="text-lg font-bold text-slate-100 max-w-md">
-                Interactive MapLibre GL JS Container Ready
-              </h3>
-
-              <p className="mt-1 text-xs text-slate-400 max-w-sm leading-relaxed">
-                Vector tile rendering, dynamic bounding boxes, and real-time hazard marker feeds will be connected in <strong>Phase 2.1</strong>.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                <Button variant="secondary" size="sm" asChild className="text-xs">
-                  <Link href="/map">View Active Map</Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Map Legend Overlay */}
-            <MapLegend />
-
-            {/* Map Attribution */}
-            <MapAttribution />
-          </div>
+          </MapView>
         </section>
 
         {/* 7. Active Regional Hazard Events Stream */}
@@ -582,7 +581,7 @@ export default function HomePage() {
                   Monitored Hazards
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  3 Verified Feeds in Vicinity
+                  {displayDisasterEvents.length} Active Feeds in Vicinity
                 </span>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
@@ -599,7 +598,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {sampleDisasterEvents.map((event) => (
+            {displayDisasterEvents.map((event) => (
               <DisasterCard
                 key={event.id}
                 data={event}
@@ -860,5 +859,13 @@ export default function HomePage() {
         </section>
       </RouteContainer>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <LocationProvider>
+      <HomePageContent />
+    </LocationProvider>
   );
 }
