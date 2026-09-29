@@ -7,14 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapView, LocationProvider } from "@/features/map";
 import {
-  MapEarthquakeLayer,
-  EarthquakeListPanel,
-  useEarthquakes,
-  type NormalizedEarthquake,
-  MapGlobalDisasterLayer,
-  GlobalDisasterListPanel,
-  useGlobalDisasters,
-  type NormalizedGlobalDisaster,
+  MapUnifiedDisasterLayer,
+  UnifiedDisasterListPanel,
+  useUnifiedDisasters,
+  type UnifiedDisasterEvent,
 } from "@/features/disasters";
 import {
   Compass,
@@ -23,71 +19,51 @@ import {
   ShieldAlert,
   Smartphone,
   Sparkles,
-  Activity,
-  Globe2,
+  ShieldCheck,
+  Radio,
 } from "lucide-react";
 
 function MapPageContent() {
-  const [activeListTab, setActiveListTab] = React.useState<"earthquakes" | "global">("earthquakes");
-  const [activeLayerFilter, setActiveLayerFilter] = React.useState<"all" | "earthquakes" | "global">("all");
-
   const {
-    earthquakes,
-    geoJson: earthquakeGeoJson,
-    selectedEarthquake,
-    setSelectedEarthquake,
-    feedType,
-    setFeedType,
-    minMagnitude,
-    setMinMagnitude,
-    searchQuery: earthquakeSearch,
-    setSearchQuery: setEarthquakeSearch,
-    isLoading: isEarthquakesLoading,
-    error: earthquakesError,
-    isStale: isEarthquakesStale,
-    refresh: refreshEarthquakes,
-  } = useEarthquakes();
-
-  const {
-    disasters: globalDisasters,
-    geoJson: globalGeoJson,
-    selectedDisaster: selectedGlobalDisaster,
-    setSelectedDisaster: setSelectedGlobalDisaster,
+    disasters,
+    filteredDisasters,
+    geoJson,
+    selectedDisaster,
+    setSelectedDisaster,
     categoryFilter,
     setCategoryFilter,
-    statusFilter,
-    setStatusFilter,
-    searchQuery: globalSearch,
-    setSearchQuery: setGlobalSearch,
+    providerFilter,
+    setProviderFilter,
+    minSeverity,
+    setMinSeverity,
+    timeWindow,
+    setTimeWindow,
+    officialOnly,
+    setOfficialOnly,
+    searchQuery,
+    setSearchQuery,
     categoryCounts,
-    isLoading: isGlobalLoading,
-    error: globalError,
-    isStale: isGlobalStale,
-    refresh: refreshGlobalDisasters,
-  } = useGlobalDisasters();
+    officialCount,
+    criticalCount,
+    isLoading,
+    error,
+    isStale,
+    refresh,
+  } = useUnifiedDisasters();
 
-  const handleSelectEarthquake = (eq: NormalizedEarthquake | null) => {
-    setSelectedEarthquake(eq);
-    if (eq) {
-      setSelectedGlobalDisaster(null);
-      setActiveListTab("earthquakes");
-    }
-  };
-
-  const handleSelectGlobalDisaster = (d: NormalizedGlobalDisaster | null) => {
-    setSelectedGlobalDisaster(d);
-    if (d) {
-      setSelectedEarthquake(null);
-      setActiveListTab("global");
-    }
-  };
+  const handleSelectDisaster = React.useCallback(
+    (disaster: UnifiedDisasterEvent | null) => {
+      setSelectedDisaster(disaster);
+    },
+    [setSelectedDisaster]
+  );
 
   return (
     <RouteContainer size="lg" className="space-y-6 pb-12">
       {/* 1. Page Header */}
       <PageHeader
-        title="Interactive GIS Disaster Map"
-        description="High-performance MapLibre vector surveillance map with real-time USGS earthquake feeds, NASA EONET global events, and OpenStreetMap basemap."
+        title="Interactive GIS Multi-Hazard Disaster Map"
+        description="High-performance MapLibre vector GIS engine combining live USGS earthquakes, NASA EONET events, Open-Meteo severe weather, and Indian statutory NDMA SACHET / IMD alerts."
         badge={
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
@@ -95,91 +71,30 @@ function MapPageContent() {
               MapLibre GL JS 5.2
             </Badge>
             <Badge variant="secondary" className="font-mono text-[10px]">
-              <Activity className="h-3 w-3 mr-1 text-destructive" />
-              USGS Earthquakes ({earthquakes.length})
+              <Radio className="h-3 w-3 mr-1 text-primary animate-pulse" />
+              {disasters.length} Monitored Hazards
             </Badge>
-            <Badge variant="secondary" className="font-mono text-[10px]">
-              <Globe2 className="h-3 w-3 mr-1 text-blue-500" />
-              NASA EONET Events ({globalDisasters.length})
-            </Badge>
+            {officialCount > 0 && (
+              <Badge variant="destructive" className="font-mono text-[10px]">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                {officialCount} Official Indian Alerts
+              </Badge>
+            )}
+            {criticalCount > 0 && (
+              <Badge variant="destructive" className="font-mono text-[10px] bg-red-600">
+                {criticalCount} Critical
+              </Badge>
+            )}
           </div>
         }
       />
 
-      {/* Layer Visibility Mode Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg border border-border/60">
-          <span className="text-[11px] font-semibold text-muted-foreground px-2 flex items-center gap-1">
-            <Layers className="h-3 w-3 text-primary" /> Map Layers:
-          </span>
-          <button
-            type="button"
-            onClick={() => setActiveLayerFilter("all")}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeLayerFilter === "all"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All Hazards ({earthquakes.length + globalDisasters.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveLayerFilter("earthquakes")}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeLayerFilter === "earthquakes"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            USGS Quakes ({earthquakes.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveLayerFilter("global")}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeLayerFilter === "global"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            NASA Events ({globalDisasters.length})
-          </button>
-        </div>
-
-        {/* List Switcher Tab */}
-        <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-md border border-border/40 text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveListTab("earthquakes")}
-            className={`px-2.5 py-1 rounded text-xs transition-colors ${
-              activeListTab === "earthquakes"
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Earthquakes List
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveListTab("global")}
-            className={`px-2.5 py-1 rounded text-xs transition-colors ${
-              activeListTab === "global"
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            NASA EONET List
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Interactive Map & Live Seismic Feed Grid */}
+      {/* 2. Interactive Map & Live Unified Feed Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Interactive MapLibre GIS Container (2 Columns on Large Screens) */}
         <div className="relative lg:col-span-2">
           <MapView
-            className="h-[520px] sm:h-[580px] lg:h-[640px] w-full rounded-xl overflow-hidden border border-border/80 shadow-sm"
+            className="h-[540px] sm:h-[600px] lg:h-[660px] w-full rounded-xl overflow-hidden border border-border/80 shadow-sm"
             showFilterChips={true}
             showRegionPicker={true}
             showLocationBadge={true}
@@ -190,64 +105,42 @@ function MapPageContent() {
             showScaleControl={true}
             showGeolocateControl={true}
           >
-            {/* Live USGS Earthquake Marker & Pulse Layers */}
-            <MapEarthquakeLayer
-              geoJson={earthquakeGeoJson}
-              earthquakes={earthquakes}
-              selectedEarthquake={selectedEarthquake}
-              onSelectEarthquake={handleSelectEarthquake}
-              visible={activeLayerFilter === "all" || activeLayerFilter === "earthquakes"}
-            />
-
-            {/* Live NASA EONET Global Disaster Events Layer */}
-            <MapGlobalDisasterLayer
-              geoJson={globalGeoJson}
-              disasters={globalDisasters}
-              selectedDisaster={selectedGlobalDisaster}
-              onSelectDisaster={handleSelectGlobalDisaster}
-              visible={activeLayerFilter === "all" || activeLayerFilter === "global"}
+            {/* Live Unified Multi-Hazard Layer (USGS, EONET, NDMA, IMD, Open-Meteo) */}
+            <MapUnifiedDisasterLayer
+              geoJson={geoJson}
+              disasters={filteredDisasters}
+              selectedDisaster={selectedDisaster}
+              onSelectDisaster={handleSelectDisaster}
+              visible={true}
             />
           </MapView>
         </div>
 
         {/* Live Surveillance Panel (1 Column on Large Screens) */}
-        <div className="h-[520px] sm:h-[580px] lg:h-[640px] flex flex-col">
-          {activeListTab === "earthquakes" ? (
-            <EarthquakeListPanel
-              earthquakes={earthquakes}
-              isLoading={isEarthquakesLoading}
-              error={earthquakesError}
-              isStale={isEarthquakesStale}
-              feedType={feedType}
-              onFeedTypeChange={setFeedType}
-              minMagnitude={minMagnitude}
-              onMinMagnitudeChange={setMinMagnitude}
-              searchQuery={earthquakeSearch}
-              onSearchQueryChange={setEarthquakeSearch}
-              onSelectEarthquake={handleSelectEarthquake}
-              onRefresh={refreshEarthquakes}
-              selectedEarthquakeId={selectedEarthquake?.id}
-              className="h-full"
-            />
-          ) : (
-            <GlobalDisasterListPanel
-              disasters={globalDisasters}
-              isLoading={isGlobalLoading}
-              error={globalError}
-              isStale={isGlobalStale}
-              categoryFilter={categoryFilter}
-              onCategoryFilterChange={setCategoryFilter}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              searchQuery={globalSearch}
-              onSearchQueryChange={setGlobalSearch}
-              onSelectDisaster={handleSelectGlobalDisaster}
-              onRefresh={refreshGlobalDisasters}
-              selectedDisasterId={selectedGlobalDisaster?.id}
-              categoryCounts={categoryCounts}
-              className="h-full"
-            />
-          )}
+        <div className="h-[540px] sm:h-[600px] lg:h-[660px] flex flex-col">
+          <UnifiedDisasterListPanel
+            disasters={filteredDisasters}
+            isLoading={isLoading}
+            error={error}
+            isStale={isStale}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            providerFilter={providerFilter}
+            onProviderFilterChange={setProviderFilter}
+            minSeverity={minSeverity}
+            onMinSeverityChange={setMinSeverity}
+            timeWindow={timeWindow}
+            onTimeWindowChange={setTimeWindow}
+            officialOnly={officialOnly}
+            onOfficialOnlyChange={setOfficialOnly}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onSelectDisaster={(d) => handleSelectDisaster(d)}
+            onRefresh={refresh}
+            selectedDisasterId={selectedDisaster?.id}
+            categoryCounts={categoryCounts}
+            className="h-full"
+          />
         </div>
       </div>
 
@@ -259,9 +152,9 @@ function MapPageContent() {
               <Compass className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-sm font-semibold text-foreground">Vector GIS Canvas</h4>
+              <h4 className="text-sm font-semibold text-foreground">Multi-Source Aggregation</h4>
               <p className="text-xs text-muted-foreground">
-                60 FPS WebGL rendering with pan, pinch-zoom, pitch tilt, and rotation.
+                Zero-crash concurrent ingestion across USGS, NASA EONET, Open-Meteo, NDMA SACHET, and IMD.
               </p>
             </div>
           </CardContent>
@@ -273,9 +166,9 @@ function MapPageContent() {
               <MapPin className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-sm font-semibold text-foreground">Live Geolocation</h4>
+              <h4 className="text-sm font-semibold text-foreground">Spatial Deduplication</h4>
               <p className="text-xs text-muted-foreground">
-                GPS centering with dynamic Haversine distance calculations to seismic events.
+                Auto-consolidation of overlapping reports within 15 km and 6 hours with authoritative provenance ranking.
               </p>
             </div>
           </CardContent>
@@ -287,9 +180,9 @@ function MapPageContent() {
               <Layers className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <h4 className="text-sm font-semibold text-foreground">Dynamic Marker Scaling</h4>
+              <h4 className="text-sm font-semibold text-foreground">Dynamic Vector Styling</h4>
               <p className="text-xs text-muted-foreground">
-                Circle radii and pulsing shockwave rings scaled by Richter/Moment magnitude.
+                Scaled circle radii, statutory gold rings for official alerts, and pulsing shockwaves for critical events.
               </p>
             </div>
           </CardContent>
@@ -303,7 +196,7 @@ function MapPageContent() {
             <div className="space-y-0.5">
               <h4 className="text-sm font-semibold text-foreground">Mobile & Touch Ready</h4>
               <p className="text-xs text-muted-foreground">
-                Optimized for touch gestures, popup inspections, and responsive container resizing.
+                Optimized for touch gestures, popup inspections, and responsive container resizing down to 360 px.
               </p>
             </div>
           </CardContent>
@@ -315,7 +208,7 @@ function MapPageContent() {
         <div className="flex items-center gap-1.5">
           <ShieldAlert className="h-4 w-4 text-primary" />
           <span>
-            Basemap imagery &copy;{" "}
+            Basemap &copy;{" "}
             <a
               href="https://www.openstreetmap.org/copyright"
               target="_blank"
@@ -324,11 +217,11 @@ function MapPageContent() {
             >
               OpenStreetMap
             </a>{" "}
-            contributors. Earthquakes feed provided by USGS. Global disaster events provided by NASA EONET v3. Powered by MapLibre GL JS.
+            contributors. Multi-hazard feeds provided by USGS, NASA EONET v3, NDMA SACHET, IMD, and Open-Meteo. Powered by MapLibre GL JS.
           </span>
         </div>
         <div className="text-[11px] font-mono">
-          CRS: WGS84 (Lat/Lon) &bull; USGS & NASA Real-Time Feeds Active
+          CRS: WGS84 (Lat/Lon) &bull; Multi-Hazard Telemetry Engine Active
         </div>
       </div>
     </RouteContainer>

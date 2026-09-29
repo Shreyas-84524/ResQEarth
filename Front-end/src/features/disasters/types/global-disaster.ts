@@ -1,4 +1,6 @@
 import type { RiskLevel } from "@/types";
+import type { CanonicalDisasterType } from "./disaster-event";
+export type { CanonicalDisasterType };
 
 export type GlobalDisasterCategory =
   | "all"
@@ -11,18 +13,6 @@ export type GlobalDisasterCategory =
   | "tempExtremes"
   | "earthquakes"
   | "waterColor"
-  | "other";
-
-export type CanonicalDisasterType =
-  | "wildfire"
-  | "cyclone"
-  | "severe-storm"
-  | "flood"
-  | "volcano"
-  | "landslide"
-  | "extreme-temperature"
-  | "earthquake"
-  | "drought"
   | "other";
 
 // 1. Raw NASA EONET v3 Schema Types
