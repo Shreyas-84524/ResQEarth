@@ -1,40 +1,27 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { RouteContainer } from "@/components/layout/route-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { CookiePreferenceCenter } from "@/features/legal/components/cookie-preference-center";
+
+export const metadata: Metadata = {
+  title: "Cookie & Local Storage Preferences | ResQEarth",
+  description:
+    "Manage your cookie, local storage, and privacy preferences for the ResQEarth platform.",
+};
 
 export default function CookiesPage() {
   return (
-    <RouteContainer size="sm">
+    <RouteContainer size="default">
       <PageHeader
         title="Cookie & Storage Preferences"
-        description="Manage your local storage preferences and session preferences on ResQEarth."
+        description="Configure your browser storage, authentication session tokens, UI functional preferences, and anonymous latency analytics."
         badge={<Badge variant="outline">Privacy Controls</Badge>}
       />
 
-      <div className="mt-6 space-y-5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <h3 className="font-bold text-foreground text-sm">Essential Storage Only</h3>
-            <p>
-              ResQEarth only uses essential browser local storage to maintain your authentication state and local disaster notification preferences. No third-party tracking cookies or advertising pixels are used.
-            </p>
-
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
-              <Button size="sm" variant="default">
-                Accept All
-              </Button>
-              <Button size="sm" variant="outline">
-                Essential Only
-              </Button>
-              <Button size="sm" variant="secondary">
-                Manage Preferences
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mt-8">
+        <CookiePreferenceCenter />
       </div>
     </RouteContainer>
   );
