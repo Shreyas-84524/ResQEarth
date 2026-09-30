@@ -78,23 +78,25 @@ export function useWeather(options?: UseWeatherOptions): UseWeatherReturn {
     [targetLat, targetLon, targetName]
   );
 
+  const loadWeatherRef = React.useRef(loadWeather);
+  loadWeatherRef.current = loadWeather;
+
   // Trigger fetch when location coordinates change
   React.useEffect(() => {
     if (!autoFetch) return;
+    if (typeof targetLat !== "number" || typeof targetLon !== "number") return;
 
     const currentKey = generateWeatherCacheKey(targetLat, targetLon);
-    // Even if key is same, we might need initial load
-    const abortController = new AbortController();
+    if (currentKey === prevCacheKeyRef.current) return;
+    prevCacheKeyRef.current = currentKey;
 
-    if (currentKey !== prevCacheKeyRef.current || !weather) {
-      prevCacheKeyRef.current = currentKey;
-      loadWeather(false, abortController.signal);
-    }
+    const abortController = new AbortController();
+    loadWeatherRef.current(false, abortController.signal);
 
     return () => {
       abortController.abort();
     };
-  }, [targetLat, targetLon, autoFetch, loadWeather, weather]);
+  }, [targetLat, targetLon, autoFetch]);
 
   const refresh = React.useCallback(async () => {
     await loadWeather(true);

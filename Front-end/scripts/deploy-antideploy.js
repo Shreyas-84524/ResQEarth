@@ -71,7 +71,7 @@ async function deploy() {
   console.log('Polling deployment progress...\n');
 
   let attempts = 0;
-  while (attempts < 120) {
+  while (attempts < 300) {
     attempts++;
     await new Promise(r => setTimeout(r, 3000));
 

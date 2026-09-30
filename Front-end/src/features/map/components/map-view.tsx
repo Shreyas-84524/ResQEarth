@@ -108,10 +108,15 @@ function MapViewInternal({
     }
   };
 
+  const mapCenter = React.useMemo<LngLat>(() => {
+    if (initialCenter) return initialCenter;
+    return [location.longitude, location.latitude];
+  }, [initialCenter, location.longitude, location.latitude]);
+
   return (
     <div className={cn("relative w-full", className)}>
       <DynamicMapContainer
-        initialCenter={initialCenter || [location.longitude, location.latitude]}
+        initialCenter={mapCenter}
         initialZoom={initialZoom}
         showNavigationControls={showNavigationControls}
         showFullscreenControl={showFullscreenControl}

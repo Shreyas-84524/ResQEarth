@@ -65,10 +65,12 @@ export const REGION_PRESETS: RegionPreset[] = [
 ];
 
 /**
- * OpenStreetMap Standard Tile Style (No API Key Required)
+/**
+ * OpenStreetMap Standard Tile Style
  */
 export const OSM_RASTER_STYLE = {
   version: 8 as const,
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     "osm-tiles": {
       type: "raster" as const,
@@ -95,10 +97,11 @@ export const OSM_RASTER_STYLE = {
 };
 
 /**
- * CartoDB Voyager Tile Style (Crisp Modern Basemap with OSM Provenance)
+ * CartoDB Voyager Tile Style (High performance, unblocked public tiles with OSM attribution)
  */
 export const CARTO_VOYAGER_STYLE = {
   version: 8 as const,
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     "carto-voyager": {
       type: "raster" as const,
@@ -129,6 +132,7 @@ export const CARTO_VOYAGER_STYLE = {
  */
 export const CARTO_DARK_STYLE = {
   version: 8 as const,
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     "carto-dark": {
       type: "raster" as const,
@@ -153,6 +157,8 @@ export const CARTO_DARK_STYLE = {
     },
   ],
 };
+
+export const DEFAULT_MAP_STYLE = CARTO_VOYAGER_STYLE;
 
 export const MAP_THEMES = {
   osm: OSM_RASTER_STYLE,

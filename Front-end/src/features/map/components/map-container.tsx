@@ -17,7 +17,7 @@ import {
   DEFAULT_MAP_ZOOM,
   DEFAULT_MAP_MIN_ZOOM,
   DEFAULT_MAP_MAX_ZOOM,
-  OSM_RASTER_STYLE,
+  DEFAULT_MAP_STYLE,
 } from "../constants/map-config";
 import { MapContext } from "../context/map-context";
 import { MapLoadingSkeleton } from "./map-loading-skeleton";
@@ -58,7 +58,7 @@ export function MapContainer({
   initialZoom = DEFAULT_MAP_ZOOM,
   minZoom = DEFAULT_MAP_MIN_ZOOM,
   maxZoom = DEFAULT_MAP_MAX_ZOOM,
-  styleSpecification = OSM_RASTER_STYLE as unknown as StyleSpecification,
+  styleSpecification = DEFAULT_MAP_STYLE as unknown as StyleSpecification,
   showNavigationControls = true,
   showFullscreenControl = true,
   showScaleControl = true,
@@ -71,6 +71,11 @@ export function MapContainer({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const mapRef = React.useRef<MapLibreMap | null>(null);
 
+  const initialCenterRef = React.useRef(initialCenter);
+  const initialZoomRef = React.useRef(initialZoom);
+  const onMapReadyRef = React.useRef(onMapReady);
+  onMapReadyRef.current = onMapReady;
+
   const [isLoading, setIsLoading] = React.useState(true);
   const [webglError, setWebglError] = React.useState<string | null>(null);
 
@@ -78,7 +83,7 @@ export function MapContainer({
 
   // Initialize MapLibre GL instance
   const initMap = React.useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
     // Check WebGL availability
     if (!checkWebGLSupport()) {
@@ -100,13 +105,21 @@ export function MapContainer({
       const mapInstance = new maplibregl.Map({
         container: containerRef.current,
         style: styleSpecification,
-        center: initialCenter,
-        zoom: initialZoom,
+        center: initialCenterRef.current,
+        zoom: initialZoomRef.current,
         minZoom,
         maxZoom,
         interactive,
         attributionControl: false, // We use custom MapAttribution
       });
+
+      // Safety timer: ensure loading skeleton never blocks children permanently
+      const safetyTimer = setTimeout(() => {
+        setIsLoading(false);
+        if (mapContext?._setIsLoaded) {
+          mapContext._setIsLoaded(true);
+        }
+      }, 3500);
 
       // Add standard controls if enabled
       if (showNavigationControls) {
@@ -144,6 +157,7 @@ export function MapContainer({
 
       // Map loaded event
       mapInstance.on("load", () => {
+        clearTimeout(safetyTimer);
         setIsLoading(false);
         mapRef.current = mapInstance;
 
@@ -152,8 +166,8 @@ export function MapContainer({
           mapContext._setIsLoaded(true);
         }
 
-        if (onMapReady) {
-          onMapReady(mapInstance);
+        if (onMapReadyRef.current) {
+          onMapReadyRef.current(mapInstance);
         }
 
         // Trigger safe initial resize
@@ -186,11 +200,16 @@ export function MapContainer({
       });
 
       mapInstance.on("error", (e) => {
+        clearTimeout(safetyTimer);
         // Suppress non-fatal tile errors (e.g. rapid zoom before tile loads)
         if (e && e.error && typeof e.error.message === "string") {
           if (!e.error.message.includes("404")) {
             console.warn("MapLibre event:", e.error.message);
           }
+        }
+        setIsLoading(false);
+        if (mapContext?._setIsLoaded) {
+          mapContext._setIsLoaded(true);
         }
       });
 
@@ -206,8 +225,6 @@ export function MapContainer({
       }
     }
   }, [
-    initialCenter,
-    initialZoom,
     minZoom,
     maxZoom,
     styleSpecification,
@@ -217,7 +234,6 @@ export function MapContainer({
     showGeolocateControl,
     interactive,
     mapContext,
-    onMapReady,
   ]);
 
   // Handle mounting and unmounting
@@ -226,7 +242,9 @@ export function MapContainer({
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.remove();
+        try {
+          mapRef.current.remove();
+        } catch {}
         mapRef.current = null;
       }
       if (mapContext?._setMap) {
