@@ -80,6 +80,10 @@ export function MapContainer({
   const [webglError, setWebglError] = React.useState<string | null>(null);
 
   const mapContext = React.useContext(MapContext);
+  // Context state changes whenever the map/viewport changes. Keep the latest
+  // value in a ref so those changes do not tear down and recreate MapLibre.
+  const mapContextRef = React.useRef(mapContext);
+  mapContextRef.current = mapContext;
 
   // Initialize MapLibre GL instance
   const initMap = React.useCallback(() => {
@@ -91,8 +95,8 @@ export function MapContainer({
         "WebGL is not supported or disabled in this browser/device. Please enable hardware acceleration."
       );
       setIsLoading(false);
-      if (mapContext?._setHasWebGLError) {
-        mapContext._setHasWebGLError(true);
+      if (mapContextRef.current?._setHasWebGLError) {
+        mapContextRef.current._setHasWebGLError(true);
       }
       return;
     }
@@ -112,14 +116,6 @@ export function MapContainer({
         interactive,
         attributionControl: false, // We use custom MapAttribution
       });
-
-      // Safety timer: ensure loading skeleton never blocks children permanently
-      const safetyTimer = setTimeout(() => {
-        setIsLoading(false);
-        if (mapContext?._setIsLoaded) {
-          mapContext._setIsLoaded(true);
-        }
-      }, 3500);
 
       // Add standard controls if enabled
       if (showNavigationControls) {
@@ -157,13 +153,12 @@ export function MapContainer({
 
       // Map loaded event
       mapInstance.on("load", () => {
-        clearTimeout(safetyTimer);
         setIsLoading(false);
         mapRef.current = mapInstance;
 
-        if (mapContext?._setMap) {
-          mapContext._setMap(mapInstance);
-          mapContext._setIsLoaded(true);
+        if (mapContextRef.current?._setMap) {
+          mapContextRef.current._setMap(mapInstance);
+          mapContextRef.current._setIsLoaded(true);
         }
 
         if (onMapReadyRef.current) {
@@ -194,22 +189,17 @@ export function MapContainer({
           ] as BoundingBox,
         };
 
-        if (mapContext?._setViewport) {
-          mapContext._setViewport(viewportData);
+        if (mapContextRef.current?._setViewport) {
+          mapContextRef.current._setViewport(viewportData);
         }
       });
 
       mapInstance.on("error", (e) => {
-        clearTimeout(safetyTimer);
         // Suppress non-fatal tile errors (e.g. rapid zoom before tile loads)
         if (e && e.error && typeof e.error.message === "string") {
           if (!e.error.message.includes("404")) {
             console.warn("MapLibre event:", e.error.message);
           }
-        }
-        setIsLoading(false);
-        if (mapContext?._setIsLoaded) {
-          mapContext._setIsLoaded(true);
         }
       });
 
@@ -220,8 +210,8 @@ export function MapContainer({
       console.error("Failed to initialize MapLibre GL map:", err);
       setWebglError(errorMessage);
       setIsLoading(false);
-      if (mapContext?._setHasWebGLError) {
-        mapContext._setHasWebGLError(true);
+      if (mapContextRef.current?._setHasWebGLError) {
+        mapContextRef.current._setHasWebGLError(true);
       }
     }
   }, [
@@ -233,7 +223,6 @@ export function MapContainer({
     showScaleControl,
     showGeolocateControl,
     interactive,
-    mapContext,
   ]);
 
   // Handle mounting and unmounting
@@ -247,12 +236,12 @@ export function MapContainer({
         } catch {}
         mapRef.current = null;
       }
-      if (mapContext?._setMap) {
-        mapContext._setMap(null);
-        mapContext._setIsLoaded(false);
+      if (mapContextRef.current?._setMap) {
+        mapContextRef.current._setMap(null);
+        mapContextRef.current._setIsLoaded(false);
       }
     };
-  }, [initMap, mapContext]);
+  }, [initMap]);
 
   // Handle container resize dynamically via ResizeObserver
   React.useEffect(() => {

@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import type { LngLat, RegionPreset } from "../types/map";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from "../constants/map-config";
 import { MapProvider, MapContext } from "../context/map-context";
-import { LocationProvider } from "../context/location-context";
 import { useGeolocation } from "../hooks/use-geolocation";
 import { MapLoadingSkeleton } from "./map-loading-skeleton";
 import { MapRegionPresetPicker } from "./map-region-preset-picker";
@@ -185,14 +184,12 @@ function MapViewInternal({
 
 export function MapView(props: MapViewProps) {
   return (
-    <LocationProvider>
-      <MapProvider
-        initialCenter={props.initialCenter || DEFAULT_MAP_CENTER}
-        initialZoom={props.initialZoom || DEFAULT_MAP_ZOOM}
-        initialRegionId={props.initialRegionId || "mumbai"}
-      >
-        <MapViewInternal {...props} />
-      </MapProvider>
-    </LocationProvider>
+    <MapProvider
+      initialCenter={props.initialCenter || DEFAULT_MAP_CENTER}
+      initialZoom={props.initialZoom || DEFAULT_MAP_ZOOM}
+      initialRegionId={props.initialRegionId || "mumbai"}
+    >
+      <MapViewInternal {...props} />
+    </MapProvider>
   );
 }
