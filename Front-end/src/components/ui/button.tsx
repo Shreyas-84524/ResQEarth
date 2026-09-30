@@ -4,34 +4,35 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-[180ms] ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        default: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
+        brand: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:-translate-y-0.5",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border-[1.5px] border-[#0A0A0A] bg-white text-[#0A0A0A] hover:bg-[#FAFBFA] hover:-translate-y-0.5",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground shadow hover:bg-success/90",
-        warning: "bg-warning text-warning-foreground shadow hover:bg-warning/90",
+          "bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] hover:bg-[#E8FAD9]/50 hover:-translate-y-0.5",
+        ghost: "hover:bg-[#E8FAD9]/60 hover:text-[#0B8F2F]",
+        link: "text-[#0B8F2F] underline-offset-4 hover:underline rounded-none p-0 h-auto",
+        success: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
+        warning: "bg-warning text-warning-foreground shadow hover:bg-warning/90 hover:-translate-y-0.5",
         "risk-critical":
-          "bg-risk-critical text-white shadow hover:bg-risk-critical/90",
-        "risk-high": "bg-risk-high text-white shadow hover:bg-risk-high/90",
+          "bg-risk-critical text-white shadow hover:bg-risk-critical/90 hover:-translate-y-0.5",
+        "risk-high": "bg-risk-high text-white shadow hover:bg-risk-high/90 hover:-translate-y-0.5",
         "risk-moderate":
-          "bg-risk-moderate text-slate-900 shadow hover:bg-risk-moderate/90",
-        "risk-guarded": "bg-risk-guarded text-white shadow hover:bg-risk-guarded/90",
-        "risk-low": "bg-risk-low text-white shadow hover:bg-risk-low/90",
+          "bg-risk-moderate text-slate-900 shadow hover:bg-risk-moderate/90 hover:-translate-y-0.5",
+        "risk-guarded": "bg-risk-guarded text-white shadow hover:bg-risk-guarded/90 hover:-translate-y-0.5",
+        "risk-low": "bg-[#0B8F2F] text-white shadow hover:bg-[#08752A] hover:-translate-y-0.5",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8 text-base",
-        icon: "h-9 w-9",
+        default: "h-10 px-5 py-2",
+        sm: "h-8 px-3.5 text-xs",
+        lg: "h-12 px-8 text-base",
+        icon: "h-10 w-10 p-0",
       },
     },
     defaultVariants: {

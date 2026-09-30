@@ -47,19 +47,19 @@ export function GovernmentDirectoryView({
   return (
     <div className="space-y-6">
       {/* Top Banner: Statutory Framework */}
-      <div className="rounded-xl border bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 sm:p-6 shadow-sm">
+      <div className="rounded-[16px] bg-gradient-to-r from-[#04411F] via-[#08752A] to-[#0B8F2F] text-white p-6 sm:p-8 shadow-[0_10px_30px_rgba(4,65,31,0.15)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 font-bold text-base sm:text-lg text-emerald-400">
+            <div className="flex items-center gap-2 font-bold text-base sm:text-lg text-[#BDF58E]">
               <Shield className="h-5 w-5" />
               <span>Institutional Disaster Framework of India</span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+            <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-2xl">
               Under the <strong>Disaster Management Act, 2005</strong>, India operates a unified multi-tiered architecture: <strong>NDMA</strong> (National Policy), <strong>NDRF</strong> (Specialized Response), <strong>Scientific Bodies</strong> (IMD, CWC, INCOIS, GSI), and <strong>SDMAs / DDMAs</strong> (State & District Execution).
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="destructive" size="sm" asChild className="text-xs h-8">
+            <Button variant="destructive" size="sm" asChild className="text-xs h-9 rounded-full px-4">
               <a href="tel:112">
                 <PhoneCall className="h-3.5 w-3.5 mr-1.5" />
                 Universal Emergency: <span className="font-mono font-bold ml-1">112</span>

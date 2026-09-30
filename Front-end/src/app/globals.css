@@ -4,35 +4,49 @@
 
 @layer base {
   :root {
+    /* ResQEarth Design System Brand Tokens (design.md) */
+    --green-primary: #0B8F2F;
+    --green-dark: #08752A;
+    --green-brand: #137D43;
+    --green-light: #BDF58E;
+    --green-pale: #E8FAD9;
+
+    --white: #FFFFFF;
+    --off-white: #FAFBFA;
+    --text-primary: #0A0A0A;
+    --text-secondary: #4D514F;
+    --border-color: #E7EAE7;
+    --card-border: #EEF1EE;
+
     /* Base theme tokens */
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 137 86% 31%; /* #0B8F2F */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 130 15% 98%;
+    --secondary-foreground: 140 10% 20%;
+    --muted: 130 15% 96%;
+    --muted-foreground: 150 4% 31%;
+    --accent: 92 84% 92%; /* #E8FAD9 */
+    --accent-foreground: 140 74% 28%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 98%;
+    --border: 120 7% 91%; /* #E7EAE7 */
+    --input: 120 7% 91%;
+    --ring: 137 86% 31%;
+    --radius: 0.875rem; /* 14px */
 
     /* Status Tokens */
-    --success: 142 71% 45%;
-    --success-foreground: 210 40% 98%;
+    --success: 137 86% 31%;
+    --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
+    --warning-foreground: 0 0% 4%;
     --info: 199 89% 48%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 0 0% 100%;
 
     /* ResQEarth Risk Level Tokens (0-100) */
     --risk-low: 142 71% 45%;         /* 0-20: Low (Green) */
@@ -113,5 +127,56 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* ResQEarth Design System Utilities */
+  .card-resq {
+    background: #FFFFFF;
+    border: 1px solid #EEF1EE;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  .btn-pill-primary {
+    background-color: var(--green-primary);
+    color: #FFFFFF;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 180ms ease;
+  }
+  .btn-pill-primary:hover {
+    background-color: var(--green-dark);
+    transform: translateY(-1px);
+  }
+
+  .btn-pill-secondary {
+    background-color: #FFFFFF;
+    color: #0A0A0A;
+    border: 1.5px solid #111111;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 180ms ease;
+  }
+  .btn-pill-secondary:hover {
+    background-color: #FAFBFA;
+    transform: translateY(-1px);
+  }
+
+  .icon-circle-light {
+    background-color: #E8FAD9;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .eyebrow-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green-brand);
   }
 }
