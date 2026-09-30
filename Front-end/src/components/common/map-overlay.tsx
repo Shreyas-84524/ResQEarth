@@ -237,7 +237,7 @@ export function MapAttribution({
         className
       )}
     >
-      &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline">OpenStreetMap</a> contributors | MapLibre
+      &copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer" className="hover:underline">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline">OpenStreetMap</a> contributors | MapLibre
     </div>
   );
 }

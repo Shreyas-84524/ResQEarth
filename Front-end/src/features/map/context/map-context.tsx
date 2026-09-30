@@ -6,14 +6,12 @@ import type {
   LngLat,
   BoundingBox,
   MapViewport,
-  RegionPreset,
   MapPopupData,
   MapContextValue,
 } from "../types/map";
 import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
-  REGION_PRESETS,
 } from "../constants/map-config";
 import { setLayerVisibility } from "../services/layer-registry";
 
@@ -30,14 +28,12 @@ export interface MapProviderProps {
   children: React.ReactNode;
   initialCenter?: LngLat;
   initialZoom?: number;
-  initialRegionId?: string;
 }
 
 export function MapProvider({
   children,
   initialCenter = DEFAULT_MAP_CENTER,
   initialZoom = DEFAULT_MAP_ZOOM,
-  initialRegionId = "mumbai",
 }: MapProviderProps) {
   const [map, setMap] = React.useState<MapLibreMap | null>(null);
   const [isLoaded, setIsLoaded] = React.useState(false);
@@ -47,12 +43,6 @@ export function MapProvider({
     center: initialCenter,
     zoom: initialZoom,
   });
-
-  const initialRegion =
-    REGION_PRESETS.find((r) => r.id === initialRegionId) || REGION_PRESETS[0];
-  const [activeRegion, setActiveRegion] = React.useState<RegionPreset | null>(
-    initialRegion
-  );
 
   const [activeLayers, setActiveLayers] = React.useState<Record<string, boolean>>({
     "layer-earthquakes": true,
@@ -102,19 +92,6 @@ export function MapProvider({
     [map]
   );
 
-  // Set active geographic preset
-  const setRegion = React.useCallback(
-    (preset: RegionPreset) => {
-      setActiveRegion(preset);
-      if (preset.bounds) {
-        fitBounds(preset.bounds);
-      } else {
-        flyTo(preset.center, preset.zoom);
-      }
-    },
-    [fitBounds, flyTo]
-  );
-
   // Toggle layer visibility
   const toggleLayer = React.useCallback(
     (layerId: string, visible?: boolean) => {
@@ -134,9 +111,8 @@ export function MapProvider({
 
   // Reset to default Mumbai viewport
   const resetView = React.useCallback(() => {
-    const defaultPreset = REGION_PRESETS[0];
-    setRegion(defaultPreset);
-  }, [setRegion]);
+    flyTo(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+  }, [flyTo]);
 
   const value = React.useMemo<InternalMapContextValue>(
     () => ({
@@ -144,12 +120,10 @@ export function MapProvider({
       isLoaded,
       hasWebGLError,
       viewport,
-      activeRegion,
       activeLayers,
       selectedFeature,
       flyTo,
       fitBounds,
-      setRegion,
       toggleLayer,
       setSelectedFeature,
       resetView,
@@ -163,12 +137,10 @@ export function MapProvider({
       isLoaded,
       hasWebGLError,
       viewport,
-      activeRegion,
       activeLayers,
       selectedFeature,
       flyTo,
       fitBounds,
-      setRegion,
       toggleLayer,
       setSelectedFeature,
       resetView,

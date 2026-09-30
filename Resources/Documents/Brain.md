@@ -899,8 +899,8 @@ Firestore Rules & Composite Indexes:
 
 Authentication: UNIT TESTED (Live cloud testing pending .env.local credentials from Firebase Console)
 Route Authorization & Security Rules: UNIT TESTED / SPECIFIED (Rules syntax version 2 with default-deny and role checks)
-Map: PASS (Interactive MapLibre GL JS engine, OSM basemap tiles, layer drawer, region presets, GIS toolbar, heatmap, and legend on / and /map)
-Geolocation & Region Resolution: PASS (Live GPS layer, OSM Nominatim reverse geocoder, manual search dialog, session persistence)
+Map: PASS (Interactive MapLibre GL JS engine, MapTiler vector/raster basemap integration via NEXT_PUBLIC_MAPTILER_API_KEY with graceful missing-key fallback, on-demand geolocation controls, GIS toolbar, heatmap, and legend on / and /map)
+Geolocation & Region Resolution: PASS (On-demand GPS locate button in bottom-right controls, permission denial protection with non-blocking notice & manual city search dialog, OSM Nominatim reverse geocoder, session persistence)
 Weather: PASS (Open-Meteo live API integration, WMO interpretations, WeatherOverviewCard, WeatherCompactBadge on homepage, /map, and /dashboard)
 Earthquakes: PASS (USGS live feed, magnitude scaling, MapLibre layer, interactive popup, EarthquakeListPanel, EarthquakeOverviewCard)
 Global Disasters: PASS (NASA EONET live feed, category taxonomy, centroid calculation, MapGlobalDisasterLayer, GlobalDisasterPopup, GlobalDisasterListPanel, GlobalDisasterOverviewCard)
@@ -1046,17 +1046,62 @@ Deployment Architecture:
 5. Live route health verification: 100% HTTP 200 OK across public, map, knowledge, history, government response, and auth routes on https://resqearth.antideploy.app.
 ```
 
-## 41. Immediate Next Action
+## 41. MapTiler Basemap & On-Demand Geolocation Integration
+
+```text
+Status: COMPLETE (PASS)
+Date: 2026-09-30
+Scope: MapTiler API Key system and on-demand location UX migration on branch `phase-5`.
+
+Key Implementations & Architecture:
+1. MapTiler Basemap Configuration (Task 1):
+   - Created centralized service `src/features/map/services/maptiler-service.ts`:
+     * Manages `NEXT_PUBLIC_MAPTILER_API_KEY` environment variable.
+     * Provides `getMapTilerStyleUrl("outdoor-v2")` tailored for ResQEarth environmental/disaster visualization.
+     * Implements `isMapTilerKeyConfigured()` check before MapLibre initialization.
+   - Graceful Configuration Fallback:
+     * When `NEXT_PUBLIC_MAPTILER_API_KEY` is omitted or empty, `MapErrorFallback` renders clean in-map guidance with instructions on obtaining a free key at maptiler.com and placing it in `.env.local`.
+     * Completely prevents MapLibre GL from making invalid tile requests, eliminating "API KEY REQUIRED" watermarks and broken tile grids.
+     * Preserves child controls, overlays, hazard filter pills, and bottom-right locate buttons above the fallback banner.
+   - Updated `.env.example` with `NEXT_PUBLIC_MAPTILER_API_KEY=` under Map & Geospatial Configuration.
+   - Ensured `.env.local` is never committed (gitignored).
+
+2. Location UX Migration (Task 2):
+   - Completely removed the prefilled location buttons row (Mumbai Metropolitan, Maharashtra State, India, Himalayan Seismic Belt, Eastern Coastal Cyclone Belt) and deleted `map-region-preset-picker.tsx`.
+   - Purged unused `REGION_PRESETS` and preset handlers from `map-config.ts`, `types/map.ts`, `map-context.tsx`, `map-view.tsx`, and page views.
+   - Geolocation is strictly on-demand: NEVER requested automatically on page load.
+   - Added dedicated bottom-right map controls (`map-bottom-right-controls.tsx`) with Zoom In, Zoom Out, Fullscreen, and Locate Me (GPS) button.
+   - Locate Button Workflow:
+     * On click, invokes `requestGpsLocation()`.
+     * If granted: Obtains high-accuracy coordinates, smoothly animates/flies the map to user location, renders GPS dot and accuracy halo (`map-user-location-marker.tsx`), resolves location name via Nominatim, and auto-refreshes location-aware weather, disaster, and risk telemetry.
+     * If denied: Displays non-blocking notification, prompts user with manual city search dialog (`LocationSearchDialog`), keeps the map fully usable, and remembers denial state (`hasDeniedLocally`) to avoid repeated browser prompts.
+
+3. Map UX Polish (Task 3):
+   - Clean, rebalanced top controls: Hazard filters (All, Floods, Cyclones, Earthquakes, Wildfires), Location badge, Weather badge.
+   - Bottom-left GIS toolbar: Display mode switcher (Hybrid, Markers, Heatmap), Fit all disasters, Reset view, Legend toggle.
+   - Bottom-right navigation controls: Zoom +, Zoom -, Fullscreen, Locate Me.
+   - Bottom-left floating legend: Severity color ramp, hazard symbols, source attribution.
+   - Zero dead code or orphaned preset logic remains.
+
+4. Validation Suite:
+   - Automated Real Browser CDP Validation (Google Chrome): PASS across 4 comprehensive tests (missing key fallback, watermark absence, zero prompt on load, locate click triggers request, denial flow with non-blocking message & manual search, no repeat prompts, granted flow coordinates update).
+   - TypeScript (`npm run type-check`): PASS (0 errors)
+   - ESLint (`npm run lint`): PASS (0 warnings, 0 errors)
+   - Unit & Integration Tests (`npm run test`): PASS (49/49 passed across all suites)
+   - Production Build (`npm run build`): PASS (All 40 static & SSG routes rendered successfully)
+```
+
+## 42. Immediate Next Action
 
 ```text
 Current State:
-ResQEarth is 100% implemented, integrated, validated, and LIVE on Antideploy at https://resqearth.antideploy.app. All 5 project phases (Phases 1 through 5) and live cloud hosting are operational.
+ResQEarth is 100% implemented, integrated, validated, and LIVE on Antideploy at https://resqearth.antideploy.app. All 5 project phases (Phases 1 through 5), live cloud hosting, and MapTiler on-demand geolocation UX are operational.
 
 Next Action:
 Final project submission and live faculty presentation.
 ```
 
-## 42. Brain.md Maintenance Rule
+## 43. Brain.md Maintenance Rule
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 

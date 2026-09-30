@@ -110,14 +110,12 @@ function MapPageContent() {
           <MapView
             className="h-[540px] sm:h-[600px] lg:h-[660px] w-full rounded-xl overflow-hidden border border-border/80 shadow-sm"
             showFilterChips={true}
-            showRegionPicker={true}
             showLocationBadge={true}
             showWeatherBadge={true}
             showLegend={false}
-            showNavigationControls={false}
-            showFullscreenControl={true}
             showScaleControl={true}
-            showGeolocateControl={false}
+            showZoomControls={true}
+            showFullscreenControl={true}
           >
             {/* GIS Top-Right Quick Toolbar (Mode Switcher, Fit, Recenter, Legend) */}
             <MapGisToolbar

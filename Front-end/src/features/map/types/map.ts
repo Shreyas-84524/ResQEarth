@@ -1,6 +1,6 @@
 /**
  * ResQEarth MapLibre GIS Types
- * Comprehensive typed definitions for coordinates, viewports, region presets, layers, and popups.
+ * Comprehensive typed definitions for coordinates, viewports, layers, and popups.
  */
 
 import type { Map as MapLibreMap } from "maplibre-gl";
@@ -13,16 +13,6 @@ export interface MapViewport {
   zoom: number;
   pitch?: number;
   bearing?: number;
-  bounds?: BoundingBox;
-}
-
-export interface RegionPreset {
-  id: string;
-  name: string;
-  category: "city" | "state" | "national" | "hazard_zone";
-  center: LngLat;
-  zoom: number;
-  description: string;
   bounds?: BoundingBox;
 }
 
@@ -88,12 +78,10 @@ export interface MapContextValue {
   isLoaded: boolean;
   hasWebGLError: boolean;
   viewport: MapViewport;
-  activeRegion: RegionPreset | null;
   activeLayers: Record<string, boolean>;
   selectedFeature: MapPopupData | null;
   flyTo: (center: LngLat, zoom?: number, options?: { pitch?: number; bearing?: number; duration?: number }) => void;
   fitBounds: (bounds: BoundingBox, padding?: number) => void;
-  setRegion: (preset: RegionPreset) => void;
   toggleLayer: (layerId: string, visible?: boolean) => void;
   setSelectedFeature: (feature: MapPopupData | null) => void;
   resetView: () => void;
