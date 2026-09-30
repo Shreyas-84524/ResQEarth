@@ -18,7 +18,6 @@ import {
   ArrowRight,
   Shield,
   AlertTriangle,
-  Radio,
   Bell,
   BookOpen,
   LayoutDashboard,
@@ -239,49 +238,55 @@ function HomePageContent() {
           />
         )}
 
-        {/* 3. Hero Section */}
-        <section className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-primary/5 via-card to-background p-6 sm:p-10 lg:p-14 shadow-sm">
+        {/* 3. Hero Section (design.md Section 9, 10) */}
+        <section className="relative overflow-hidden rounded-[20px] border border-[#EEF1EE] bg-gradient-to-br from-[#FAFBFA] via-white to-[#E8FAD9]/30 p-8 sm:p-12 lg:p-16 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
+          {/* Subtle decorative background organic shape */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-[#E8FAD9]/50 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-[#BDF58E]/20 blur-2xl pointer-events-none" />
+
           <div className="relative z-10 mx-auto max-w-4xl text-center space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
-              <Radio className="h-3.5 w-3.5 animate-pulse text-primary" />
-              <span>Multi-Source Disaster Intelligence & Emergency Early Warning</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#BDF58E] bg-[#E8FAD9] px-4 py-1.5 text-xs font-semibold text-[#137D43]">
+              <span>🌿</span>
+              <span className="tracking-wide">SMALL ACTIONS • BIG IMPACT</span>
+              <span>🌿</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-              Resilient Communities Through Transparent Environmental Intelligence
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#0A0A0A] leading-[1.05]">
+              Rescue Earth <span className="text-[#0B8F2F] font-extrabold block sm:inline">• Protect Life</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-              ResQEarth combines near-real-time environmental telemetry, multi-provider hazard tracking, explainable 0–100 deterministic risk scores, and consent-based citizen alerts across India.
+            <p className="text-base sm:text-lg text-[#4D514F] leading-relaxed max-w-2xl mx-auto">
+              Transparent disaster intelligence, real-time environmental observations, explainable 0–100 calculated risk, and community early warning.
             </p>
 
-            {/* Hero CTAs */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <Button size="lg" asChild className="gap-2 shadow-sm">
-                <Link href="/map">
+            {/* Hero CTAs per design.md Section 8 */}
+            <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+              <Button size="lg" asChild className="bg-[#0B8F2F] text-white hover:bg-[#08752A] rounded-full px-7 py-3.5 text-base font-semibold shadow-sm hover:-translate-y-0.5 transition-all duration-[180ms]">
+                <Link href="/map" className="inline-flex items-center gap-2">
                   <Map className="h-4 w-4" />
                   Explore Live Disaster Map
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
 
-              <Button size="lg" variant="outline" asChild className="gap-2">
-                <Link href="/disasters">
-                  <Flame className="h-4 w-4 text-orange-500" />
+              <Button size="lg" variant="outline" asChild className="bg-white text-[#0A0A0A] border-[1.5px] border-[#0A0A0A] hover:bg-[#FAFBFA] rounded-full px-7 py-3.5 text-base font-semibold hover:-translate-y-0.5 transition-all duration-[180ms]">
+                <Link href="/disasters" className="inline-flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-[#0B8F2F]" />
                   Disaster Preparedness
                 </Link>
               </Button>
 
               {isAuthenticated ? (
-                <Button size="lg" variant="secondary" asChild className="gap-2">
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="h-4 w-4 text-primary" />
-                    My Citizen Dashboard
+                <Button size="lg" variant="secondary" asChild className="bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] rounded-full px-6 py-3.5 hover:bg-[#E8FAD9]/50">
+                  <Link href="/dashboard" className="inline-flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4 text-[#0B8F2F]" />
+                    Citizen Dashboard
                   </Link>
                 </Button>
               ) : (
-                <Button size="lg" variant="secondary" asChild className="gap-2">
-                  <Link href="/signup">
-                    <UserPlus className="h-4 w-4 text-primary" />
+                <Button size="lg" variant="secondary" asChild className="bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] rounded-full px-6 py-3.5 hover:bg-[#E8FAD9]/50">
+                  <Link href="/signup" className="inline-flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-[#0B8F2F]" />
                     Register for Alerts
                   </Link>
                 </Button>
@@ -289,41 +294,86 @@ function HomePageContent() {
             </div>
 
             {/* Engine & Pipeline Telemetry Chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-6 border-t border-border/60 text-left text-xs">
-              <div className="rounded-lg bg-card/80 p-2.5 border border-border/60">
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-[#EEF1EE] text-left text-xs">
+              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
+                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
                   Surveillance Nodes
                 </span>
-                <p className="font-mono font-bold text-foreground mt-0.5">
-                  USGS • NASA EONET • Open-Meteo
+                <p className="font-semibold text-[#0A0A0A] mt-0.5">
+                  USGS • NASA • Open-Meteo
                 </p>
               </div>
 
-              <div className="rounded-lg bg-card/80 p-2.5 border border-border/60">
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground">
-                  Regional Focus
+              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
+                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
+                  Regional Anchor
                 </span>
-                <p className="font-semibold text-foreground mt-0.5 truncate">
+                <p className="font-semibold text-[#0A0A0A] mt-0.5 truncate">
                   Western India (Mumbai)
                 </p>
               </div>
 
-              <div className="rounded-lg bg-card/80 p-2.5 border border-border/60">
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
+                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
                   Risk Engine
                 </span>
-                <p className="font-mono font-bold text-primary mt-0.5">
-                  Deterministic v1.0
+                <p className="font-bold text-[#0B8F2F] mt-0.5">
+                  Deterministic v1.0 (0–100)
                 </p>
               </div>
 
-              <div className="rounded-lg bg-card/80 p-2.5 border border-border/60">
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
+                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
                   User Clearance
                 </span>
-                <p className="font-semibold uppercase text-foreground mt-0.5">
+                <p className="font-semibold uppercase text-[#0A0A0A] mt-0.5">
                   {isAuthenticated ? (role ?? "citizen") : "Public Visitor"}
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 4. Impact Feature Strip per design.md Section 11 */}
+        <section className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:divide-x divide-[#EEF1EE] bg-white rounded-[16px] border border-[#EEF1EE] p-6 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
+            <div className="flex items-start gap-3.5 sm:px-3">
+              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0A0A0A]">Cleaner Environment</h3>
+                <p className="text-xs text-[#4D514F] mt-0.5">Less pollution, healthier lives, multi-source telemetry.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 sm:px-3">
+              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0A0A0A]">Stronger Communities</h3>
+                <p className="text-xs text-[#4D514F] mt-0.5">People + Nature = Progress. Citizen alerts & SOS.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 sm:px-3">
+              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0A0A0A]">Sustainable Future</h3>
+                <p className="text-xs text-[#4D514F] mt-0.5">Reduce. Reuse. Recycle. 22 Disaster SOPs.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 sm:px-3">
+              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
+                <Map className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0A0A0A]">Global Impact</h3>
+                <p className="text-xs text-[#4D514F] mt-0.5">Local actions, worldwide change. GIS Surveillance.</p>
               </div>
             </div>
           </div>
@@ -764,8 +814,59 @@ function HomePageContent() {
           </div>
         </section>
 
+        {/* 8.5. Environmental Impact Statistics Card per design.md Section 15 */}
+        <section className="relative overflow-hidden rounded-[20px] bg-gradient-to-r from-[#04411F] via-[#08752A] to-[#0B8F2F] text-white p-8 sm:p-12 lg:p-16 shadow-[0_10px_30px_rgba(4,65,31,0.15)]">
+          <div className="relative z-10 max-w-4xl mx-auto space-y-8 text-center">
+            <div className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#BDF58E]">
+                OUR ENVIRONMENTAL IMPACT & COVERAGE
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
+                Empowering Communities Through Science & Technology
+              </h2>
+              <p className="text-sm text-white/80 max-w-2xl mx-auto leading-relaxed">
+                Dedicated to reducing environmental vulnerability, enhancing hazard preparedness, and protecting lives through open disaster intelligence.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
+              <div className="space-y-1">
+                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">22</p>
+                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Hazard Guides</p>
+                <p className="text-[11px] text-white/70">Natural & Man-Made</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">17</p>
+                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Indian Case Studies</p>
+                <p className="text-[11px] text-white/70">1984–2024 Archive</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">11+</p>
+                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Statutory Bodies</p>
+                <p className="text-[11px] text-white/70">NDMA, NDRF, IMD, CWC</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">100%</p>
+                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Explainable Risk</p>
+                <p className="text-[11px] text-white/70">Deterministic 0–100</p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button asChild size="lg" className="bg-white text-[#04411F] hover:bg-[#FAFBFA] rounded-full px-8 py-3.5 font-bold shadow-md hover:-translate-y-0.5 transition-all duration-[180ms]">
+                <Link href="/about" className="inline-flex items-center gap-2">
+                  Get Involved & Learn More →
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* 9. Verified Government Response Directory Callout */}
-        <section className="rounded-2xl border border-border/80 bg-muted/30 p-6 sm:p-8 lg:p-10">
+        <section className="rounded-[16px] border border-[#EEF1EE] bg-[#FAFBFA] p-6 sm:p-8 lg:p-10 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <Badge variant="outline" className="text-xs uppercase font-semibold bg-background">

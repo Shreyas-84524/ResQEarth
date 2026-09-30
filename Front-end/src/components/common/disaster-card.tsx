@@ -90,22 +90,22 @@ export function DisasterCard({
   return (
     <Card
       className={cn(
-        "flex flex-col justify-between overflow-hidden border-border/80 transition-all hover:border-primary/50 hover:shadow-md",
+        "flex flex-col justify-between overflow-hidden rounded-[14px] border border-[#EEF1EE] bg-white text-[#0A0A0A] shadow-[0_6px_24px_rgba(0,0,0,0.04)] transition-all duration-[180ms] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:-translate-y-0.5",
         className
       )}
       {...props}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8FAD9] text-[#0B8F2F]">
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#137D43]">
                 {data.type}
               </span>
-              <CardTitle className="text-base font-bold line-clamp-1">
+              <CardTitle className="text-base font-bold text-[#0A0A0A] line-clamp-1">
                 {data.title}
               </CardTitle>
             </div>

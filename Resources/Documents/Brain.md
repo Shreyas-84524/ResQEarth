@@ -980,17 +980,59 @@ Next Recommended Task:
 Project submission and live faculty presentation.
 ```
 
-## 39. Immediate Next Action
+## 39. Design System & UI/UX Migration (design.md)
+
+```text
+Status: COMPLETE (PASS)
+Date: 2026-09-30
+Scope: Full website UI/UX migration aligning to Resources/Documents/design.md as single source of truth.
+
+Key Updates:
+1. Design Tokens & Palette:
+   - Updated Tailwind config & globals.css with official brand palette:
+     Primary Green (#0B8F2F), Dark Green (#08752A), Accent Green (#137D43), Light Accent (#BDF58E), Pale Green (#E8FAD9), Off-white (#FAFBFA), Neutral Text (#0A0A0A / #4D514F), Border (#E7EAE7).
+   - Standardized 70/20/10 ratio: Clean white background base (70%), Brand/Forest green structural & interactive elements (20%), Pale green soft pills and badge accents (10%).
+   - Geometric border-radius: Pill buttons (rounded-full / 999px), Cards (rounded-[14px] with subtle shadow-sm), circular badge containers.
+
+2. Shared Components:
+   - Button (ui/button.tsx): Pill geometry, elevation transitions (hover:-translate-y-0.5), brand color variables.
+   - Card (ui/card.tsx): 14px rounded corners, #EEF1EE border, soft neutral drop shadows.
+   - Badge (ui/badge.tsx): Added brand, brand-light, brand-pale styling while preserving critical severity variants (critical/high/moderate/low) and provenance badges.
+   - DisasterCard (common/disaster-card.tsx): Circular pale green icon containers, pill badges, clean typography.
+   - Footer (layout/footer.tsx): Rebuilt with clean aesthetic, environmental mission tagline ("CLEANER EARTH • HEALTHIER LIVES • SUSTAINABLE FUTURE"), botanical accents, and verified links.
+
+3. Routes Migrated & Visually Harmonized:
+   - Homepage (/): Hero section ("Rescue Earth • Protect Life"), eyebrow ("SMALL ACTIONS 🌿 BIG IMPACT"), 4-item impact feature strip, environmental impact statistics banner, preparedness grid.
+   - Live Map (/map): Map overlay controls, risk score indicators, event cards, category/severity filter pills.
+   - Disasters & Detail (/disasters, /disasters/[id]): 22 disaster cards, severity badges, preparedness checklists, evacuation instructions.
+   - History (/history): Chronological disaster timeline, impact statistics, statutory framework headers.
+   - Government Bodies (/government-response): National/State/District response directory, emergency helplines.
+   - About (/about): Mission, 5-stage DRR framework, architecture & technical stack.
+   - Auth (/login, /signup): Form controls, pill CTA buttons, security badges.
+   - Citizen Dashboard (/dashboard): Local risk gauge, alert feeds, preparedness quick links.
+   - Alerts (/alerts): Active & historical alerts, official provenance labels, severity filters.
+   - Admin (/admin): Broadcast warning workflow, sequential SMS preview, FCM trigger controls.
+   - Static Policy Pages (/privacy, /terms, /cookies): Clean typography, readable layout.
+
+4. Validation:
+   - Responsive check across 360px, 768px, 1366px, 1920px viewports.
+   - TypeScript (npm run type-check): PASS (0 errors)
+   - ESLint (npm run lint): PASS (0 errors, 0 warnings)
+   - Unit Tests (npm run test): PASS (48/48 passed across 33 test suites)
+   - Next.js Production Build (npm run build): PASS (All 40 static/SSG routes rendered)
+```
+
+## 40. Immediate Next Action
 
 ```text
 Current State:
-ResQEarth Phase 5 is 100% complete (PASS) on branch `phase-5`. All 5 project phases (Phases 1 through 5) are fully integrated, validated, and documented.
+ResQEarth Phase 5 and design.md UI/UX migration are 100% complete (PASS) on branch `phase-5`. All 5 project phases (Phases 1 through 5) are fully integrated, validated, and documented.
 
 Next Action:
-Present final Phase 5 demonstration report and submission package.
+Project submission and live faculty presentation.
 ```
 
-## 40. Brain.md Maintenance Rule
+## 41. Brain.md Maintenance Rule
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 
@@ -1003,3 +1045,4 @@ Maintenance checklist:
 - Do not duplicate detailed architecture/requirements already maintained in source documents; summarize and link conceptually.
 - Preserve concise AI readability and remove stale transient notes only after their durable outcome is recorded.
 - When evidence is missing, write `PENDING`, `NOT TESTED`, `NEEDS REVIEW`, or `BLOCKED`; never infer success.
+

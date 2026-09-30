@@ -38,25 +38,25 @@ export function HistoryTimelineView({ initialEvents }: HistoryTimelineViewProps)
   return (
     <div className="space-y-6">
       {/* Historical Context Banner */}
-      <div className="rounded-xl border bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-purple-950/20 p-4 sm:p-5">
+      <div className="rounded-[16px] border border-[#EEF1EE] bg-gradient-to-r from-[#FAFBFA] via-white to-[#E8FAD9]/40 p-5 sm:p-6 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-primary font-bold text-sm sm:text-base">
+            <div className="flex items-center gap-2 text-[#0B8F2F] font-bold text-sm sm:text-base">
               <History className="h-5 w-5 shrink-0" />
               <span>Evolution of Disaster Management in India (1984 – 2024)</span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-[#4D514F]">
               From the 1984 Bhopal tragedy and the 1999 Odisha Super Cyclone to the modern NDMA / NDRF framework and AI-driven early warnings.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <div className="text-center bg-background/80 backdrop-blur rounded-lg p-2.5 border">
-              <div className="text-lg font-extrabold text-primary">{initialEvents.length}</div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold">Major Catastrophes</div>
+            <div className="text-center bg-white rounded-[12px] p-2.5 border border-[#EEF1EE] shadow-sm">
+              <div className="text-lg font-extrabold text-[#0B8F2F]">{initialEvents.length}</div>
+              <div className="text-[10px] text-[#4D514F] uppercase font-semibold">Major Catastrophes</div>
             </div>
-            <div className="text-center bg-background/80 backdrop-blur rounded-lg p-2.5 border">
-              <div className="text-lg font-extrabold text-emerald-600">40 Yrs</div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold">Policy Evolution</div>
+            <div className="text-center bg-white rounded-[12px] p-2.5 border border-[#EEF1EE] shadow-sm">
+              <div className="text-lg font-extrabold text-[#137D43]">40 Yrs</div>
+              <div className="text-[10px] text-[#4D514F] uppercase font-semibold">Policy Evolution</div>
             </div>
           </div>
         </div>

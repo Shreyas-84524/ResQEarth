@@ -100,15 +100,15 @@ export default function AboutPage() {
 
       <div className="mt-8 space-y-8">
         {/* Executive Summary & Mission */}
-        <div className="rounded-2xl border bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 space-y-4">
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs uppercase tracking-wider">
+        <div className="rounded-[20px] bg-gradient-to-r from-[#04411F] via-[#08752A] to-[#0B8F2F] text-white p-8 sm:p-10 space-y-4 shadow-[0_10px_30px_rgba(4,65,31,0.15)]">
+          <div className="flex items-center gap-2 text-[#BDF58E] font-semibold text-xs uppercase tracking-wider">
             <Globe className="h-4 w-4" />
             Project Mission & Core Objective
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
             Empowering Resilient Communities Through Environmental Intelligence & Real-Time Warning
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+          <p className="text-sm text-white/90 leading-relaxed max-w-3xl">
             ResQEarth bridges the critical gap between complex environmental sensor telemetry and actionable citizen preparedness. By synthesizing satellite earth observations, seismic feeds, hydrological models, and historical hazard profiles into a unified geospatial GIS interface, ResQEarth democratizes disaster awareness and accelerates life-saving emergency actions.
           </p>
         </div>
@@ -116,10 +116,10 @@ export default function AboutPage() {
         {/* ESE Curriculum Core: 5 Stages of Disaster Management */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Workflow className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-bold">The Five Stages of the Disaster Management Cycle</h3>
+            <Workflow className="h-5 w-5 text-[#0B8F2F]" />
+            <h3 className="text-lg font-bold text-[#0A0A0A]">The Five Stages of the Disaster Management Cycle</h3>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-[#4D514F] leading-relaxed">
             In modern Environmental Engineering, disaster risk reduction (DRR) has transformed from a purely reactive post-event relief model into an integrated, proactive cyclical paradigm.
           </p>
 
@@ -127,17 +127,17 @@ export default function AboutPage() {
             {disasterCycleStages.map((s, idx) => {
               const Icon = s.icon;
               return (
-                <Card key={idx} className="hover:border-primary/50 transition-colors shadow-xs">
+                <Card key={idx} className="rounded-[14px] border border-[#EEF1EE] bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-[180ms]">
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${s.color}`}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8FAD9] text-[#0B8F2F] shrink-0">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <CardTitle className="text-sm font-bold">{s.stage}</CardTitle>
+                      <CardTitle className="text-sm font-bold text-[#0A0A0A]">{s.stage}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{s.description}</p>
+                    <p className="text-xs text-[#4D514F] leading-relaxed">{s.description}</p>
                   </CardContent>
                 </Card>
               );

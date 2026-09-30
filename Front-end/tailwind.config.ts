@@ -28,6 +28,17 @@ const config: Config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        brand: {
+          primary: "#0B8F2F",
+          dark: "#08752A",
+          green: "#137D43",
+          light: "#BDF58E",
+          pale: "#E8FAD9",
+          offwhite: "#FAFBFA",
+          textPrimary: "#0A0A0A",
+          textSecondary: "#4D514F",
+          border: "#E7EAE7",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -82,13 +93,15 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        pill: "999px",
+        xl: "18px",
+        lg: "14px",
+        md: "12px",
+        sm: "8px",
       },
       boxShadow: {
         subtle: "0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)",
-        card: "0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)",
+        card: "0 6px 24px rgba(0, 0, 0, 0.04)",
         float: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
       },
       keyframes: {
