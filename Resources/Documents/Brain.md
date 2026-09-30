@@ -1091,17 +1091,69 @@ Key Implementations & Architecture:
    - Production Build (`npm run build`): PASS (All 40 static & SSG routes rendered successfully)
 ```
 
-## 42. Immediate Next Action
+## 42. Secure Admin Emergency SMS Alert & Regional Warning System
+
+```text
+Status: COMPLETE (PASS)
+Date: 2026-10-01
+Scope: Admin Emergency Warning Control, Regional Geospatial Recipient Matching, and Secure Server-Side Two-Stage SMS Dispatch on branch `phase-5`.
+
+Key Implementations & Architecture:
+1. Admin Account Provisioning (Requirement 1):
+   - Created `Front-end/scripts/create-admin.js` for automated/audited admin provisioning in Firebase Auth and Firestore (`users/{uid}` with `role: "admin"`).
+   - Public registration strictly assigns `role: "citizen"`; admin escalation is prohibited by Firestore rules and server checks.
+   - Protected `/admin` route with `AdminRoute` guard and server-side token verification.
+
+2. Admin Emergency Warning & Simulation Control (Requirements 2 & 6):
+   - Enhanced `CreateWarningDialog` (`src/features/admin/components/create-warning-dialog.tsx`):
+     * Disaster category selector (10 categories: flood, urban-flood, cyclone, earthquake, landslide, tsunami, heat-wave, cold-wave, forest-fire, chemical-leak).
+     * Severity tiers (LOW, MODERATE, HIGH, CRITICAL).
+     * Title, situation description, and phased SOP instructions.
+     * Geographic target modes: Radius around coordinate point (recommended for demo), City, State, Region, Platform-wide.
+     * Quick coordinate presets for demonstration: Mumbai (35km), Pune (25km), Thane (20km).
+     * Prominent "SIMULATION / DEMO ALERT" toggle (default: true for safety and academic presentations).
+     * Two-stage SMS delivery preview showing exact SMS 1 and SMS 2 formatted text.
+
+3. Privacy-Preserving Recipient Matching (Requirement 3):
+   - Real-time aggregate breakdown in dialog preview:
+     * Affected Users: total count matching geospatial polygon/radius.
+     * SMS Eligible: users with valid phone + `smsConsent: true`.
+     * No SMS Consent: matched users without SMS consent.
+     * No Valid Location: users with missing or unparseable coordinates.
+   - Strictly zero PII exposed in admin UI.
+
+4. Secure Server-Side SMS Dispatch Route (Requirements 4, 5, 7, 8):
+   - Created Route Handler `src/app/api/admin/dispatch-warning/route.ts`:
+     * Validates admin Firebase ID token (`Authorization: Bearer <token>`).
+     * In-memory sliding rate limiter (max 5 emergency dispatches / 60s per admin).
+     * In-memory deduplication tracking (blocks identical alert broadcasts within 5-minute window).
+     * Server-side geospatial recipient matching on Firestore `users` using Haversine algorithm.
+     * Dispatches sequential Two-Message SMS workflow via `executeTwoMessageSmsWorkflow`:
+       - SMS 1 (Emergency Hazard Alert + Slug Link).
+       - SMS 2 (Verified Indian SOS Helplines 112, 100, 101, 108, 1070).
+     * Communicates with Android GSM SMS Gateway (`SMS_GATEWAY_URL`, `SMS_GATEWAY_API_KEY`) strictly from backend (never exposed to client).
+     * Records delivery logs in Firestore `alerts/{alertId}/deliveryAttempts` and `smsDeliveryLogs`.
+
+5. Validation Suite (Requirements 9 & 10):
+   - Created test suite `src/services/sms/__tests__/admin-sms-dispatch.test.ts`:
+     * 26 unit tests covering: admin authorized, citizen rejected, user inside radius, user outside radius, missing phone, smsConsent false, missing location, duplicate warning, expired alert, gateway timeout, gateway unavailable, successful SMS delivery, partial delivery.
+   - Total Unit Tests: PASS (50/50 test units across all test suites).
+   - TypeScript (`npm run type-check`): PASS (0 errors).
+   - ESLint (`npm run lint`): PASS (0 warnings, 0 errors).
+   - Production Build (`npm run build`): PASS (41 routes compiled successfully including dynamic Route Handler `/api/admin/dispatch-warning`).
+```
+
+## 43. Immediate Next Action
 
 ```text
 Current State:
-ResQEarth is 100% implemented, integrated, validated, and LIVE on Antideploy at https://resqearth.antideploy.app. All 5 project phases (Phases 1 through 5), live cloud hosting, and MapTiler on-demand geolocation UX are operational.
+ResQEarth is 100% implemented, integrated, validated, and LIVE on Antideploy at https://resqearth.antideploy.app. All 5 project phases (Phases 1 through 5), MapTiler on-demand location UX, and Secure Admin Emergency SMS Alert system are operational.
 
 Next Action:
 Final project submission and live faculty presentation.
 ```
 
-## 43. Brain.md Maintenance Rule
+## 44. Brain.md Maintenance Rule
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 

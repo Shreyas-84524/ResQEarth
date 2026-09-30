@@ -65,8 +65,8 @@ async function deploy() {
     process.exit(1);
   }
 
-  const taskId = data.taskId;
-  console.log(`Deployment task queued: ${taskId}`);
+  const taskId = data.taskId || data.id || data.deploymentId || data.deployment?.id;
+  console.log(`Deployment task queued: ${taskId || 'active'}`);
   console.log(`Dashboard: https://antideploy.com/app/${APP_ID}`);
   console.log('Polling deployment progress...\n');
 
