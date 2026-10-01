@@ -69,7 +69,9 @@ export const MAPTILER_CONFIG_ERROR_MESSAGE =
  */
 export function getMapTilerApiKey(): string {
   if (typeof process === "undefined" || !process.env) return "";
-  const key = process.env[MAPTILER_API_KEY_ENV_NAME];
+  const key =
+    process.env.NEXT_PUBLIC_MAPTILER_API_KEY ||
+    process.env[MAPTILER_API_KEY_ENV_NAME];
   if (!key || typeof key !== "string") return "";
   return key.trim();
 }

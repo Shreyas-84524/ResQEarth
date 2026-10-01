@@ -1153,7 +1153,34 @@ Next Action:
 Final project submission and live faculty presentation.
 ```
 
-## 44. Brain.md Maintenance Rule
+## 45. Production Environment Variable Configuration
+
+```text
+Status: Configured
+Date: 2026-10-01
+
+Environment Variable Mapping:
+- NEXT_PUBLIC_FIREBASE_API_KEY: Configured (Client Web SDK)
+- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: Configured (resqearth-60fd3.firebaseapp.com)
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID: Configured (resqearth-60fd3)
+- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: Configured (resqearth-60fd3.firebasestorage.app)
+- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: Configured (167414741483)
+- NEXT_PUBLIC_FIREBASE_APP_ID: Configured (Web App ID)
+- NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: Configured (Google Analytics G-ZH3QH2NLE5)
+- NEXT_PUBLIC_MAPTILER_API_KEY: Preserved (Vector Basemap)
+- SMS_GATEWAY_URL: Configured (Server-Side Only - Global OTP Gateway)
+- SMS_GATEWAY_API_KEY: Configured (Server-Side Only - Never Exposed to Client)
+
+Security Invariants Verified:
+- FCM / VAPID configuration omitted (ResQEarth emergency warnings are SMS-only).
+- SMS_GATEWAY_API_KEY is server-side only; verified absent from client Webpack bundles (.next/static).
+- Front-end/.env.local contains real credentials and is strictly Gitignored.
+- Front-end/.env.example contains empty placeholders only.
+- MapTiler client bundle resolution verified with static process.env access.
+```
+
+## 46. Brain.md Maintenance Rule
+
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 
