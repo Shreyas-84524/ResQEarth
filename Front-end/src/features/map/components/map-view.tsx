@@ -109,6 +109,8 @@ function MapViewInternal({
         initialCenter={mapCenter}
         initialZoom={initialZoom}
         showScaleControl={showScaleControl}
+        showNavigationControls={showZoomControls}
+        showFullscreenControl={showFullscreenControl}
         interactive={interactive}
         onMapReady={onMapReady}
       >

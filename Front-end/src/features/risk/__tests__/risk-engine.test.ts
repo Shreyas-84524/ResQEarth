@@ -57,6 +57,7 @@ function createMockDisaster(overrides: Partial<UnifiedDisasterEvent> = {}): Unif
     sourceName: "USGS",
     sourceUrl: "https://earthquake.usgs.gov",
     isOfficialAlert: false,
+    isMappable: true,
     latitude: 19.1,
     longitude: 73.0,
     coordinates: [73.0, 19.1],

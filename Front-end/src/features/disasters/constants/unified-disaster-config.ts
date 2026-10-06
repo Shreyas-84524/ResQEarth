@@ -6,7 +6,8 @@ import type {
 } from "../types/disaster-event";
 
 export const UNIFIED_DISASTER_CONFIG = {
-  cacheTtlMs: 5 * 60 * 1000, // 5 minutes cache
+  cacheTtlMs: 6 * 60 * 60 * 1000, // 6 hours cache TTL
+  autoRefreshIntervalMs: 6 * 60 * 60 * 1000, // 6 hours periodic auto-refresh interval
   timeoutMs: 12000, // 12 seconds aggregate timeout
   deduplicationDistanceKm: 15, // 15 km spatial dedupe threshold
   deduplicationTimeWindowMs: 6 * 60 * 60 * 1000, // 6 hours temporal dedupe threshold

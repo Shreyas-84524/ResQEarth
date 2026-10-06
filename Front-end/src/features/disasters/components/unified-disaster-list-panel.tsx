@@ -30,6 +30,7 @@ import {
   SlidersHorizontal,
   X,
   Globe2,
+  ExternalLink,
 } from "lucide-react";
 
 export interface UnifiedDisasterListPanelProps {
@@ -130,7 +131,7 @@ export function UnifiedDisasterListPanel({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {disasters.length} active multi-hazard feeds
+              {disasters.length} active multi-hazard feeds &bull; Auto-refreshes every 6h
             </p>
           </div>
 
@@ -393,11 +394,77 @@ export function UnifiedDisasterListPanel({
                     })}
                   </span>
                 </div>
+
+                {/* Verified Source Row */}
+                {event.sourceUrl && (
+                  <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-border/30 text-[10px]">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <ShieldCheck className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+                      Verified Source:
+                    </span>
+                    <a
+                      href={event.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 font-medium text-primary hover:underline hover:text-primary/80 transition-colors truncate max-w-[170px]"
+                      title={`Open official portal: ${event.sourceName}`}
+                    >
+                      <span className="truncate">{event.sourceName}</span>
+                      <ExternalLink className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                    </a>
+                  </div>
+                )}
               </div>
             );
           })
         )}
       </CardContent>
+
+      {/* 3. Verified Official Data Sources Footer */}
+      <div className="px-3 py-2 border-t border-border/60 bg-muted/20 text-[10px] text-muted-foreground flex items-center justify-between flex-wrap gap-1.5">
+        <span className="flex items-center gap-1 font-semibold text-foreground/80">
+          <ShieldCheck className="h-3 w-3 text-emerald-500" />
+          Verified Feeds:
+        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="https://sachet.ndma.gov.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary hover:underline flex items-center gap-0.5"
+          >
+            NDMA SACHET <ExternalLink className="h-2 w-2" />
+          </a>
+          <span>&bull;</span>
+          <a
+            href="https://mausam.imd.gov.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary hover:underline flex items-center gap-0.5"
+          >
+            IMD <ExternalLink className="h-2 w-2" />
+          </a>
+          <span>&bull;</span>
+          <a
+            href="https://earthquake.usgs.gov"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary hover:underline flex items-center gap-0.5"
+          >
+            USGS <ExternalLink className="h-2 w-2" />
+          </a>
+          <span>&bull;</span>
+          <a
+            href="https://eonet.gsfc.nasa.gov"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary hover:underline flex items-center gap-0.5"
+          >
+            NASA EONET <ExternalLink className="h-2 w-2" />
+          </a>
+        </div>
+      </div>
     </Card>
   );
 }

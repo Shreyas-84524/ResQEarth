@@ -1153,6 +1153,35 @@ Next Action:
 Final project submission and live faculty presentation.
 ```
 
+## 44. Hazard Feed and Live Map Data Source Unification (Part 1)
+
+```text
+Status: Complete
+Date: 2026-10-06
+Scope: Part 1 — Unify Hazard Data Source (ResQEarth Single Source of Truth)
+
+1. Root Cause Analysis:
+   - Premature Discard in Deduplication: deduplicateDisasters() dropped any hazard without valid coordinates outright (if (!event || !isValidCoord(event.longitude, event.latitude)) continue;). Non-mappable official advisories (e.g., statewide weather or flood bulletins without point coordinates) were discarded from the feed.
+   - Coordinate Imputation Bug: normalizeIndianCapAlert() imputed missing alert coordinates to Mumbai (19.0760, 72.8777), resulting in statewide advisories falsely clustering in Mumbai.
+   - GeoJSON Conversion Inaccuracy: unifiedDisastersToGeoJson() mapped every disaster into a GeoJSON Point directly without validating coordinates, generating [undefined, undefined] coordinate tuples for unmappable events.
+   - Missing Canonical Mappability Contract: UnifiedDisasterEvent lacked an explicit isMappable flag to distinguish between events that should render on MapLibre and events that belong exclusively in the live feed.
+
+2. Architecture & Normalization Solutions:
+   - Canonical Mappability Field: Added isMappable: boolean to UnifiedDisasterEvent and made coordinates (latitude?: number, longitude?: number, coordinates?: [number, number]) optional.
+   - Zero-Imputation Normalization: Removed false Mumbai coordinate fallback from normalizeIndianCapAlert. Events lacking valid WGS84 coordinates now cleanly set isMappable: false with undefined coordinates.
+   - Preservative Deduplication: deduplicateDisasters() now preserves non-mappable events based on exact ID/providerEventId deduplication, while performing spatial and temporal proximity deduplication strictly across mappable events.
+   - Clean GeoJSON Generation: unifiedDisastersToGeoJson() strictly filters for d.isMappable && isValidCoord(d.longitude, d.latitude) before constructing MapLibre GeoJSON Point features.
+   - Hazard Mapping Telemetry: Added getDisasterMappingStats(disasters) returning DisasterMappingStats ({ total, mappable, missingCoordinates }) and exposed totalHazards, mappableHazards, missingCoordinateHazards in useUnifiedDisasters().
+   - Map Component Safety: Guarded MapGisToolbar handleFitToEvents to filter mappable events before computing bounding box; guarded UnifiedDisasterPopup to mount only for mappable events.
+
+3. Validation:
+   - TypeScript (npm run type-check): PASS (0 errors)
+   - ESLint (npm run lint): PASS (0 warnings, 0 errors)
+   - Test Suite (npm test): PASS (50/50 test units passed)
+   - Live Dataset Stats: Total hazards: 99, Mappable hazards: 99, Missing coordinates: 0, Duplicate hazards: 0
+   - Single Source of Truth: Feed and Map consume identical UnifiedDisasterEvent[] dataset via useUnifiedDisasters().
+```
+
 ## 45. Production Environment Variable Configuration
 
 ```text

@@ -278,7 +278,7 @@ export function MapUnifiedDisasterLayer({
 
   return (
     <>
-      {selectedDisaster && (
+      {selectedDisaster && selectedDisaster.isMappable && (
         <UnifiedDisasterPopup
           disaster={selectedDisaster}
           onClose={() => onSelectDisaster(null)}

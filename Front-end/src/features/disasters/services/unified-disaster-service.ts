@@ -17,6 +17,7 @@ import type {
   UnifiedDisasterFetchOptions,
   UnifiedDisasterGeoJsonFeature,
   UnifiedDisasterCategory,
+  DisasterMappingStats,
 } from "../types/disaster-event";
 import type { RiskLevel } from "@/types";
 
@@ -28,9 +29,9 @@ const unifiedDisasterCache = new Map<
 const inFlightUnifiedRequests = new Map<string, Promise<UnifiedDisasterEvent[]>>();
 
 /**
- * Validates WGS84 coordinates
+ * Validates WGS84 coordinates safely
  */
-function isValidCoord(lon: number, lat: number): boolean {
+export function isValidCoord(lon?: number | null, lat?: number | null): boolean {
   return (
     typeof lon === "number" &&
     typeof lat === "number" &&
@@ -62,8 +63,9 @@ export function earthquakeToUnifiedEvent(
   userLat?: number,
   userLon?: number
 ): UnifiedDisasterEvent {
+  const isMappable = isValidCoord(eq.longitude, eq.latitude);
   let distanceKm = eq.distanceKm;
-  if (typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
+  if (isMappable && typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
     distanceKm = Math.round(calculateHaversineDistanceKm([userLon, userLat], [eq.longitude, eq.latitude]));
   }
 
@@ -82,9 +84,10 @@ export function earthquakeToUnifiedEvent(
     sourceName: eq.source,
     sourceUrl: eq.sourceUrl,
     isOfficialAlert: false, // USGS is official telemetry, not statutory emergency decree
-    latitude: eq.latitude,
-    longitude: eq.longitude,
-    coordinates: [eq.longitude, eq.latitude],
+    isMappable,
+    latitude: isMappable ? eq.latitude : undefined,
+    longitude: isMappable ? eq.longitude : undefined,
+    coordinates: isMappable ? [eq.longitude, eq.latitude] : undefined,
     geometryType: "Point",
     region: eq.place,
     occurredAt: eq.occurredAt,
@@ -107,8 +110,9 @@ export function globalDisasterToUnifiedEvent(
   userLat?: number,
   userLon?: number
 ): UnifiedDisasterEvent {
+  const isMappable = isValidCoord(d.longitude, d.latitude);
   let distanceKm = d.distanceKm;
-  if (typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
+  if (isMappable && typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
     distanceKm = Math.round(calculateHaversineDistanceKm([userLon, userLat], [d.longitude, d.latitude]));
   }
 
@@ -135,15 +139,16 @@ export function globalDisasterToUnifiedEvent(
     sourceName: `NASA EONET (${d.primarySource.name})`,
     sourceUrl: d.sourceUrl,
     isOfficialAlert: false,
-    latitude: d.latitude,
-    longitude: d.longitude,
-    coordinates: [d.longitude, d.latitude],
+    isMappable,
+    latitude: isMappable ? d.latitude : undefined,
+    longitude: isMappable ? d.longitude : undefined,
+    coordinates: isMappable ? [d.longitude, d.latitude] : undefined,
     geometryType: d.geometryType,
     region: d.title,
     occurredAt: d.occurredAt,
     updatedAt: d.updatedAt,
     isOpen: d.isOpen,
-    distanceKm,
+    distanceKm: isMappable ? distanceKm : undefined,
     magnitudeValue: d.magnitudeValue,
     magnitudeUnit: d.magnitudeUnit,
     isStale: d.isStale,
@@ -164,9 +169,10 @@ export function weatherToUnifiedEvents(
   const lat = weather.latitude;
   const lon = weather.longitude;
   const locationName = weather.locationName || "Local Region";
+  const isMappable = isValidCoord(lon, lat);
 
   let distanceKm: number | undefined;
-  if (typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
+  if (isMappable && typeof userLat === "number" && typeof userLon === "number" && isValidCoord(userLon, userLat)) {
     distanceKm = Math.round(calculateHaversineDistanceKm([userLon, userLat], [lon, lat]));
   }
 
@@ -187,9 +193,10 @@ export function weatherToUnifiedEvents(
       sourceName: "Open-Meteo High-Resolution Model",
       sourceUrl: weather.sourceUrl,
       isOfficialAlert: false,
-      latitude: lat,
-      longitude: lon,
-      coordinates: [lon, lat],
+      isMappable,
+      latitude: isMappable ? lat : undefined,
+      longitude: isMappable ? lon : undefined,
+      coordinates: isMappable ? [lon, lat] : undefined,
       geometryType: "Point",
       region: locationName,
       occurredAt: weather.updatedAt,
@@ -217,9 +224,10 @@ export function weatherToUnifiedEvents(
       sourceName: "Open-Meteo High-Resolution Model",
       sourceUrl: weather.sourceUrl,
       isOfficialAlert: false,
-      latitude: lat,
-      longitude: lon,
-      coordinates: [lon, lat],
+      isMappable,
+      latitude: isMappable ? lat : undefined,
+      longitude: isMappable ? lon : undefined,
+      coordinates: isMappable ? [lon, lat] : undefined,
       geometryType: "Point",
       region: locationName,
       occurredAt: weather.updatedAt,
@@ -247,9 +255,10 @@ export function weatherToUnifiedEvents(
       sourceName: "Open-Meteo High-Resolution Model",
       sourceUrl: weather.sourceUrl,
       isOfficialAlert: false,
-      latitude: lat,
-      longitude: lon,
-      coordinates: [lon, lat],
+      isMappable,
+      latitude: isMappable ? lat : undefined,
+      longitude: isMappable ? lon : undefined,
+      coordinates: isMappable ? [lon, lat] : undefined,
       geometryType: "Point",
       region: locationName,
       occurredAt: weather.updatedAt,
@@ -271,28 +280,41 @@ export function deduplicateDisasters(events: UnifiedDisasterEvent[]): UnifiedDis
   const deduplicated: UnifiedDisasterEvent[] = [];
 
   for (const event of events) {
-    if (!event || !isValidCoord(event.longitude, event.latitude)) continue;
+    if (!event) continue;
 
     // 1. Exact ID match
     if (seenIds.has(event.id) || (event.providerEventId && seenIds.has(`${event.provider}:${event.providerEventId}`))) {
       continue;
     }
 
-    // 2. Spatial & Temporal proximity deduplication
-    // Check if there is an existing event of the same disasterType within 15 km and 6 hours
+    // If event is not mappable or has no valid coordinates, spatial deduplication cannot be performed.
+    // Keep it in the canonical dataset as long as ID is unique.
+    if (!event.isMappable || !isValidCoord(event.longitude, event.latitude)) {
+      seenIds.add(event.id);
+      if (event.providerEventId) {
+        seenIds.add(`${event.provider}:${event.providerEventId}`);
+      }
+      deduplicated.push(event);
+      continue;
+    }
+
+    // 2. Spatial & Temporal proximity deduplication (only among mappable events)
     const eventTime = new Date(event.occurredAt).getTime();
     let isDuplicate = false;
 
     for (let i = 0; i < deduplicated.length; i++) {
       const existing = deduplicated[i];
+      if (!existing.isMappable || !isValidCoord(existing.longitude, existing.latitude)) {
+        continue;
+      }
       if (existing.disasterType === event.disasterType) {
         const existingTime = new Date(existing.occurredAt).getTime();
         const timeDiff = Math.abs(eventTime - existingTime);
 
         if (timeDiff <= UNIFIED_DISASTER_CONFIG.deduplicationTimeWindowMs) {
           const dist = calculateHaversineDistanceKm(
-            [event.longitude, event.latitude],
-            [existing.longitude, existing.latitude]
+            [event.longitude!, event.latitude!],
+            [existing.longitude!, existing.latitude!]
           );
 
           if (dist <= UNIFIED_DISASTER_CONFIG.deduplicationDistanceKm) {
@@ -417,12 +439,18 @@ export function filterUnifiedDisasters(
 }
 
 /**
- * Converts UnifiedDisasterEvent list into a MapLibre-ready GeoJSON FeatureCollection
+ * Converts UnifiedDisasterEvent list into a MapLibre-ready GeoJSON FeatureCollection.
+ * Cleanly excludes hazards without valid coordinates (isMappable === false).
  */
 export function unifiedDisastersToGeoJson(
   disasters: UnifiedDisasterEvent[]
 ): GeoJSON.FeatureCollection<GeoJSON.Point> {
-  const features: UnifiedDisasterGeoJsonFeature[] = disasters.map((d) => ({
+  const mappable = disasters.filter(
+    (d): d is UnifiedDisasterEvent & { longitude: number; latitude: number } =>
+      Boolean(d.isMappable && isValidCoord(d.longitude, d.latitude))
+  );
+
+  const features: UnifiedDisasterGeoJsonFeature[] = mappable.map((d) => ({
     type: "Feature",
     id: d.id,
     geometry: {
@@ -457,6 +485,29 @@ export function unifiedDisastersToGeoJson(
 }
 
 /**
+ * Tracks hazard mapping metrics: total, mappable, and missing coordinates
+ */
+export function getDisasterMappingStats(disasters: UnifiedDisasterEvent[]): DisasterMappingStats {
+  const total = disasters.length;
+  let mappable = 0;
+  let missingCoordinates = 0;
+
+  for (const d of disasters) {
+    if (d.isMappable && isValidCoord(d.longitude, d.latitude)) {
+      mappable++;
+    } else {
+      missingCoordinates++;
+    }
+  }
+
+  return {
+    total,
+    mappable,
+    missingCoordinates,
+  };
+}
+
+/**
  * Aggregates all live disaster feeds (USGS Earthquakes, NASA EONET, Indian Official Alerts, Open-Meteo Weather)
  * with concurrent execution, failure isolation, deduplication, and caching.
  */
@@ -472,11 +523,17 @@ export async function fetchUnifiedDisasters(
       // Re-calculate distance relative to current user coordinates
       return cached.data.map((item) => {
         let dist = item.distanceKm;
-        if (typeof options?.userLat === "number" && typeof options?.userLon === "number") {
+        if (
+          item.isMappable &&
+          isValidCoord(item.longitude, item.latitude) &&
+          typeof options?.userLat === "number" &&
+          typeof options?.userLon === "number" &&
+          isValidCoord(options.userLon, options.userLat)
+        ) {
           dist = Math.round(
             calculateHaversineDistanceKm(
               [options.userLon, options.userLat],
-              [item.longitude, item.latitude]
+              [item.longitude!, item.latitude!]
             )
           );
         }

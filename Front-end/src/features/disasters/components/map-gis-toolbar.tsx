@@ -45,7 +45,16 @@ export function MapGisToolbar({
       return;
     }
 
-    const coords = disasters.map((d) => [d.longitude, d.latitude] as [number, number]);
+    const mappableDisasters = disasters.filter(
+      (d) => d.isMappable && typeof d.longitude === "number" && typeof d.latitude === "number"
+    );
+
+    if (mappableDisasters.length === 0) {
+      resetView();
+      return;
+    }
+
+    const coords = mappableDisasters.map((d) => [d.longitude!, d.latitude!] as [number, number]);
     const bbox = computeBoundingBox(coords);
     if (bbox) {
       fitBounds(bbox, 45);

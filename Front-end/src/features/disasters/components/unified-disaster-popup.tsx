@@ -58,6 +58,13 @@ export function UnifiedDisasterPopup({ disaster, onClose }: UnifiedDisasterPopup
 
   React.useEffect(() => {
     if (!map || !containerRef.current) return;
+    if (
+      !disaster.isMappable ||
+      typeof disaster.longitude !== "number" ||
+      typeof disaster.latitude !== "number"
+    ) {
+      return;
+    }
 
     // Create MapLibre HTML popup
     const popup = new maplibregl.Popup({
@@ -176,12 +183,14 @@ export function UnifiedDisasterPopup({ disaster, onClose }: UnifiedDisasterPopup
             </span>
           </div>
 
-          <div>
-            <span className="text-muted-foreground text-[10px] block">Coordinates</span>
-            <span className="font-mono text-foreground text-[10px] mt-0.5 block">
-              {disaster.latitude.toFixed(2)}°, {disaster.longitude.toFixed(2)}°
-            </span>
-          </div>
+          {typeof disaster.latitude === "number" && typeof disaster.longitude === "number" && (
+            <div>
+              <span className="text-muted-foreground text-[10px] block">Coordinates</span>
+              <span className="font-mono text-foreground text-[10px] mt-0.5 block">
+                {disaster.latitude.toFixed(2)}°, {disaster.longitude.toFixed(2)}°
+              </span>
+            </div>
+          )}
 
           <div className="col-span-2 flex items-center justify-between pt-1 border-t border-border/40 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">

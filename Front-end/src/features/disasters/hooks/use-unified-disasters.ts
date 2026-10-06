@@ -6,7 +6,9 @@ import {
   fetchUnifiedDisasters,
   filterUnifiedDisasters,
   unifiedDisastersToGeoJson,
+  getDisasterMappingStats,
 } from "../services/unified-disaster-service";
+import { UNIFIED_DISASTER_CONFIG } from "../constants/unified-disaster-config";
 import type {
   UnifiedDisasterEvent,
   UnifiedDisasterCategory,
@@ -14,6 +16,7 @@ import type {
   DisasterSourceType,
   DisasterTimeWindow,
   UnifiedDisasterFilterOptions,
+  DisasterMappingStats,
 } from "../types/disaster-event";
 import type { RiskLevel } from "@/types";
 
@@ -47,10 +50,17 @@ export interface UseUnifiedDisastersReturn {
   criticalCount: number;
   nearbyDisasters: UnifiedDisasterEvent[];
   mostSevereDisaster: UnifiedDisasterEvent | null;
+  // Mapping stats
+  mappingStats: DisasterMappingStats;
+  filteredMappingStats: DisasterMappingStats;
+  totalHazards: number;
+  mappableHazards: number;
+  missingCoordinateHazards: number;
   // States
   isLoading: boolean;
   error: string | null;
   isStale: boolean;
+  lastFetchedAt: number | null;
   refresh: () => Promise<void>;
 }
 
@@ -61,6 +71,8 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isStale, setIsStale] = React.useState<boolean>(false);
+  const [lastFetchedAt, setLastFetchedAt] = React.useState<number | null>(null);
+  const lastFetchedRef = React.useRef<number | null>(null);
 
   // Filter States
   const [categoryFilter, setCategoryFilter] = React.useState<UnifiedDisasterCategory>("all");
@@ -98,6 +110,9 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
 
         setDisasters(events);
         setIsStale(events.some((e) => e.isStale));
+        const now = Date.now();
+        setLastFetchedAt(now);
+        lastFetchedRef.current = now;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to load multi-hazard feeds.";
         setError(msg);
@@ -115,6 +130,31 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
 
     return () => {
       controller.abort();
+    };
+  }, [loadData]);
+
+  // Periodic 6-hour automatic background refresh & visibility-aware revalidation
+  React.useEffect(() => {
+    const intervalId = setInterval(() => {
+      loadData(true);
+    }, UNIFIED_DISASTER_CONFIG.autoRefreshIntervalMs);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        const last = lastFetchedRef.current;
+        if (last && Date.now() - last >= UNIFIED_DISASTER_CONFIG.autoRefreshIntervalMs) {
+          loadData(true);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
     };
   }, [loadData]);
 
@@ -199,6 +239,10 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
     return disasters[0]; // Already sorted with highest severity and official alerts at the top
   }, [disasters]);
 
+  // Hazard mapping telemetry / metrics
+  const mappingStats = React.useMemo(() => getDisasterMappingStats(disasters), [disasters]);
+  const filteredMappingStats = React.useMemo(() => getDisasterMappingStats(filteredDisasters), [filteredDisasters]);
+
   const refresh = React.useCallback(async () => {
     await loadData(true);
   }, [loadData]);
@@ -231,9 +275,15 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
     criticalCount,
     nearbyDisasters,
     mostSevereDisaster,
+    mappingStats,
+    filteredMappingStats,
+    totalHazards: mappingStats.total,
+    mappableHazards: mappingStats.mappable,
+    missingCoordinateHazards: mappingStats.missingCoordinates,
     isLoading,
     error,
     isStale,
+    lastFetchedAt,
     refresh,
   };
 }
