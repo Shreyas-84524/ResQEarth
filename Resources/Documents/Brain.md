@@ -1208,7 +1208,46 @@ Security Invariants Verified:
 - MapTiler client bundle resolution verified with static process.env access.
 ```
 
-## 46. Brain.md Maintenance Rule
+## 46. Render All Mappable Hazards on MapLibre (Part 2)
+
+```text
+Status: Complete
+Date: 2026-10-06
+Scope: Part 2 — Render All Mappable Hazards on MapLibre (ResQEarth Single Source of Truth)
+
+1. MapLibre Source & Layer Architecture:
+   - Canonical MapLibre Source: Single reusable GeoJSON source `resqearth-unified-hazards` populated directly from the canonical UnifiedDisasterEvent[] dataset via unifiedDisastersToGeoJson().
+   - Multi-Hazard Representation: Full categorical color coding and dynamic sizing across all supported hazard types: floods, cyclones/storms, earthquakes, wildfires, landslides, heatwaves, severe weather, and normalized advisories.
+   - Six-Tier Vector Layer Stack:
+     1. resqearth-unified-heatmap: Severity-weighted kernel density layer (heat weight 0.25 to 1.0 based on low/moderate/high/severe severity). Fades smoothly between zoom 7–9 in hybrid mode; full 0.85 opacity in heatmap mode.
+     2. resqearth-unified-pulse: Animated ambient ring for high/severe hazards and official emergency alerts.
+     3. resqearth-unified-official-ring: Distinct outer stroke highlighting vetted government agency alerts.
+     4. resqearth-unified-circles: Precision vector circle markers with category-driven colors (#3b82f6 for floods, #06b6d4 for cyclones, #ef4444 for earthquakes, #f97316 for wildfires, #10b981 for landslides, #eab308 for heatwaves).
+     5. resqearth-unified-selected-halo: High-contrast cyan (#06b6d4) focus ring indicating the currently selected disaster.
+     6. resqearth-unified-labels: Category and magnitude text labels displayed at zoom >= 7 with subtle halos.
+
+2. Mode & Filter Synchronization:
+   - Map Controls: Unified category filter chips (All Hazards, Floods, Cyclones, Earthquakes, Wildfires) display live counts from categoryCounts.
+   - Display Modes:
+     - Markers Mode: Precision point rendering of all matching hazards.
+     - Heatmap Mode: Continuous spatial density representation weighted by disaster severity.
+     - Hybrid Mode: Low-zoom spatial density visualization combined with marker points at medium/high zoom without duplication.
+   - Feed-to-Map Navigation: Clicking any hazard card in the unified feed triggers smooth map.flyTo navigation to the event coordinates and activates the selected halo.
+
+3. Robustness & Lifecycle Management:
+   - Style Switch Lifecycle: Listens to map "style.load" events to automatically re-add the unified source and all layers when changing MapTiler basemap styles.
+   - Stale Closure Protection: Uses React refs (disastersRef, onSelectDisasterRef, geoJsonRef) for event handlers to prevent stale closure bugs on rapid updates.
+   - Safe Unmount: Complete teardown of all map layers and sources on component unmount.
+
+4. Validation:
+   - TypeScript (npm run type-check): PASS (0 errors)
+   - ESLint (npm run lint): PASS (0 warnings, 0 errors)
+   - Test Suite (npm test): PASS (50/50 test units passed)
+   - Production Build (npm run build): PASS (41 routes compiled)
+   - Headless Browser Verification: Verified WebGL map canvas initialization, filter chip interactivity, mode switching, feed-to-map flyTo, and 0 console errors.
+```
+
+## 47. Brain.md Maintenance Rule
 
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**

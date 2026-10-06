@@ -36,27 +36,42 @@ export function MapUnifiedDisasterLayer({
 }: MapUnifiedDisasterLayerProps) {
   const { map, isLoaded } = useMap();
 
-  const sourceId = "resqearth-source-unified-hazards";
-  const heatmapLayerId = "resqearth-unified-hazard-heatmap";
-  const circleLayerId = "resqearth-unified-hazard-circles";
-  const pulseLayerId = "resqearth-unified-hazard-pulse";
+  const sourceId = "resqearth-unified-hazards";
+  const heatmapLayerId = "resqearth-unified-heatmap";
+  const circleLayerId = "resqearth-unified-circles";
+  const pulseLayerId = "resqearth-unified-pulse";
   const officialRingLayerId = "resqearth-unified-official-ring";
   const selectedHaloLayerId = "resqearth-unified-selected-halo";
-  const labelLayerId = "resqearth-unified-hazard-labels";
+  const labelLayerId = "resqearth-unified-labels";
 
-  // 1. Initialize Source and Layers once Map is loaded
-  React.useEffect(() => {
-    if (!map || !isLoaded) return;
+  // Fresh refs to prevent stale closures and avoid recreating listeners on every disaster change
+  const disastersRef = React.useRef(disasters);
+  disastersRef.current = disasters;
 
-    // Add GeoJSON source if missing
-    if (!map.getSource(sourceId)) {
+  const onSelectDisasterRef = React.useRef(onSelectDisaster);
+  onSelectDisasterRef.current = onSelectDisaster;
+
+  const geoJsonRef = React.useRef(geoJson);
+  geoJsonRef.current = geoJson;
+
+  const prevSelectedIdRef = React.useRef<string | null>(null);
+
+  // 1. Idempotent initialization of MapLibre source and layers
+  const setupSourceAndLayers = React.useCallback(() => {
+    if (!map || !map.isStyleLoaded()) return;
+
+    // 1a. Ensure single GeoJSON source exists
+    const existingSource = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+    if (!existingSource) {
       map.addSource(sourceId, {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
+        data: geoJsonRef.current,
       });
+    } else {
+      existingSource.setData(geoJsonRef.current);
     }
 
-    // 1a. Multi-Hazard Severity-Weighted Heatmap Layer (Lowest z-index layer)
+    // 1b. Multi-Hazard Severity-Weighted Heatmap Layer (Lowest z-index)
     if (!map.getLayer(heatmapLayerId)) {
       map.addLayer({
         id: heatmapLayerId,
@@ -75,7 +90,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // 1b. High-Severity Pulse Ring Layer (for CRITICAL or HIGH events)
+    // 1c. High-Severity Pulse Ring Layer (for CRITICAL or HIGH events)
     if (!map.getLayer(pulseLayerId)) {
       map.addLayer({
         id: pulseLayerId,
@@ -95,7 +110,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // 1c. Official Statutory Alert Outer Ring Layer
+    // 1d. Official Statutory Alert Outer Ring Layer (NDMA SACHET / IMD)
     if (!map.getLayer(officialRingLayerId)) {
       map.addLayer({
         id: officialRingLayerId,
@@ -115,7 +130,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // 1d. Primary Unified Disaster Point Circle Layer
+    // 1e. Primary Unified Disaster Point Circle Layer
     if (!map.getLayer(circleLayerId)) {
       map.addLayer({
         id: circleLayerId,
@@ -134,7 +149,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // 1e. Selected Event Focus / Halo Layer
+    // 1f. Selected Event Focus / Halo Layer
     if (!map.getLayer(selectedHaloLayerId)) {
       map.addLayer({
         id: selectedHaloLayerId,
@@ -154,7 +169,7 @@ export function MapUnifiedDisasterLayer({
       });
     }
 
-    // 1f. Category Text Labels at closer zoom levels
+    // 1g. Category Text Labels at closer zoom levels (zoom >= 5)
     if (!map.getLayer(labelLayerId)) {
       map.addLayer({
         id: labelLayerId,
@@ -176,70 +191,61 @@ export function MapUnifiedDisasterLayer({
         },
       });
     }
+  }, [map, sourceId, heatmapLayerId, pulseLayerId, officialRingLayerId, circleLayerId, selectedHaloLayerId, labelLayerId]);
 
-    // 2. Click Handler
-    const handleClick = (e: { features?: MapGeoJSONFeature[] }) => {
-      if (!e.features || e.features.length === 0) return;
-      const feat = e.features[0];
-      const clickedId = feat.properties?.id;
-      const match = disasters.find((d) => d.id === clickedId);
-      if (match) {
-        onSelectDisaster(match);
-      }
-    };
+  // 2. Lifecycle setup: on load and on map style reload (e.g. basemap change)
+  React.useEffect(() => {
+    if (!map) return;
 
-    // 3. Mouse Hover Pointer
-    const handleMouseEnter = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const handleMouseLeave = () => {
-      map.getCanvas().style.cursor = "";
-    };
+    if (isLoaded) {
+      setupSourceAndLayers();
+    }
 
-    map.on("click", circleLayerId, handleClick);
-    map.on("mouseenter", circleLayerId, handleMouseEnter);
-    map.on("mouseleave", circleLayerId, handleMouseLeave);
+    map.on("style.load", setupSourceAndLayers);
 
     return () => {
-      if (map) {
-        map.off("click", circleLayerId, handleClick);
-        map.off("mouseenter", circleLayerId, handleMouseEnter);
-        map.off("mouseleave", circleLayerId, handleMouseLeave);
+      map.off("style.load", setupSourceAndLayers);
+      const layersToClean = [
+        labelLayerId,
+        selectedHaloLayerId,
+        circleLayerId,
+        officialRingLayerId,
+        pulseLayerId,
+        heatmapLayerId,
+      ];
+      for (const id of layersToClean) {
+        if (map.getLayer(id)) {
+          try {
+            map.removeLayer(id);
+          } catch {
+            // ignore during unmount
+          }
+        }
+      }
+      if (map.getSource(sourceId)) {
+        try {
+          map.removeSource(sourceId);
+        } catch {
+          // ignore during unmount
+        }
       }
     };
-  }, [
-    map,
-    isLoaded,
-    disasters,
-    onSelectDisaster,
-    sourceId,
-    heatmapLayerId,
-    circleLayerId,
-    pulseLayerId,
-    officialRingLayerId,
-    selectedHaloLayerId,
-    labelLayerId,
-  ]);
+  }, [map, isLoaded, setupSourceAndLayers, sourceId, labelLayerId, selectedHaloLayerId, circleLayerId, officialRingLayerId, pulseLayerId, heatmapLayerId]);
 
-  // Update GeoJSON source whenever data updates
+  // 3. Update GeoJSON source data reactively
   React.useEffect(() => {
-    if (!map || !isLoaded) return;
+    geoJsonRef.current = geoJson;
+    if (!map || !isLoaded || !map.isStyleLoaded()) return;
+
     const src = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
     if (src) {
       src.setData(geoJson);
     }
   }, [map, isLoaded, geoJson, sourceId]);
 
-  // Update selected event halo filter
+  // 4. Update display modes: Hybrid ("all"), Markers Only ("markers"), Heatmap Only ("heatmap")
   React.useEffect(() => {
-    if (!map || !isLoaded || !map.getLayer(selectedHaloLayerId)) return;
-    const selectedId = selectedDisaster ? selectedDisaster.id : "";
-    map.setFilter(selectedHaloLayerId, ["==", ["get", "id"], selectedId]);
-  }, [map, isLoaded, selectedDisaster, selectedHaloLayerId]);
-
-  // Update layer visibility and display modes (all / markers / heatmap)
-  React.useEffect(() => {
-    if (!map || !isLoaded) return;
+    if (!map || !isLoaded || !map.isStyleLoaded()) return;
 
     const isOverallVisible = visible;
     const showHeatmap = isOverallVisible && (displayMode === "all" || displayMode === "heatmap");
@@ -250,7 +256,6 @@ export function MapUnifiedDisasterLayer({
 
     if (map.getLayer(heatmapLayerId)) {
       map.setLayoutProperty(heatmapLayerId, "visibility", heatmapVis);
-      // If user explicitly chose "heatmap" mode, keep full opacity across all zooms
       if (displayMode === "heatmap") {
         map.setPaintProperty(heatmapLayerId, "heatmap-opacity", 0.85);
       } else {
@@ -275,6 +280,77 @@ export function MapUnifiedDisasterLayer({
     selectedHaloLayerId,
     labelLayerId,
   ]);
+
+  // 5. Update selected event focus halo filter
+  React.useEffect(() => {
+    if (!map || !isLoaded || !map.isStyleLoaded() || !map.getLayer(selectedHaloLayerId)) return;
+    const selectedId = selectedDisaster ? selectedDisaster.id : "";
+    map.setFilter(selectedHaloLayerId, ["==", ["get", "id"], selectedId]);
+  }, [map, isLoaded, selectedDisaster, selectedHaloLayerId]);
+
+  // 6. Feed-to-map navigation: flyTo selected hazard and focus view
+  React.useEffect(() => {
+    if (!map || !selectedDisaster) {
+      prevSelectedIdRef.current = null;
+      return;
+    }
+
+    if (selectedDisaster.id !== prevSelectedIdRef.current) {
+      prevSelectedIdRef.current = selectedDisaster.id;
+      if (
+        selectedDisaster.isMappable &&
+        typeof selectedDisaster.longitude === "number" &&
+        typeof selectedDisaster.latitude === "number"
+      ) {
+        map.flyTo({
+          center: [selectedDisaster.longitude, selectedDisaster.latitude],
+          zoom: Math.max(map.getZoom(), 7),
+          essential: true,
+          duration: 1200,
+        });
+      }
+    }
+  }, [map, selectedDisaster]);
+
+  // 7. Click and hover interactions on hazard marker layers
+  React.useEffect(() => {
+    if (!map || !isLoaded) return;
+
+    const interactiveLayers = [circleLayerId, pulseLayerId, officialRingLayerId];
+
+    const handleClick = (e: { features?: MapGeoJSONFeature[] }) => {
+      if (!e.features || e.features.length === 0) return;
+      const feat = e.features[0];
+      const clickedId = feat.properties?.id;
+      const match = disastersRef.current.find((d) => d.id === clickedId);
+      if (match) {
+        onSelectDisasterRef.current?.(match);
+      }
+    };
+
+    const handleMouseEnter = () => {
+      map.getCanvas().style.cursor = "pointer";
+    };
+    const handleMouseLeave = () => {
+      map.getCanvas().style.cursor = "";
+    };
+
+    for (const layerId of interactiveLayers) {
+      map.on("click", layerId, handleClick);
+      map.on("mouseenter", layerId, handleMouseEnter);
+      map.on("mouseleave", layerId, handleMouseLeave);
+    }
+
+    return () => {
+      if (map) {
+        for (const layerId of interactiveLayers) {
+          map.off("click", layerId, handleClick);
+          map.off("mouseenter", layerId, handleMouseEnter);
+          map.off("mouseleave", layerId, handleMouseLeave);
+        }
+      }
+    };
+  }, [map, isLoaded, circleLayerId, pulseLayerId, officialRingLayerId]);
 
   return (
     <>

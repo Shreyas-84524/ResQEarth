@@ -40,6 +40,9 @@ export interface MapViewProps {
   initialZoom?: number;
   className?: string;
   showFilterChips?: boolean;
+  filterOptions?: FilterChipOption[];
+  selectedFilter?: string;
+  onFilterChange?: (filterId: string) => void;
   showLocationBadge?: boolean;
   showWeatherBadge?: boolean;
   showLegend?: boolean;
@@ -64,6 +67,9 @@ function MapViewInternal({
   initialZoom,
   className,
   showFilterChips = true,
+  filterOptions,
+  selectedFilter: selectedFilterProp,
+  onFilterChange,
   showLocationBadge = true,
   showWeatherBadge = true,
   showLegend = true,
@@ -77,12 +83,17 @@ function MapViewInternal({
   const mapContext = React.useContext(MapContext);
   const { location } = useGeolocation();
   const { weather, isLoading: isWeatherLoading } = useWeather();
-  const [selectedFilter, setSelectedFilter] = React.useState("all");
+  const [internalFilter, setInternalFilter] = React.useState("all");
+  const activeFilter = selectedFilterProp ?? internalFilter;
   const [isLocationDialogOpen, setIsLocationDialogOpen] = React.useState(false);
   const [showDeniedNotice, setShowDeniedNotice] = React.useState(false);
 
   const handleFilterSelect = (filterId: string) => {
-    setSelectedFilter(filterId);
+    if (selectedFilterProp === undefined) {
+      setInternalFilter(filterId);
+    }
+    onFilterChange?.(filterId);
+
     if (mapContext) {
       if (filterId === "all") {
         mapContext.toggleLayer("layer-earthquakes", true);
@@ -121,8 +132,8 @@ function MapViewInternal({
         {showFilterChips && (
           <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-140px)] sm:max-w-none">
             <MapFilterChips
-              options={DEFAULT_MAP_FILTER_OPTIONS}
-              selectedId={selectedFilter}
+              options={filterOptions ?? DEFAULT_MAP_FILTER_OPTIONS}
+              selectedId={activeFilter}
               onSelect={handleFilterSelect}
             />
           </div>

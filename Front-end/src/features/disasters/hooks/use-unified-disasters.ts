@@ -96,7 +96,7 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
   }, []);
 
   const loadData = React.useCallback(
-    async (forceRefresh = false, signal?: AbortSignal) => {
+    async (forceRefresh = false) => {
       setIsLoading(true);
       setError(null);
 
@@ -105,7 +105,6 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
           userLat: location.latitude,
           userLon: location.longitude,
           forceRefresh,
-          signal,
         });
 
         setDisasters(events);
@@ -125,12 +124,7 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
 
   // Initial fetch and on location coordinate change
   React.useEffect(() => {
-    const controller = new AbortController();
-    loadData(false, controller.signal);
-
-    return () => {
-      controller.abort();
-    };
+    loadData(false);
   }, [loadData]);
 
   // Periodic 6-hour automatic background refresh & visibility-aware revalidation
