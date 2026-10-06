@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { MapGeoJSONFeature } from "maplibre-gl";
 import type maplibregl from "maplibre-gl";
 import { useMap } from "@/features/map/hooks/use-map";
 import {
@@ -356,7 +357,7 @@ export function MapUnifiedDisasterLayer({
     }
   }, [map, selectedDisaster]);
 
-  // 7. Click, hover, heatmap, and outside-click interactions
+  // 7. Click, hover, and heatmap interactions
   React.useEffect(() => {
     if (!map || !isLoaded) return;
 
@@ -392,44 +393,41 @@ export function MapUnifiedDisasterLayer({
       return candidates;
     };
 
-    // Safe selection helper that ignores repeated selection of identical hazard
+    // Safe selection helper that ignores repeated selection of identical hazard (prevents card flicker)
     const selectHazard = (hazard: UnifiedDisasterEvent) => {
       if (selectedDisasterRef.current?.id === hazard.id) {
-        return; // Ignore repeated selection of the same hazard
+        return; // Already selected, avoid unnecessary state cycle
       }
       onSelectDisasterRef.current?.(hazard);
     };
 
-    // Single unified click handler on map: handles vector markers and heatmap blooms
-    const handleMapClick = (e: maplibregl.MapMouseEvent) => {
-      // 1. Check if a vector marker layer was under the click point
-      const existingLayers = interactiveLayers.filter((id) => map.getLayer(id));
-      if (existingLayers.length > 0) {
-        const rendered = map.queryRenderedFeatures(e.point, { layers: existingLayers });
-        if (rendered.length > 0) {
-          const featId = rendered[0].properties?.id;
-          if (featId) {
-            const match = disastersRef.current.find((d) => d.id === featId);
-            if (match) {
-              selectHazard(match);
-              return;
-            }
-          }
-        }
-      }
+    // Direct click on marker layer
+    const handleMarkerClick = (e: maplibregl.MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
+      if (!e.features || e.features.length === 0) return;
+      (e.originalEvent as unknown as { _handledByMarker?: boolean })._handledByMarker = true;
 
-      // 2. Query nearby underlying hazard features (for heatmap clicks and clusters)
-      const nearby = findHazardsNearScreenPoint(e.point, 36);
-      if (nearby.length > 0) {
-        selectHazard(nearby[0].disaster);
+      const feat = e.features[0];
+      const clickedId = feat.properties?.id;
+      const match = disastersRef.current.find((d) => d.id === clickedId);
+      if (match) {
+        selectHazard(match);
+      }
+    };
+
+    // General map click: handles Heatmap clicks and cluster disambiguation
+    const handleMapClick = (e: maplibregl.MapMouseEvent) => {
+      if ((e.originalEvent as unknown as { _handledByMarker?: boolean })._handledByMarker) {
         return;
       }
 
-      // 3. Clicking empty map area or panning/zooming DOES NOT close or flicker the card.
-      // The selected card remains locked until another hazard is selected or user explicitly closes via X.
+      // Query nearby underlying hazard features (for heatmap clicks and clusters)
+      const nearby = findHazardsNearScreenPoint(e.point, 36);
+      if (nearby.length > 0) {
+        selectHazard(nearby[0].disaster);
+      }
     };
 
-    // Throttled mousemove handler ONLY for changing cursor style in heatmap mode (max ~16fps)
+    // Throttled mousemove handler ONLY for changing cursor style in heatmap mode
     let lastMouseMoveTime = 0;
     const handleMouseMove = (e: maplibregl.MapMouseEvent) => {
       const now = performance.now();
@@ -452,6 +450,7 @@ export function MapUnifiedDisasterLayer({
     };
 
     for (const layerId of interactiveLayers) {
+      map.on("click", layerId, handleMarkerClick);
       map.on("mouseenter", layerId, handleMouseEnter);
       map.on("mouseleave", layerId, handleMouseLeave);
     }
@@ -462,6 +461,7 @@ export function MapUnifiedDisasterLayer({
     return () => {
       if (map) {
         for (const layerId of interactiveLayers) {
+          map.off("click", layerId, handleMarkerClick);
           map.off("mouseenter", layerId, handleMouseEnter);
           map.off("mouseleave", layerId, handleMouseLeave);
         }

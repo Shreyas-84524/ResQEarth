@@ -163,6 +163,9 @@ export function MapContainer({
       mapInstance.on("load", () => {
         setIsLoading(false);
         mapRef.current = mapInstance;
+        if (typeof window !== "undefined") {
+          (window as unknown as { __map?: maplibregl.Map }).__map = mapInstance;
+        }
 
         if (mapContextRef.current?._setMap) {
           mapContextRef.current._setMap(mapInstance);

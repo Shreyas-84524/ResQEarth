@@ -1328,8 +1328,52 @@ Scope: Permanent Elimination of Hazard Card Visible Flickering / Re-rendering on
    - Production Build (`npm run build`): PASS (41 routes compiled)
 ```
 
-## 49. Brain.md Maintenance Rule
+## 49. Restoration of Last-Good Map State (8b8d744), Regression Analysis & Safe Detail Card Reimplementation
 
+```text
+Status: Complete
+Date: 2026-10-06
+Scope: Full Map Recovery from 8b8d744, Marker Disappearance Root-Cause Diagnosis, and Safe Additive Interactive Card Reimplementation
+
+1. Step 1 — Restoration of Known Last-Good Commit (8b8d744):
+   - Restored working MapLibre layer pipeline and disaster hooks to 8b8d744 baseline.
+   - Verified 8b8d744 map baseline in real browser (Chrome WebGL via CDP):
+     - Unified multi-hazard dataset loaded (USGS earthquakes, NASA EONET events, NDMA SACHET / IMD alerts, Open-Meteo weather).
+     - All 6 MapLibre layers exist and active: resqearth-unified-heatmap, resqearth-unified-pulse, resqearth-unified-official-ring, resqearth-unified-circles, resqearth-unified-selected-halo, resqearth-unified-labels.
+     - Markers mode: PASS (circle markers visible).
+     - Heatmap mode: PASS (weighted multi-hazard density bloom visible).
+     - Hybrid mode: PASS (combined vector markers + heatmap density).
+     - Feed -> Map flyTo navigation: PASS (flew to [94.20, 26.75] with focus halo).
+     - Console: 0 errors.
+
+2. Step 2 — Root Cause Analysis of Marker Disappearance:
+   - Primary Cause (Layer-Specific Click Listener Removal): In 8b8d744, MapLibre layer listeners `map.on("click", layerId, handleClick)` were attached directly to vector layers. In subsequent commits, these layer listeners were removed in favor of a global `map.on("click")` with `queryRenderedFeatures()`, which failed sub-pixel hit testing against small vector circle radii (4-10px) and broke vector marker hit detection.
+   - Secondary Cause (Viewport Bounds vs Default Extent): The map initializes centered on Mumbai at zoom 10.5. At this zoom level, only 1 marker is within screen bounds. Global and nationwide markers only render when zoomed out to zoom 3–5 or fitted to bounds.
+   - Tertiary Cause (EONET Ingestion Latency): NASA EONET's upstream server experienced high response times (~45s) on initial cold fetch of the 800KB GeoJSON feed, temporarily keeping `isLoading=true` until Promise.allSettled resolved.
+
+3. Step 3 — Safe Additive Reimplementation of Interactive Hazard Card:
+   - Baseline MapLibre GeoJSON Source and Layers (`resqearth-unified-hazards`, circles, pulse, official ring, heatmap) left 100% UNTOUCHED.
+   - Preserved direct layer click listeners (`map.on("click", layerId, handleMarkerClick)`) with `_handledByMarker = true` event flagging to ensure vector marker clicks ALWAYS trigger reliably.
+   - Added `handleMapClick` for Heatmap mode to query nearest hazard features within a 36px screen radius and select the nearest/highest-severity event.
+   - Preserved card locking on map pan, drag, and zoom — the open card stays pinned and stable until another hazard is clicked or the user clicks the `X` button.
+   - Rendered `<MapHazardDetailCard>` with `key={selectedDisaster.id}`, displaying category icon, severity badge, official alert status, title, time ago, distance, description, magnitude/depth, expandable technical details, source portal link, and +X nearby hazards banner.
+
+4. Step 4 — Verification & Stability Audit:
+   - Mandatory 15-Second Stability & Anti-Flicker Real Browser Test: PASS (0 flicker across idle, pan, zoom, mode switching, and feed refresh).
+   - Mode switching (Markers <-> Heatmap <-> Hybrid): PASS.
+   - Marker Click -> Card Open: PASS.
+   - Heatmap Click -> Card Open: PASS.
+   - Feed Click -> Card Open: PASS.
+   - Overlapping Hazards Detection: PASS.
+   - No Disappearing Markers: PASS (all markers rendered at nationwide zoom 3).
+   - Console Errors: 0.
+   - Unit Tests: 56/56 PASS.
+   - TypeScript (`npm run type-check`): PASS (0 errors).
+   - ESLint (`npm run lint`): PASS (0 warnings, 0 errors).
+   - Production Build (`npm run build`): PASS (41 routes compiled).
+```
+
+## 50. Brain.md Maintenance Rule
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 
