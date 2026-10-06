@@ -26,6 +26,8 @@ export interface UseUnifiedDisastersReturn {
   geoJson: GeoJSON.FeatureCollection<GeoJSON.Point>;
   selectedDisaster: UnifiedDisasterEvent | null;
   setSelectedDisaster: (disaster: UnifiedDisasterEvent | null) => void;
+  selectedHazardId: string | null;
+  setSelectedHazardId: (id: string | null) => void;
   // Filters
   categoryFilter: UnifiedDisasterCategory;
   setCategoryFilter: (cat: UnifiedDisasterCategory) => void;
@@ -67,7 +69,23 @@ export interface UseUnifiedDisastersReturn {
 export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
   const { location } = useGeolocation();
   const [disasters, setDisasters] = React.useState<UnifiedDisasterEvent[]>([]);
-  const [selectedDisaster, setSelectedDisaster] = React.useState<UnifiedDisasterEvent | null>(null);
+  // Authoritative selection state managed by stable hazard ID
+  const [selectedHazardId, setSelectedHazardIdState] = React.useState<string | null>(null);
+
+  const setSelectedHazardId = React.useCallback((id: string | null) => {
+    setSelectedHazardIdState((prev) => (prev === id ? prev : id));
+  }, []);
+
+  const setSelectedDisaster = React.useCallback((disaster: UnifiedDisasterEvent | null) => {
+    const newId = disaster ? disaster.id : null;
+    setSelectedHazardIdState((prev) => (prev === newId ? prev : newId));
+  }, []);
+
+  // Derive selectedDisaster from master disasters list using stable selectedHazardId
+  const selectedDisaster = React.useMemo(() => {
+    if (!selectedHazardId) return null;
+    return disasters.find((d) => d.id === selectedHazardId) ?? null;
+  }, [disasters, selectedHazardId]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isStale, setIsStale] = React.useState<boolean>(false);
@@ -247,6 +265,8 @@ export function useUnifiedDisasters(): UseUnifiedDisastersReturn {
     geoJson,
     selectedDisaster,
     setSelectedDisaster,
+    selectedHazardId,
+    setSelectedHazardId,
     categoryFilter,
     setCategoryFilter,
     providerFilter,

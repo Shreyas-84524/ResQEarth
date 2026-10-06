@@ -1289,7 +1289,46 @@ Scope: Part 3 — Interactive Hazard Information Card on Live Map (ResQEarth Sin
      - Console Audit: 0 errors.
 ```
 
-## 48. Brain.md Maintenance Rule
+## 48. Anti-Flicker Architecture & Persistent Hazard Card Stability Hardening
+
+```text
+Status: Complete
+Date: 2026-10-06
+Scope: Permanent Elimination of Hazard Card Visible Flickering / Re-rendering on Live Map
+
+1. Root Cause Analysis:
+   - Root Cause 1 (CSS Keyframe Reflashes): `MapHazardDetailCard` container used `animate-in fade-in-0 slide-in-from-bottom-3 duration-200 transition-all`, which restarted CSS opacity and translate keyframe animations whenever the parent re-rendered or prop identities shifted.
+   - Root Cause 2 (Pan/Drag False Deselection): `handleMapClick` in `map-unified-disaster-layer.tsx` dismissed `selectedDisaster` on empty map clicks. Panning, dragging, or mouse-up releases on the map canvas registered as clicks on empty space, causing premature card dismissals and flicker loops.
+   - Root Cause 3 (Competing Listener Race Conditions): Both individual layer click listeners (`map.on("click", layerId)`) and global map click listeners (`map.on("click")`) were registered simultaneously, creating multi-event races and duplicate state dispatches.
+   - Root Cause 4 (Object Reference Mutation on Background Feeds): Storing entire object references in React state caused card unmount/remount churn whenever background feed polling updated timestamps or telemetry values.
+
+2. Permanent Architectural Fixes:
+   - Stable ID State: Selection state stored strictly by stable hazard `id` (`selectedHazardId: string | null`) in `useUnifiedDisasters` with strict equality guards (`prev === newId ? prev : newId`). Redundant selections are rejected at state-level.
+   - Resilient Derivation: `selectedDisaster` is derived via `disasters.find(d => d.id === selectedHazardId) ?? null`, ensuring background feed polling preserves the active card continuously rather than resetting it.
+   - Selection Locking: Map pan, drag, and zoom actions never dismiss the card. The card remains locked open until the user explicitly selects a different hazard, clicks the `X` button, or navigates away.
+   - Unified Click Pipeline: Eliminated per-layer click callbacks. A single throttled `map.on("click", handleMapClick)` queries rendered features within a 24px bounding box and resolves points or heatmap density centers deterministically.
+   - Hover Isolation: `mousemove` listener throttled to 16ms modifies only canvas cursor styles (`pointer` vs default) without touching React selection state.
+   - Memoized Component & Stable Key: `<MapHazardDetailCard key={selectedDisaster.id}>` wrapped with `React.memo` using strict semantic prop equality (matching ID, updatedAt, isOpen, severity, and overlapping count). Removed disruptive CSS keyframe enter classes.
+
+3. Mandatory 15-Second Stability & Anti-Flicker Verification:
+   - Real Headless Chrome CDP test executed for >= 15 continuous seconds:
+     - [0-3s] Map Idle: 0 flicker, 0 spontaneous close/open
+     - [3-6s] Map Pan & Drag: 0 flicker, card locked open
+     - [6-9s] Map Zoom In & Out: 0 flicker, card locked open
+     - [9-12s] Display Modes Switch (Markers <-> Heatmap <-> Hybrid): 0 flicker, card locked open across all modes
+     - [12-15s] Background Feed Data Refresh: 0 flicker, card preserved stably
+     - Rapid Hazard Selection Switch & Return: 0 flicker, smooth and responsive
+     - Explicit Close via `X` Button: Verified clean dismissal
+     - Console Error Audit: 0 errors logged across entire test duration
+   - Regression Test Suite (`src/features/disasters/__tests__/hazard-card-stability.test.ts`):
+     - 5 new test cases added: repeated same-hazard selection, feed refresh preservation, pan/zoom lock preservation, clean unmount / listener cleanup, and hover vs click isolation.
+     - All 56 test units in the repository pass.
+   - TypeScript (`npm run type-check`): PASS (0 errors)
+   - ESLint (`npm run lint`): PASS (0 warnings, 0 errors)
+   - Production Build (`npm run build`): PASS (41 routes compiled)
+```
+
+## 49. Brain.md Maintenance Rule
 
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**

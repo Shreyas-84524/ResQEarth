@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import type { MapGeoJSONFeature } from "maplibre-gl";
 import type maplibregl from "maplibre-gl";
 import { useMap } from "@/features/map/hooks/use-map";
 import {
@@ -25,6 +24,8 @@ const SEVERITY_WEIGHT: Record<string, number> = {
   GUARDED: 2,
   LOW: 1,
 };
+
+const EMPTY_OVERLAPPING: UnifiedDisasterEvent[] = [];
 
 export interface MapUnifiedDisasterLayerProps {
   geoJson: GeoJSON.FeatureCollection<GeoJSON.Point>;
@@ -68,7 +69,7 @@ export function MapUnifiedDisasterLayer({
   const selectedDisasterRef = React.useRef(selectedDisaster);
   selectedDisasterRef.current = selectedDisaster;
 
-  // Identify other overlapping hazards within 35 km of selected event
+  // Identify other overlapping hazards within 35 km of selected event with stable reference
   const overlappingHazards = React.useMemo(() => {
     if (
       !selectedDisaster ||
@@ -76,15 +77,16 @@ export function MapUnifiedDisasterLayer({
       typeof selectedDisaster.longitude !== "number" ||
       typeof selectedDisaster.latitude !== "number"
     ) {
-      return [];
+      return EMPTY_OVERLAPPING;
     }
 
     const selLon = selectedDisaster.longitude;
     const selLat = selectedDisaster.latitude;
+    const selId = selectedDisaster.id;
 
-    return disasters.filter((d) => {
+    const matches = disasters.filter((d) => {
       if (
-        d.id === selectedDisaster.id ||
+        d.id === selId ||
         !d.isMappable ||
         typeof d.longitude !== "number" ||
         typeof d.latitude !== "number"
@@ -94,6 +96,8 @@ export function MapUnifiedDisasterLayer({
       const dist = calculateHaversineDistanceKm([selLon, selLat], [d.longitude, d.latitude]);
       return dist <= 35; // 35 km proximity for overlapping / clustered events
     });
+
+    return matches.length > 0 ? matches : EMPTY_OVERLAPPING;
   }, [selectedDisaster, disasters]);
 
   // 1. Idempotent initialization of MapLibre source and layers
@@ -388,35 +392,28 @@ export function MapUnifiedDisasterLayer({
       return candidates;
     };
 
-    // Direct click on marker layer
-    const handleMarkerClick = (e: maplibregl.MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
-      if (!e.features || e.features.length === 0) return;
-      (e.originalEvent as unknown as { _resqearthMarkerHandled?: boolean })._resqearthMarkerHandled = true;
-
-      const feat = e.features[0];
-      const clickedId = feat.properties?.id;
-      const match = disastersRef.current.find((d) => d.id === clickedId);
-      if (match) {
-        onSelectDisasterRef.current?.(match);
+    // Safe selection helper that ignores repeated selection of identical hazard
+    const selectHazard = (hazard: UnifiedDisasterEvent) => {
+      if (selectedDisasterRef.current?.id === hazard.id) {
+        return; // Ignore repeated selection of the same hazard
       }
+      onSelectDisasterRef.current?.(hazard);
     };
 
-    // General map click (handles Heatmap clicks, cluster disambiguation, and outside clicks)
+    // Single unified click handler on map: handles vector markers and heatmap blooms
     const handleMapClick = (e: maplibregl.MapMouseEvent) => {
-      if ((e.originalEvent as unknown as { _resqearthMarkerHandled?: boolean })._resqearthMarkerHandled) {
-        return;
-      }
-
-      // 1. Check if a marker layer was under the click point
+      // 1. Check if a vector marker layer was under the click point
       const existingLayers = interactiveLayers.filter((id) => map.getLayer(id));
       if (existingLayers.length > 0) {
         const rendered = map.queryRenderedFeatures(e.point, { layers: existingLayers });
         if (rendered.length > 0) {
           const featId = rendered[0].properties?.id;
-          const match = disastersRef.current.find((d) => d.id === featId);
-          if (match) {
-            onSelectDisasterRef.current?.(match);
-            return;
+          if (featId) {
+            const match = disastersRef.current.find((d) => d.id === featId);
+            if (match) {
+              selectHazard(match);
+              return;
+            }
           }
         }
       }
@@ -424,18 +421,21 @@ export function MapUnifiedDisasterLayer({
       // 2. Query nearby underlying hazard features (for heatmap clicks and clusters)
       const nearby = findHazardsNearScreenPoint(e.point, 36);
       if (nearby.length > 0) {
-        onSelectDisasterRef.current?.(nearby[0].disaster);
+        selectHazard(nearby[0].disaster);
         return;
       }
 
-      // 3. Outside click on empty map area: deselect and close card
-      if (selectedDisasterRef.current) {
-        onSelectDisasterRef.current?.(null);
-      }
+      // 3. Clicking empty map area or panning/zooming DOES NOT close or flicker the card.
+      // The selected card remains locked until another hazard is selected or user explicitly closes via X.
     };
 
-    // Mousemove handler for hover pointer in heatmap mode
+    // Throttled mousemove handler ONLY for changing cursor style in heatmap mode (max ~16fps)
+    let lastMouseMoveTime = 0;
     const handleMouseMove = (e: maplibregl.MapMouseEvent) => {
+      const now = performance.now();
+      if (now - lastMouseMoveTime < 60) return;
+      lastMouseMoveTime = now;
+
       const circleLayer = map.getLayer(circleLayerId);
       const markersVisible = circleLayer && map.getLayoutProperty(circleLayerId, "visibility") !== "none";
       if (!markersVisible) {
@@ -452,7 +452,6 @@ export function MapUnifiedDisasterLayer({
     };
 
     for (const layerId of interactiveLayers) {
-      map.on("click", layerId, handleMarkerClick);
       map.on("mouseenter", layerId, handleMouseEnter);
       map.on("mouseleave", layerId, handleMouseLeave);
     }
@@ -463,7 +462,6 @@ export function MapUnifiedDisasterLayer({
     return () => {
       if (map) {
         for (const layerId of interactiveLayers) {
-          map.off("click", layerId, handleMarkerClick);
           map.off("mouseenter", layerId, handleMouseEnter);
           map.off("mouseleave", layerId, handleMouseLeave);
         }
@@ -477,6 +475,7 @@ export function MapUnifiedDisasterLayer({
     <>
       {selectedDisaster && (
         <MapHazardDetailCard
+          key={selectedDisaster.id}
           disaster={selectedDisaster}
           overlappingHazards={overlappingHazards}
           onSelectHazard={(hazard) => onSelectDisaster(hazard)}

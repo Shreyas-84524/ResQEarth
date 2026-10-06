@@ -91,7 +91,7 @@ function formatDateTime(isoString: string): string {
   }
 }
 
-export function MapHazardDetailCard({
+function MapHazardDetailCardInternal({
   disaster,
   overlappingHazards = [],
   onSelectHazard,
@@ -101,10 +101,22 @@ export function MapHazardDetailCard({
   const [showOverlapping, setShowOverlapping] = React.useState(false);
   const [showTechnicalDetails, setShowTechnicalDetails] = React.useState(false);
 
-  const Icon = getCategoryIcon(disaster.categoryKey, disaster.disasterType);
-  const guideSlug = getGuideSlug(disaster.disasterType);
-  const timeAgo = formatTimeAgo(disaster.occurredAt);
-  const formattedTime = formatDateTime(disaster.occurredAt);
+  const Icon = React.useMemo(
+    () => getCategoryIcon(disaster.categoryKey, disaster.disasterType),
+    [disaster.categoryKey, disaster.disasterType]
+  );
+  const guideSlug = React.useMemo(
+    () => getGuideSlug(disaster.disasterType),
+    [disaster.disasterType]
+  );
+  const timeAgo = React.useMemo(
+    () => formatTimeAgo(disaster.occurredAt),
+    [disaster.occurredAt]
+  );
+  const formattedTime = React.useMemo(
+    () => formatDateTime(disaster.occurredAt),
+    [disaster.occurredAt]
+  );
 
   return (
     <div
@@ -113,7 +125,7 @@ export function MapHazardDetailCard({
       className={cn(
         "absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-auto z-20 w-auto sm:w-[390px] max-w-[calc(100%-24px)] sm:max-w-[400px]",
         "bg-background/95 backdrop-blur-md rounded-2xl border border-border/80 shadow-2xl p-4 text-foreground",
-        "transition-all duration-200 animate-in fade-in-0 slide-in-from-bottom-3 flex flex-col gap-3 max-h-[80vh] overflow-y-auto",
+        "flex flex-col gap-3 max-h-[80vh] overflow-y-auto",
         className
       )}
       onClick={(e) => e.stopPropagation()}
@@ -364,3 +376,16 @@ export function MapHazardDetailCard({
     </div>
   );
 }
+
+export const MapHazardDetailCard = React.memo(
+  MapHazardDetailCardInternal,
+  (prev, next) => {
+    return (
+      prev.disaster.id === next.disaster.id &&
+      prev.disaster.updatedAt === next.disaster.updatedAt &&
+      prev.disaster.isOpen === next.disaster.isOpen &&
+      prev.disaster.severity === next.disaster.severity &&
+      prev.overlappingHazards?.length === next.overlappingHazards?.length
+    );
+  }
+);
