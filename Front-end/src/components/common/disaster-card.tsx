@@ -144,11 +144,13 @@ export function DisasterCard({
           <div className="flex items-center gap-1.5">
             <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span>
-              {new Date(data.occurredAt).toLocaleDateString(undefined, {
+              {new Date(data.occurredAt).toLocaleDateString("en-IN", {
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",
                 minute: "2-digit",
+                hour12: false,
+                timeZone: "Asia/Kolkata",
               })}
             </span>
           </div>

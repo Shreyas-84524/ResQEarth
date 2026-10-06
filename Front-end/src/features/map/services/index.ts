@@ -4,3 +4,4 @@ export * from "./layer-registry";
 export * from "./accuracy-circle";
 export * from "./reverse-geocoding";
 export * from "./geolocation-service";
+export * from "./maptiler-service";

@@ -605,12 +605,10 @@ function HomePageContent() {
           <MapView
             className="h-[380px] sm:h-[440px] w-full"
             showFilterChips={true}
-            showRegionPicker={true}
             showLegend={true}
-            showNavigationControls={true}
             showFullscreenControl={true}
             showScaleControl={true}
-            showGeolocateControl={true}
+            showZoomControls={true}
           >
             <MapUnifiedDisasterLayer
               geoJson={unifiedGeoJson}

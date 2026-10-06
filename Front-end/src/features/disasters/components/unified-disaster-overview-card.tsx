@@ -15,6 +15,7 @@ import {
   MapPin,
   ArrowRight,
   Map,
+  ExternalLink,
 } from "lucide-react";
 
 export interface UnifiedDisasterOverviewCardProps {
@@ -147,7 +148,20 @@ export function UnifiedDisasterOverviewCard({
                       ? `${mostSevereDisaster.distanceKm.toLocaleString()} km away`
                       : mostSevereDisaster.region}
                   </span>
-                  <span>{mostSevereDisaster.sourceName}</span>
+                  {mostSevereDisaster.sourceUrl ? (
+                    <a
+                      href={mostSevereDisaster.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                      title={`Verified Source: ${mostSevereDisaster.sourceName}`}
+                    >
+                      <span>{mostSevereDisaster.sourceName}</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  ) : (
+                    <span>{mostSevereDisaster.sourceName}</span>
+                  )}
                 </div>
               </div>
             ) : (

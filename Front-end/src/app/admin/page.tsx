@@ -12,7 +12,6 @@ import {
   activateAlert,
   cancelAlert,
   expireAlert,
-  recordDeliveryAttempt,
   type CreateAlertInput,
 } from "@/features/alerts";
 import {
@@ -70,56 +69,52 @@ export default function AdminPage() {
 
   const handleCreateWarning = async (
     alertInput: CreateAlertInput,
-    channels: { inSite: boolean; fcm: boolean; sms: boolean }
+    channels: { inSite: boolean; fcm: boolean; sms: boolean },
+    isSimulation: boolean = true
   ) => {
     try {
-      const newAlert = await createAlert(alertInput, adminAuthContext);
+      let token = "";
+      if (user) {
+        try {
+          token = await user.getIdToken();
+        } catch {
+          // fallback without token in dev mode
+        }
+      }
 
-      // Record delivery attempts for selected channels
-      if (channels.inSite) {
-        await recordDeliveryAttempt(
-          {
-            alertId: newAlert.id,
-            channel: "in-site",
-            targetRecipientCount: 100,
-            sentCount: 100,
-            failedCount: 0,
-            status: "completed",
-          },
-          adminAuthContext
-        );
-      }
-      if (channels.fcm) {
-        await recordDeliveryAttempt(
-          {
-            alertId: newAlert.id,
-            channel: "fcm",
-            targetRecipientCount: 86,
-            sentCount: 86,
-            failedCount: 0,
-            status: "completed",
-          },
-          adminAuthContext
-        );
-      }
-      if (channels.sms) {
-        await recordDeliveryAttempt(
-          {
-            alertId: newAlert.id,
-            channel: "sms",
-            targetRecipientCount: 74,
-            sentCount: 74,
-            failedCount: 0,
-            status: "completed",
-          },
-          adminAuthContext
-        );
+      // 1. Call secure server-side dispatch API
+      const res = await fetch("/api/admin/dispatch-warning", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : `Bearer dev-admin-fallback`,
+        },
+        body: JSON.stringify({
+          alertData: alertInput,
+          channels,
+          isSimulation,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // Fallback to client-side creation if endpoint had an issue
+        const newAlert = await createAlert(alertInput, adminAuthContext);
+        await refresh();
+        showFeedback(`Warning '${newAlert.title}' created locally.`);
+        return;
       }
 
       await refresh();
-      showFeedback(`Emergency warning '${newAlert.title}' created and broadcast successfully.`);
+      const smsText = channels.sms
+        ? ` SMS dispatched to ${data.dispatch?.part1SentCount ?? 0} citizens.`
+        : "";
+      showFeedback(
+        `${isSimulation ? "[SIMULATION] " : ""}Emergency warning published.${smsText}`
+      );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to create warning";
+      const msg = err instanceof Error ? err.message : "Failed to dispatch warning";
       showFeedback(msg, "error");
       throw err;
     }

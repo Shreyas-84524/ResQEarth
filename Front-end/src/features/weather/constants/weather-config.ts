@@ -1,6 +1,6 @@
 export const OPEN_METEO_CONFIG = {
   baseUrl: "https://api.open-meteo.com/v1/forecast",
-  timeoutMs: 8000,
+  timeoutMs: 25000,
   cacheTtlMs: 10 * 60 * 1000, // 10 minutes cache TTL
   coordinatePrecision: 2, // ~1km precision for cache keys (avoids excessive API calls on micro GPS drift)
   sourceName: "Open-Meteo Weather API",

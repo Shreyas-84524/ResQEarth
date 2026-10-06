@@ -21,11 +21,15 @@ export type FirebaseClientConfig = z.infer<typeof firebaseClientConfigSchema>;
  * Raw configuration extracted from environment variables.
  */
 export function getRawFirebaseConfig(): Record<string, string | undefined> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() || (projectId ? `${projectId}.firebaseapp.com` : undefined);
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() || (projectId ? `${projectId}.firebasestorage.app` : undefined);
+
   return {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim(),
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim(),
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
+    authDomain,
+    projectId,
+    storageBucket,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim(),
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim(),
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.trim(),

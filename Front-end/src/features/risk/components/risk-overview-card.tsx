@@ -128,7 +128,12 @@ export function RiskOverviewCard({
           <CardTitle className="text-base font-bold flex items-center justify-between">
             <span>{disasterType || "Multi-Hazard Assessment"}</span>
             <span className="text-xs font-normal text-muted-foreground font-mono">
-              {new Date(calculatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {new Intl.DateTimeFormat("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+                timeZone: "Asia/Kolkata",
+              }).format(new Date(calculatedAt))}
             </span>
           </CardTitle>
           <CardDescription className="text-xs truncate">

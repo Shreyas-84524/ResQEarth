@@ -3,7 +3,8 @@ import {
   DEFAULT_MAP_ZOOM,
   DEFAULT_MAP_MIN_ZOOM,
   DEFAULT_MAP_MAX_ZOOM,
-  REGION_PRESETS,
+  DEFAULT_MAP_STYLE_ID,
+  getDefaultMapStyleUrl,
   INDIA_BOUNDS,
   MAHARASHTRA_BOUNDS,
   MUMBAI_BOUNDS,
@@ -16,7 +17,7 @@ function assert(condition: boolean, message: string) {
   }
 }
 
-console.log("--- Starting Map Viewport & Presets Unit Tests ---");
+console.log("--- Starting Map Viewport & Configuration Unit Tests ---");
 
 // 1. Default Map Configuration
 assert(isValidCoordinate(DEFAULT_MAP_CENTER[0], DEFAULT_MAP_CENTER[1]), "Default center is valid coordinate");
@@ -35,15 +36,9 @@ assert(INDIA_BOUNDS[0] < INDIA_BOUNDS[2], "India minLng < maxLng");
 assert(INDIA_BOUNDS[1] < INDIA_BOUNDS[3], "India minLat < maxLat");
 console.log("✓ PASS: Bounds calculations and structure");
 
-// 3. Region Presets
-assert(REGION_PRESETS.length >= 4, "At least 4 region presets available");
+// 3. MapTiler Style Integration
+assert(DEFAULT_MAP_STYLE_ID === "outdoor-v2", "Default style is outdoor-v2 for environmental monitoring");
+assert(typeof getDefaultMapStyleUrl === "function", "getDefaultMapStyleUrl is a callable function");
+console.log("✓ PASS: MapTiler style integration and default viewport");
 
-for (const preset of REGION_PRESETS) {
-  assert(typeof preset.id === "string" && preset.id.length > 0, `Preset ${preset.name} has valid ID`);
-  assert(isValidCoordinate(preset.center[0], preset.center[1]), `Preset ${preset.name} has valid center coords`);
-  assert(preset.zoom >= 3 && preset.zoom <= 18, `Preset ${preset.name} has valid zoom level`);
-  assert(typeof preset.description === "string" && preset.description.length > 0, `Preset ${preset.name} has description`);
-}
-console.log("✓ PASS: Region preset metadata and coordinates");
-
-console.log("\nAll 31 Viewport & Region Preset tests passed successfully!\n");
+console.log("\nAll Map Viewport & Configuration tests passed successfully!\n");

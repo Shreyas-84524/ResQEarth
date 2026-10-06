@@ -31,11 +31,7 @@ export function LocationProvider({
   children,
   initialLocation = DEFAULT_FALLBACK_LOCATION,
 }: LocationProviderProps) {
-  const [location, setLocation] = React.useState<NormalizedLocation>(() => {
-    // Attempt hydration from sessionStorage on client, else fallback
-    const saved = getSavedSessionLocation();
-    return saved || initialLocation;
-  });
+  const [location, setLocation] = React.useState<NormalizedLocation>(initialLocation);
 
   const [permission, setPermission] =
     React.useState<GeolocationPermission>("prompt");

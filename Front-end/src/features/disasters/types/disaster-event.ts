@@ -59,10 +59,11 @@ export interface UnifiedDisasterEvent {
   sourceName: string;
   sourceUrl: string;
   isOfficialAlert: boolean;
-  latitude: number;
-  longitude: number;
-  coordinates: [number, number]; // [longitude, latitude] in WGS84
-  geometryType: "Point" | "Polygon" | "LineString";
+  isMappable: boolean; // True when valid coordinates exist for map rendering
+  latitude?: number;
+  longitude?: number;
+  coordinates?: [number, number]; // [longitude, latitude] in WGS84 when mappable
+  geometryType?: "Point" | "Polygon" | "LineString";
   region: string;
   occurredAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
@@ -75,6 +76,15 @@ export interface UnifiedDisasterEvent {
   tsunamiAlert?: boolean;
   isStale?: boolean;
   metadata?: Record<string, unknown>;
+}
+
+/**
+ * Metric summary tracking mappable vs missing-coordinate hazard counts
+ */
+export interface DisasterMappingStats {
+  total: number;
+  mappable: number;
+  missingCoordinates: number;
 }
 
 /**

@@ -12,7 +12,7 @@ export const EONET_CONFIG = {
   defaultDays: 30,
   defaultStatus: "open" as const,
   cacheTtlMs: 10 * 60 * 1000, // 10 minutes cache
-  timeoutMs: 10000, // 10s timeout
+  timeoutMs: 45000, // 45s timeout for resilient EONET fetching
   sourceName: "NASA Earth Observatory (EONET v3)",
   sourceUrl: "https://eonet.gsfc.nasa.gov",
 } as const;

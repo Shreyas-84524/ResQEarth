@@ -5,6 +5,7 @@ import {
   deduplicateDisasters,
   filterUnifiedDisasters,
   unifiedDisastersToGeoJson,
+  getDisasterMappingStats,
   clearUnifiedDisasterCache,
   fetchUnifiedDisasters,
 } from "../services/unified-disaster-service";
@@ -71,7 +72,22 @@ assert(capEvent!.severity === "HIGH", "Severe maps to HIGH severity");
 assert(capEvent!.severityScale === "NDMA SACHET / IMD Official Warning", "Official severity scale preserved");
 assert(capEvent!.disasterType === "flood" || capEvent!.disasterType === "urban-flood", "Disaster type is flood");
 assert(capEvent!.distanceKm === 0, "Distance at exact coordinates is 0 km");
-console.log("✓ PASS: Indian CAP alert normalization and official provenance");
+assert(capEvent!.isMappable === true, "Alert with valid coordinates is marked as mappable");
+
+// Test Indian CAP alert with missing coordinates (statewide broadcast)
+const mockCapNoCoords: IndianOfficialAlertRaw = {
+  ...mockCapRaw,
+  identifier: "NDMA-STATEWIDE-2026",
+  latitude: undefined,
+  longitude: undefined,
+};
+const capEventNoCoords = normalizeIndianCapAlert(mockCapNoCoords);
+assert(Boolean(capEventNoCoords), "Statewide CAP event parsed");
+assert(capEventNoCoords!.isMappable === false, "Alert without coordinates is marked as unmappable (isMappable: false)");
+assert(capEventNoCoords!.latitude === undefined, "latitude is undefined");
+assert(capEventNoCoords!.longitude === undefined, "longitude is undefined");
+assert(capEventNoCoords!.coordinates === undefined, "coordinates are undefined");
+console.log("✓ PASS: Indian CAP alert normalization, unmappable detection, and official provenance");
 
 // 2. CAP Severity & Category Mappers
 console.log("2. Testing CAP Severity & Category Mappings...");
@@ -128,6 +144,7 @@ assert(unifiedEq.depthKm === 12.5, "depthKm is 12.5");
 assert(unifiedEq.isOfficialAlert === false, "USGS telemetry is not an Indian statutory alert");
 assert(unifiedEq.sourceType === "official", "sourceType is official agency");
 assert(typeof unifiedEq.distanceKm === "number" && unifiedEq.distanceKm > 180, "Distance computed");
+assert(unifiedEq.isMappable === true, "Earthquake with valid coordinates is marked as mappable");
 console.log("✓ PASS: Earthquake to Unified Event adapter tests");
 
 // 4. Global Disaster to Unified Event Adapter
@@ -167,6 +184,7 @@ assert(unifiedGlobal.categoryKey === "wildfires", "categoryKey is wildfires");
 assert(unifiedGlobal.severity === "MODERATE", "severity is MODERATE");
 assert(unifiedGlobal.isOfficialAlert === false, "EONET is automatic classification");
 assert(unifiedGlobal.sourceType === "automatic", "sourceType is automatic");
+assert(unifiedGlobal.isMappable === true, "Global disaster with valid coordinates is marked as mappable");
 console.log("✓ PASS: Global Disaster to Unified Event adapter tests");
 
 // 5. Severe Weather Telemetry Hazard Extraction
@@ -228,6 +246,7 @@ const event1: UnifiedDisasterEvent = {
   sourceName: "NASA",
   sourceUrl: "https://eonet.gsfc.nasa.gov",
   isOfficialAlert: false,
+  isMappable: true,
   latitude: 19.05,
   longitude: 72.85,
   coordinates: [72.85, 19.05],
@@ -247,6 +266,7 @@ const event2Duplicate: UnifiedDisasterEvent = {
   title: "Official Wildfire Order",
   severity: "HIGH",
   isOfficialAlert: true,
+  isMappable: true,
   sourceType: "official",
   latitude: 19.08,
   longitude: 72.88,
@@ -259,16 +279,44 @@ const event3Distinct: UnifiedDisasterEvent = {
   ...event1,
   id: "event-c",
   providerEventId: "fire-03",
+  isMappable: true,
   latitude: 21.0,
   longitude: 75.0,
   coordinates: [75.0, 21.0],
 };
 
-const dedupeInput = [event1, event2Duplicate, event3Distinct];
+// Event 4 has NO coordinates (e.g. statewide weather bulletin)
+const eventWithoutCoords: UnifiedDisasterEvent = {
+  id: "event-no-coords",
+  provider: "ndma-sachet",
+  providerEventId: "advisory-statewide",
+  disasterType: "flood",
+  categoryKey: "floods",
+  categoryTitle: "Floods",
+  title: "Statewide Flood Advisory",
+  severity: "HIGH",
+  severityScale: "NDMA Advisory",
+  sourceType: "official",
+  sourceName: "NDMA",
+  sourceUrl: "https://sachet.ndma.gov.in",
+  isOfficialAlert: true,
+  isMappable: false,
+  latitude: undefined,
+  longitude: undefined,
+  coordinates: undefined,
+  geometryType: undefined,
+  region: "Maharashtra State",
+  occurredAt: "2026-09-30T00:00:00Z",
+  updatedAt: "2026-09-30T00:00:00Z",
+  isOpen: true,
+};
+
+const dedupeInput = [event1, event2Duplicate, event3Distinct, eventWithoutCoords];
 const dedupeResult = deduplicateDisasters(dedupeInput);
-assert(dedupeResult.length === 2, "Duplicate within 15 km merged; distinct event preserved");
-assert(dedupeResult.some((e) => e.isOfficialAlert === true), "More authoritative official alert retained");
-console.log("✓ PASS: Spatial and temporal deduplication tests");
+assert(dedupeResult.length === 3, "Duplicate within 15 km merged (2 remaining); unmappable event preserved (total 3)");
+assert(dedupeResult.some((e) => e.isOfficialAlert === true && e.id === "event-b"), "More authoritative official alert retained");
+assert(dedupeResult.some((e) => e.id === "event-no-coords"), "Event without coordinates remains present in canonical dataset");
+console.log("✓ PASS: Spatial and temporal deduplication tests with unmappable hazard preservation");
 
 // 7. Multi-Criteria Filtering
 console.log("7. Testing Multi-Criteria Filtering...");
@@ -301,14 +349,24 @@ assert(searchResults.length === 1 && searchResults[0].id === "pool-2", "Search q
 console.log("✓ PASS: Multi-criteria filtering tests");
 
 // 8. GeoJSON FeatureCollection Generation for MapLibre
-console.log("8. Testing GeoJSON FeatureCollection Generation...");
-const sampleGeoJson = unifiedDisastersToGeoJson(filterTestPool);
+console.log("8. Testing GeoJSON FeatureCollection Generation & Unmappable Exclusion...");
+const mixedPool: UnifiedDisasterEvent[] = [...filterTestPool, eventWithoutCoords];
+const sampleGeoJson = unifiedDisastersToGeoJson(mixedPool);
 assert(sampleGeoJson.type === "FeatureCollection", "GeoJSON type is FeatureCollection");
-assert(sampleGeoJson.features.length === 4, "4 features created");
+assert(sampleGeoJson.features.length === 4, "Only 4 mappable features created; unmappable event cleanly excluded");
+assert(!sampleGeoJson.features.some((f) => f.id === "event-no-coords"), "Event without coordinates excluded from GeoJSON Point features");
 assert(sampleGeoJson.features[0]!.geometry.type === "Point", "Geometry type is Point");
 assert(sampleGeoJson.features[0]!.properties!.category === "unified-disaster", "Category property set");
 assert(typeof sampleGeoJson.features[0]!.properties!.markerRadius === "number", "markerRadius set");
-console.log("✓ PASS: GeoJSON conversion for MapLibre tests");
+console.log("✓ PASS: GeoJSON conversion for MapLibre cleanly excludes unmappable hazards");
+
+// 8b. Tracking Hazard Mapping Metrics
+console.log("8b. Testing Hazard Mapping Metrics (total, mappable, missingCoordinates)...");
+const stats = getDisasterMappingStats(mixedPool);
+assert(stats.total === 5, "Total count is 5");
+assert(stats.mappable === 4, "Mappable count is 4");
+assert(stats.missingCoordinates === 1, "Missing coordinate count is 1");
+console.log("✓ PASS: Hazard mapping metrics tracking");
 
 // 9. Visual Styling Expression & Radius Helpers
 console.log("9. Testing Visual Styling Expressions & Radii...");

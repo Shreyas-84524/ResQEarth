@@ -65,19 +65,15 @@ export function getCurrentBrowserPosition(
         });
       },
       (error) => {
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            reject(new Error("PERMISSION_DENIED"));
-            break;
-          case error.POSITION_UNAVAILABLE:
-            reject(new Error("POSITION_UNAVAILABLE"));
-            break;
-          case error.TIMEOUT:
-            reject(new Error("TIMEOUT"));
-            break;
-          default:
-            reject(new Error("UNKNOWN_ERROR"));
-            break;
+        const code = error?.code;
+        if (code === 1 || code === error?.PERMISSION_DENIED) {
+          reject(new Error("PERMISSION_DENIED"));
+        } else if (code === 2 || code === error?.POSITION_UNAVAILABLE) {
+          reject(new Error("POSITION_UNAVAILABLE"));
+        } else if (code === 3 || code === error?.TIMEOUT) {
+          reject(new Error("TIMEOUT"));
+        } else {
+          reject(new Error("UNKNOWN_ERROR"));
         }
       },
       options

@@ -15,6 +15,21 @@ export function MapUserLocationMarker() {
   React.useEffect(() => {
     if (!map || !isLoaded || !map.isStyleLoaded()) return;
 
+    // Only render the GPS location marker when the user has actually granted GPS
+    // and an on-demand GPS position has been resolved.
+    if (location.source !== "gps") {
+      if (map.getLayer(MAP_LAYERS.USER_LOCATION_DOT)) {
+        map.setLayoutProperty(MAP_LAYERS.USER_LOCATION_DOT, "visibility", "none");
+      }
+      if (map.getLayer(`${MAP_LAYERS.USER_LOCATION_DOT}-halo`)) {
+        map.setLayoutProperty(`${MAP_LAYERS.USER_LOCATION_DOT}-halo`, "visibility", "none");
+      }
+      if (map.getLayer(MAP_LAYERS.USER_LOCATION_ACCURACY)) {
+        map.setLayoutProperty(MAP_LAYERS.USER_LOCATION_ACCURACY, "visibility", "none");
+      }
+      return;
+    }
+
     const userLngLat: [number, number] = [location.longitude, location.latitude];
     const accuracyMeters = location.accuracyMeters || 150;
 
@@ -48,6 +63,9 @@ export function MapUserLocationMarker() {
 
     if (existingAccuracySource) {
       existingAccuracySource.setData(circleGeoJson as unknown as GeoJSON.GeoJSON);
+      if (map.getLayer(MAP_LAYERS.USER_LOCATION_ACCURACY)) {
+        map.setLayoutProperty(MAP_LAYERS.USER_LOCATION_ACCURACY, "visibility", "visible");
+      }
     } else {
       map.addSource(accuracySourceId, {
         type: "geojson",
@@ -77,6 +95,12 @@ export function MapUserLocationMarker() {
 
     if (existingPointSource) {
       existingPointSource.setData(pointGeoJson as unknown as GeoJSON.GeoJSON);
+      if (map.getLayer(MAP_LAYERS.USER_LOCATION_DOT)) {
+        map.setLayoutProperty(MAP_LAYERS.USER_LOCATION_DOT, "visibility", "visible");
+      }
+      if (map.getLayer(`${MAP_LAYERS.USER_LOCATION_DOT}-halo`)) {
+        map.setLayoutProperty(`${MAP_LAYERS.USER_LOCATION_DOT}-halo`, "visibility", "visible");
+      }
     } else {
       map.addSource(pointSourceId, {
         type: "geojson",

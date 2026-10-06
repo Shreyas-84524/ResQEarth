@@ -25,7 +25,12 @@ import {
   Sparkles,
   ShieldCheck,
   Radio,
+  Waves,
+  Wind,
+  Activity,
+  Flame,
 } from "lucide-react";
+import type { FilterChipOption } from "@/components/common/map-overlay";
 
 function MapPageContent() {
   const [displayMode, setDisplayMode] = React.useState<MapGisDisplayMode>("all");
@@ -65,6 +70,57 @@ function MapPageContent() {
       setSelectedDisaster(disaster);
     },
     [setSelectedDisaster]
+  );
+
+  // Synchronize Map Filter Chips with Unified Hazards categoryFilter
+  const currentMapFilterId = React.useMemo(() => {
+    switch (categoryFilter) {
+      case "floods":
+        return "flood";
+      case "severeStorms":
+        return "cyclone";
+      case "earthquakes":
+        return "earthquake";
+      case "wildfires":
+        return "wildfire";
+      default:
+        return "all";
+    }
+  }, [categoryFilter]);
+
+  const handleMapFilterChange = React.useCallback(
+    (filterId: string) => {
+      switch (filterId) {
+        case "flood":
+          setCategoryFilter("floods");
+          break;
+        case "cyclone":
+          setCategoryFilter("severeStorms");
+          break;
+        case "earthquake":
+          setCategoryFilter("earthquakes");
+          break;
+        case "wildfire":
+          setCategoryFilter("wildfires");
+          break;
+        case "all":
+        default:
+          setCategoryFilter("all");
+          break;
+      }
+    },
+    [setCategoryFilter]
+  );
+
+  const mapFilterOptions: FilterChipOption[] = React.useMemo(
+    () => [
+      { id: "all", label: "All Hazards", count: disasters.length },
+      { id: "flood", label: "Floods", icon: Waves, count: categoryCounts.floods },
+      { id: "cyclone", label: "Cyclones", icon: Wind, count: categoryCounts.severeStorms },
+      { id: "earthquake", label: "Earthquakes", icon: Activity, count: categoryCounts.earthquakes },
+      { id: "wildfire", label: "Wildfires", icon: Flame, count: categoryCounts.wildfires },
+    ],
+    [disasters.length, categoryCounts]
   );
 
   return (
@@ -110,14 +166,15 @@ function MapPageContent() {
           <MapView
             className="h-[540px] sm:h-[600px] lg:h-[660px] w-full rounded-xl overflow-hidden border border-border/80 shadow-sm"
             showFilterChips={true}
-            showRegionPicker={true}
+            filterOptions={mapFilterOptions}
+            selectedFilter={currentMapFilterId}
+            onFilterChange={handleMapFilterChange}
             showLocationBadge={true}
             showWeatherBadge={true}
             showLegend={false}
-            showNavigationControls={false}
-            showFullscreenControl={true}
             showScaleControl={true}
-            showGeolocateControl={false}
+            showZoomControls={true}
+            showFullscreenControl={true}
           >
             {/* GIS Top-Right Quick Toolbar (Mode Switcher, Fit, Recenter, Legend) */}
             <MapGisToolbar

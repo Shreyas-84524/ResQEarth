@@ -4,10 +4,9 @@ import * as React from "react";
 import maplibregl, {
   type Map as MapLibreMap,
   type StyleSpecification,
+  ScaleControl,
   NavigationControl,
   FullscreenControl,
-  ScaleControl,
-  GeolocateControl,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { cn } from "@/lib/utils";
@@ -17,7 +16,10 @@ import {
   DEFAULT_MAP_ZOOM,
   DEFAULT_MAP_MIN_ZOOM,
   DEFAULT_MAP_MAX_ZOOM,
-  OSM_RASTER_STYLE,
+  DEFAULT_MAPTILER_STYLE,
+  getMapTilerStyleUrl,
+  isMapTilerKeyConfigured,
+  MAPTILER_CONFIG_ERROR_MESSAGE,
 } from "../constants/map-config";
 import { MapContext } from "../context/map-context";
 import { MapLoadingSkeleton } from "./map-loading-skeleton";
@@ -33,7 +35,6 @@ export interface MapContainerProps {
   showNavigationControls?: boolean;
   showFullscreenControl?: boolean;
   showScaleControl?: boolean;
-  showGeolocateControl?: boolean;
   interactive?: boolean;
   className?: string;
   children?: React.ReactNode;
@@ -58,11 +59,10 @@ export function MapContainer({
   initialZoom = DEFAULT_MAP_ZOOM,
   minZoom = DEFAULT_MAP_MIN_ZOOM,
   maxZoom = DEFAULT_MAP_MAX_ZOOM,
-  styleSpecification = OSM_RASTER_STYLE as unknown as StyleSpecification,
-  showNavigationControls = true,
-  showFullscreenControl = true,
+  styleSpecification,
+  showNavigationControls = false,
+  showFullscreenControl = false,
   showScaleControl = true,
-  showGeolocateControl = true,
   interactive = true,
   className,
   children,
@@ -71,58 +71,70 @@ export function MapContainer({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const mapRef = React.useRef<MapLibreMap | null>(null);
 
+  const initialCenterRef = React.useRef(initialCenter);
+  const initialZoomRef = React.useRef(initialZoom);
+  const onMapReadyRef = React.useRef(onMapReady);
+  onMapReadyRef.current = onMapReady;
+
   const [isLoading, setIsLoading] = React.useState(true);
   const [webglError, setWebglError] = React.useState<string | null>(null);
+  const [configError, setConfigError] = React.useState<string | null>(null);
 
   const mapContext = React.useContext(MapContext);
+  const mapContextRef = React.useRef(mapContext);
+  mapContextRef.current = mapContext;
 
-  // Initialize MapLibre GL instance
+  // Initialize MapLibre GL instance with MapTiler vector basemap
   const initMap = React.useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
-    // Check WebGL availability
+    // 1. Check WebGL availability
     if (!checkWebGLSupport()) {
       setWebglError(
         "WebGL is not supported or disabled in this browser/device. Please enable hardware acceleration."
       );
       setIsLoading(false);
-      if (mapContext?._setHasWebGLError) {
-        mapContext._setHasWebGLError(true);
+      if (mapContextRef.current?._setHasWebGLError) {
+        mapContextRef.current._setHasWebGLError(true);
       }
       return;
     }
 
+    // 2. Resolve MapTiler vector style
+    let resolvedStyle = styleSpecification;
+    if (!resolvedStyle) {
+      if (!isMapTilerKeyConfigured()) {
+        setConfigError(MAPTILER_CONFIG_ERROR_MESSAGE);
+        setIsLoading(false);
+        return;
+      }
+      const maptilerUrl = getMapTilerStyleUrl(DEFAULT_MAPTILER_STYLE);
+      if (!maptilerUrl) {
+        setConfigError(MAPTILER_CONFIG_ERROR_MESSAGE);
+        setIsLoading(false);
+        return;
+      }
+      resolvedStyle = maptilerUrl;
+    }
+
     setWebglError(null);
+    setConfigError(null);
     setIsLoading(true);
 
     try {
-      // Create map instance
+      // 3. Create MapLibre map instance
       const mapInstance = new maplibregl.Map({
         container: containerRef.current,
-        style: styleSpecification,
-        center: initialCenter,
-        zoom: initialZoom,
+        style: resolvedStyle,
+        center: initialCenterRef.current,
+        zoom: initialZoomRef.current,
         minZoom,
         maxZoom,
         interactive,
-        attributionControl: false, // We use custom MapAttribution
+        attributionControl: false, // Custom MapAttribution handles MapTiler & OSM
       });
 
-      // Add standard controls if enabled
-      if (showNavigationControls) {
-        const navControl = new NavigationControl({
-          showCompass: true,
-          showZoom: true,
-          visualizePitch: true,
-        });
-        mapInstance.addControl(navControl, "top-right");
-      }
-
-      if (showFullscreenControl) {
-        const fullControl = new FullscreenControl();
-        mapInstance.addControl(fullControl, "top-right");
-      }
-
+      // Standard scale bar (bottom-left)
       if (showScaleControl) {
         const scale = new ScaleControl({
           maxWidth: 120,
@@ -131,29 +143,37 @@ export function MapContainer({
         mapInstance.addControl(scale, "bottom-left");
       }
 
-      if (showGeolocateControl) {
-        const geolocate = new GeolocateControl({
-          positionOptions: {
-            enableHighAccuracy: true,
-          },
-          trackUserLocation: true,
-          showUserLocation: true,
+      // Optional built-in navigation controls
+      if (showNavigationControls) {
+        const nav = new NavigationControl({
+          showCompass: true,
+          showZoom: true,
+          visualizePitch: true,
         });
-        mapInstance.addControl(geolocate, "top-right");
+        mapInstance.addControl(nav, "top-right");
+      }
+
+      // Optional built-in fullscreen control
+      if (showFullscreenControl) {
+        const full = new FullscreenControl();
+        mapInstance.addControl(full, "top-right");
       }
 
       // Map loaded event
       mapInstance.on("load", () => {
         setIsLoading(false);
         mapRef.current = mapInstance;
-
-        if (mapContext?._setMap) {
-          mapContext._setMap(mapInstance);
-          mapContext._setIsLoaded(true);
+        if (typeof window !== "undefined") {
+          (window as unknown as { __map?: maplibregl.Map }).__map = mapInstance;
         }
 
-        if (onMapReady) {
-          onMapReady(mapInstance);
+        if (mapContextRef.current?._setMap) {
+          mapContextRef.current._setMap(mapInstance);
+          mapContextRef.current._setIsLoaded(true);
+        }
+
+        if (onMapReadyRef.current) {
+          onMapReadyRef.current(mapInstance);
         }
 
         // Trigger safe initial resize
@@ -180,13 +200,13 @@ export function MapContainer({
           ] as BoundingBox,
         };
 
-        if (mapContext?._setViewport) {
-          mapContext._setViewport(viewportData);
+        if (mapContextRef.current?._setViewport) {
+          mapContextRef.current._setViewport(viewportData);
         }
       });
 
       mapInstance.on("error", (e) => {
-        // Suppress non-fatal tile errors (e.g. rapid zoom before tile loads)
+        // Suppress non-fatal tile errors (e.g. transient 404s during rapid zoom)
         if (e && e.error && typeof e.error.message === "string") {
           if (!e.error.message.includes("404")) {
             console.warn("MapLibre event:", e.error.message);
@@ -201,23 +221,18 @@ export function MapContainer({
       console.error("Failed to initialize MapLibre GL map:", err);
       setWebglError(errorMessage);
       setIsLoading(false);
-      if (mapContext?._setHasWebGLError) {
-        mapContext._setHasWebGLError(true);
+      if (mapContextRef.current?._setHasWebGLError) {
+        mapContextRef.current._setHasWebGLError(true);
       }
     }
   }, [
-    initialCenter,
-    initialZoom,
     minZoom,
     maxZoom,
     styleSpecification,
     showNavigationControls,
     showFullscreenControl,
     showScaleControl,
-    showGeolocateControl,
     interactive,
-    mapContext,
-    onMapReady,
   ]);
 
   // Handle mounting and unmounting
@@ -226,17 +241,19 @@ export function MapContainer({
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.remove();
+        try {
+          mapRef.current.remove();
+        } catch {}
         mapRef.current = null;
       }
-      if (mapContext?._setMap) {
-        mapContext._setMap(null);
-        mapContext._setIsLoaded(false);
+      if (mapContextRef.current?._setMap) {
+        mapContextRef.current._setMap(null);
+        mapContextRef.current._setIsLoaded(false);
       }
     };
-  }, [initMap, mapContext]);
+  }, [initMap]);
 
-  // Handle container resize dynamically via ResizeObserver
+  // Container resize observer
   React.useEffect(() => {
     if (!containerRef.current) return;
 
@@ -253,10 +270,6 @@ export function MapContainer({
     };
   }, []);
 
-  if (webglError) {
-    return <MapErrorFallback error={webglError} onRetry={initMap} className={className} />;
-  }
-
   return (
     <div
       className={cn(
@@ -267,17 +280,36 @@ export function MapContainer({
       {/* Map Canvas Container */}
       <div ref={containerRef} className="h-full w-full" />
 
+      {/* 1. Missing MapTiler API Key Graceful Error Overlay */}
+      {configError && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-background/95 backdrop-blur-xs">
+          <MapErrorFallback
+            title="MapTiler API Key Required"
+            error={configError}
+            isConfigError={true}
+            onRetry={initMap}
+          />
+        </div>
+      )}
+
+      {/* 2. WebGL Hardware Error Overlay */}
+      {webglError && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-background/95">
+          <MapErrorFallback error={webglError} onRetry={initMap} />
+        </div>
+      )}
+
       {/* Loading Skeleton */}
-      {isLoading && (
+      {isLoading && !configError && !webglError && (
         <div className="absolute inset-0 z-20">
           <MapLoadingSkeleton />
         </div>
       )}
 
-      {/* Custom Overlays and Children */}
-      {!isLoading && children}
+      {/* Custom Overlays and Children (Top controls, GIS Toolbar, Bottom-Right Locate button) */}
+      {children}
 
-      {/* Baseline OpenStreetMap Attribution */}
+      {/* MapTiler + OpenStreetMap Attribution */}
       <MapAttribution />
     </div>
   );

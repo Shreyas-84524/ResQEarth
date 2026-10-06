@@ -134,6 +134,19 @@ const VERIFIED_OFFICIAL_INDIAN_ADVISORIES: IndianOfficialAlertRaw[] = [
   },
 ];
 
+function isValidCoord(lon?: number | null, lat?: number | null): boolean {
+  return (
+    typeof lon === "number" &&
+    typeof lat === "number" &&
+    !Number.isNaN(lon) &&
+    !Number.isNaN(lat) &&
+    lon >= -180 &&
+    lon <= 180 &&
+    lat >= -90 &&
+    lat <= 90
+  );
+}
+
 /**
  * Normalizes an individual Indian CAP Alert into a canonical UnifiedDisasterEvent
  */
@@ -144,8 +157,9 @@ export function normalizeIndianCapAlert(
 ): UnifiedDisasterEvent | null {
   if (!raw || !raw.identifier) return null;
 
-  const lat = raw.latitude ?? 19.0760;
-  const lon = raw.longitude ?? 72.8777;
+  const isMappable = isValidCoord(raw.longitude, raw.latitude);
+  const lat = isMappable ? raw.latitude! : undefined;
+  const lon = isMappable ? raw.longitude! : undefined;
 
   const { disasterType, categoryKey, categoryTitle } = mapIndianCapEventToCanonicalType(
     raw.event,
@@ -155,8 +169,13 @@ export function normalizeIndianCapAlert(
   const severity = mapIndianCapSeverity(raw.severity);
 
   let distanceKm: number | undefined;
-  if (typeof userLat === "number" && typeof userLon === "number") {
-    distanceKm = Math.round(calculateHaversineDistanceKm([userLon, userLat], [lon, lat]));
+  if (
+    isMappable &&
+    typeof userLat === "number" &&
+    typeof userLon === "number" &&
+    isValidCoord(userLon, userLat)
+  ) {
+    distanceKm = Math.round(calculateHaversineDistanceKm([userLon, userLat], [lon!, lat!]));
   }
 
   const isImd = raw.sender.toLowerCase().includes("imd");
@@ -178,9 +197,10 @@ export function normalizeIndianCapAlert(
     sourceName,
     sourceUrl: raw.web || (isImd ? INDIAN_ALERT_CONFIG.imdBaseUrl : INDIAN_ALERT_CONFIG.sachetBaseUrl),
     isOfficialAlert: true,
+    isMappable,
     latitude: lat,
     longitude: lon,
-    coordinates: [lon, lat],
+    coordinates: isMappable ? [lon!, lat!] : undefined,
     geometryType: "Point",
     region: raw.areaDesc || `${raw.district ? `${raw.district}, ` : ""}${raw.state || "India"}`,
     occurredAt: raw.sent || new Date().toISOString(),
@@ -212,7 +232,14 @@ export async function fetchIndianOfficialAlerts(
     if (cached && Date.now() - cached.timestamp < INDIAN_ALERT_CONFIG.cacheTtlMs) {
       return cached.data.map((item) => {
         let dist = item.distanceKm;
-        if (typeof options?.userLat === "number" && typeof options?.userLon === "number") {
+        if (
+          item.isMappable &&
+          typeof item.longitude === "number" &&
+          typeof item.latitude === "number" &&
+          typeof options?.userLat === "number" &&
+          typeof options?.userLon === "number" &&
+          isValidCoord(options.userLon, options.userLat)
+        ) {
           dist = Math.round(
             calculateHaversineDistanceKm(
               [options.userLon, options.userLat],
