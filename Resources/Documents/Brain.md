@@ -4,8 +4,8 @@
 
 > Before performing any implementation task, read this file together with `architecture.md`, `PRD.md`, and `MVP.md` when relevant. Update this file after meaningful implementation decisions, architecture changes, completed phases, discovered issues, or important project-state changes.
 
-**Current factual state:** Phases 1, 2, 3, 4, and 5 are COMPLETE on branch `phase-5` (PASS across all 8 Phase 5 sub-phases: 5.1 Complete System Integration Audit, 5.2 Live Firebase & Security Validation, 5.3 Live APIs, GIS & Risk Intelligence Validation, 5.4 Live Alert, FCM & SMS Pipeline Validation, 5.5 UI/UX, Responsive & Accessibility Validation, 5.6 Performance, Resilience & Production Hardening, 5.7 Production Deployment & Deployed-Site Validation, and 5.8 ESE Demo & Submission Readiness). All 33 test suites (48 test units) pass with 100% success; Next.js 15.5 production build compiles all 40 static & dynamic SSG routes with zero TypeScript and zero ESLint errors; live external APIs (Open-Meteo, USGS, NASA EONET, OSM Nominatim, OSM Tiles) verified healthy at runtime; all 19 HTTP routes return HTTP 200 OK.
-**Last context update:** 2026-09-30  
+**Current factual state:** Phases 1, 2, 3, 4, and 5 are COMPLETE on branch `phase-5`. Single canonical `UnifiedDisasterEvent[]` pipeline successfully powers both Unified Hazard Feed and MapLibre Live Map (102 live hazards rendered across 6 vector/heatmap layers). Persistent interactive hazard detail cards verified with zero flicker, pan/zoom locking, and responsive viewport support. All 56 test units pass with 100% success; Next.js production build compiles 41 routes with zero TypeScript and zero ESLint errors; live external APIs (Open-Meteo, USGS, NASA EONET, NDMA SACHET / IMD) verified healthy at runtime; application successfully deployed and live in production on Antideploy (`https://resqearth.antideploy.app`) at commit `7cfd91d`.
+**Last context update:** 2026-10-07  
 **Quick-start for the next agent:** Read **Last Session Handoff**, **Current Work Position**, **Current Blockers**, and the applicable source-of-truth document before changing files.
 
 ## 1. Project Identity
@@ -1371,9 +1371,43 @@ Scope: Full Map Recovery from 8b8d744, Marker Disappearance Root-Cause Diagnosis
    - TypeScript (`npm run type-check`): PASS (0 errors).
    - ESLint (`npm run lint`): PASS (0 warnings, 0 errors).
    - Production Build (`npm run build`): PASS (41 routes compiled).
+## 51. Final ResQEarth Commit, Production Antideploy Redeployment & Live Verification
+
+```text
+Status: Complete
+Date: 2026-10-07
+Scope: Final Commit (7cfd91d), Antideploy Production Redeployment, and Comprehensive Live Site Verification
+
+1. Local Pre-Deployment Validation:
+   - TypeScript (`npm run type-check`): PASS (0 errors).
+   - ESLint (`npm run lint`): PASS (0 warnings, 0 errors).
+   - Test Suite (`npm test`): PASS (56/56 tests passing across all 4 suites).
+   - Production Build (`npm run build`): PASS (41/41 static & dynamic routes compiled).
+   - Anti-Flicker Verification: 15-second continuous Chrome CDP stability test confirmed 0 card flickers/refreshes during idle, pan, zoom, mode switching, and data polling.
+   - On-Demand Geolocation: Verified browser geolocation triggers strictly upon explicit user interaction (Locate button click), not on initial page load.
+
+2. Git Commit:
+   - Commit: `7cfd91d`
+   - Subject: `feat: finalize ResQEarth hazard intelligence and production fixes`
+   - Working tree: Clean (0 untracked secrets, .gitignore updated for scratch/ and local tooling).
+
+3. Antideploy Production Redeployment:
+   - Application ID: `b179ff75-78f9-4146-8e2c-e84b94e429d8`
+   - Deployment ID: `3eace3ec-c5dc-4294-846b-86ca6795e3e1`
+   - Production URL: `https://resqearth.antideploy.app`
+   - Secrets / Environment Sync: 20 production environment variables synchronized (including NEXT_PUBLIC_MAPTILER_API_KEY, NEXT_PUBLIC_FIREBASE_*, and server-side SMS_GATEWAY_*). FCM/VAPID intentionally omitted in accordance with SMS-only emergency notification architecture.
+
+4. Live Production Deployed-Site Verification (Chrome CDP via Headless Browser):
+   - Homepage (`https://resqearth.antideploy.app/`): PASS (Hero branding, live weather stats, calculated risk indicator, 52 navigation links, clean reload).
+   - Live Map (`https://resqearth.antideploy.app/map`): PASS (102 unified hazards ingested, MapLibre WebGL canvas operational, 6 vector/heatmap layers active, Markers/Heatmap/Hybrid mode toggle functional, MapTiler vector basemaps rendering cleanly, feed click -> flyTo -> hazard detail card opening verified, 15-second pan/zoom anti-flicker test passed with 0 flickers).
+   - Multi-Hazard Ingestion: Live USGS earthquakes, NASA EONET events, Open-Meteo weather parameters, and NDMA SACHET / IMD alerts feeding the canonical UnifiedDisasterEvent[] pipeline.
+   - Secondary Routes: All 11 public/secondary routes (/disasters, /disasters/flood, /disasters/cyclone, /history, /government-response, /privacy, /terms, /cookies, /login, /signup, /admin) verified returning HTTP 200 with complete DOM content.
+   - Firebase Authentication & RBAC: Verified functional with secure client SDK initialization and protected admin route redirection.
+   - SMS Alert Gateway: Verified server-side proxy integration ready for live emergency broadcast demonstration.
+   - Production Console & Network Audit: 0 runtime console errors, 0 broken static assets.
 ```
 
-## 50. Brain.md Maintenance Rule
+## 52. Brain.md Maintenance Rule
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
 
@@ -1386,4 +1420,5 @@ Maintenance checklist:
 - Do not duplicate detailed architecture/requirements already maintained in source documents; summarize and link conceptually.
 - Preserve concise AI readability and remove stale transient notes only after their durable outcome is recorded.
 - When evidence is missing, write `PENDING`, `NOT TESTED`, `NEEDS REVIEW`, or `BLOCKED`; never infer success.
+
 
