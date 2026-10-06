@@ -51,3 +51,9 @@ ui-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Misc & Local Tooling
+opencode.jsonc
+scratch/
+Front-end/scratch/
+
