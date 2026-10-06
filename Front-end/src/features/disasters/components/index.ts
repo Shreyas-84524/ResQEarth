@@ -12,4 +12,5 @@ export * from "./unified-disaster-list-panel";
 export * from "./unified-disaster-overview-card";
 export * from "./map-gis-legend";
 export * from "./map-gis-toolbar";
+export * from "./map-hazard-detail-card";
 export * from "./knowledge";

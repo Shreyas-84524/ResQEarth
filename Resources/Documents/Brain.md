@@ -1247,7 +1247,49 @@ Scope: Part 2 — Render All Mappable Hazards on MapLibre (ResQEarth Single Sour
    - Headless Browser Verification: Verified WebGL map canvas initialization, filter chip interactivity, mode switching, feed-to-map flyTo, and 0 console errors.
 ```
 
-## 47. Brain.md Maintenance Rule
+## 47. Interactive Hazard Map Detail Cards (Part 3)
+
+```text
+Status: Complete
+Date: 2026-10-06
+Scope: Part 3 — Interactive Hazard Information Card on Live Map (ResQEarth Single Source of Truth)
+
+1. Architecture & Component Implementation:
+   - Dedicated Component: `MapHazardDetailCard` (`src/features/disasters/components/map-hazard-detail-card.tsx`), responsive floating overlay anchored within the MapLibre container.
+   - Zero Additional API Calls: Uses the identical `UnifiedDisasterEvent` dataset already powering the live feed and map layer.
+   - Comprehensive Information Architecture:
+     - Header: Hazard Category Icon, Category Title, SeverityBadge (`CRITICAL`, `HIGH`, `MODERATE`, `LOW`), Status badge (`Active Event` with pulsating indicator vs `Past Event`), and Dismiss (`X`) button.
+     - Title & Provenance: Prominent hazard headline, Official Alert badge (`ShieldCheck`) vs Auto Telemetry badge (`Radio`), and verified source name (`USGS`, `NASA EONET`, `NDMA SACHET`, `IMD`, `Open-Meteo`).
+     - Overlapping Hazard Disambiguation: Detects nearby hazards within 35 km radius and renders an interactive `+X nearby hazards` accordion banner allowing users to inspect and switch the focused event seamlessly.
+     - Description: Clean typography displaying authoritative bulletin / advisory narrative.
+     - Spatial & Telemetry Grid: Distance to user location (km), formatted occurrence time with relative time ago, focal depth, magnitude, and region.
+     - Technical Telemetry Accordion: Expandable view of exact WGS84 coordinates, provider ID, event ID, and severity scale.
+     - Action Links: Direct link to verified external source portal, plus context-aware deep link to official disaster safety preparedness guide (`/disasters/${slug}`).
+
+2. Multi-Mode Interaction & Lifecycle Management:
+   - Marker Click: Direct click on point circles, pulse rings, or statutory rings opens the detail card for that exact hazard and highlights the event with cyan `#06b6d4` halo.
+   - Heatmap Click: General map click searches screen-space pixel radius (36px). If within a density bloom, it prioritizes the highest-severity event (CRITICAL > HIGH > MODERATE > GUARDED > LOW) and nearest distance, opening the detail card with overlapping hazard badges.
+   - Outside Click: Clicking empty map space away from hazards cleanly dismisses the detail card and removes the selection halo.
+   - Feed Integration: Clicking any card in the Unified Hazard Feed triggers smooth `map.flyTo` animation, focuses the halo, and automatically opens the floating detail card.
+   - Responsive UX: Desktop floats at `bottom-4 left-4 w-[390px]` preserving top filters and bottom-right navigation controls. Mobile anchors gracefully at `bottom-3 left-3 right-3 max-h-[80vh]` with touch-friendly scrolling and stopPropagation protection.
+   - Lifecycle Safety: React refs eliminate stale closures; event listeners cleanly unmount without leaks or duplicate bindings.
+
+3. Validation:
+   - TypeScript (npm run type-check): PASS (0 errors)
+   - ESLint (npm run lint): PASS (0 warnings, 0 errors)
+   - Test Suite (npm test): PASS (50/50 test units passed)
+   - Production Build (npm run build): PASS (41 routes compiled)
+   - Real Browser Verification (Headless Chrome with WebGL via CDP):
+     - Feed-to-card navigation verified (flyTo + highlight + card content inspected).
+     - Technical details toggle verified.
+     - Close via `X` button verified.
+     - Heatmap mode switch & heatmap area click verified.
+     - Outside click dismissal verified.
+     - Mobile viewport (375x667) responsiveness verified (`fitsViewport: true`).
+     - Console Audit: 0 errors.
+```
+
+## 48. Brain.md Maintenance Rule
 
 
 > **`Brain.md` is a living file. Update it only with factual project state, confirmed decisions, test results, blockers, and implementation progress. Do not fill it with speculative ideas, verbose code explanations, transient debugging logs, or assumptions presented as facts.**
