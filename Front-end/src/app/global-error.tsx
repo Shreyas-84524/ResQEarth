@@ -6,14 +6,36 @@ import "./globals.css";
 
 export default function RootGlobalError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
   React.useEffect(() => {
     console.error("Root Application Error:", error);
+
+    // A deployment can leave an already-open tab referencing JavaScript chunks
+    // from the previous release. Retrying the same React tree cannot repair that
+    // state, so perform one guarded hard reload and then stop to avoid a loop if
+    // the error is persistent rather than transient.
+    const reloadKey = "resqearth:root-error-reload";
+
+    try {
+      const lastReload = Number(window.sessionStorage.getItem(reloadKey) ?? 0);
+      const canRetry = !Number.isFinite(lastReload) || Date.now() - lastReload > 30_000;
+
+      if (canRetry) {
+        window.sessionStorage.setItem(reloadKey, String(Date.now()));
+        const reloadTimer = window.setTimeout(() => window.location.reload(), 250);
+        return () => window.clearTimeout(reloadTimer);
+      }
+    } catch (storageError) {
+      console.warn("Unable to schedule automatic error recovery:", storageError);
+    }
   }, [error]);
+
+  const reloadApplication = () => {
+    window.location.reload();
+  };
 
   return (
     <html lang="en">
@@ -28,7 +50,7 @@ export default function RootGlobalError({
           </p>
           <button
             type="button"
-            onClick={() => reset()}
+            onClick={reloadApplication}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
             <RefreshCw className="h-4 w-4" />

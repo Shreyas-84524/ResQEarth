@@ -41,29 +41,29 @@ function getBannerStyle(severity: string): {
   if (norm === "CRITICAL") {
     return {
       containerClass:
-        "bg-red-50 text-red-950 border-red-200",
-      iconClass: "text-red-700",
+        "bg-red-600 text-white border-red-700 shadow-md animate-pulse",
+      iconClass: "text-white",
       icon: Flame,
     };
   }
   if (norm === "HIGH") {
     return {
-      containerClass: "bg-amber-50 text-amber-950 border-amber-200",
-      iconClass: "text-amber-700",
+      containerClass: "bg-orange-600 text-white border-orange-700 shadow-md",
+      iconClass: "text-white",
       icon: AlertTriangle,
     };
   }
   if (norm === "MODERATE") {
     return {
       containerClass:
-        "bg-amber-50 text-amber-950 border-amber-200",
-      iconClass: "text-amber-700",
+        "bg-amber-500 text-slate-950 border-amber-600 shadow-sm font-medium",
+      iconClass: "text-slate-950",
       icon: AlertTriangle,
     };
   }
   return {
-    containerClass: "bg-sky-50 text-sky-950 border-sky-200",
-    iconClass: "text-sky-700",
+    containerClass: "bg-sky-600 text-white border-sky-700 shadow-sm",
+    iconClass: "text-white",
     icon: ShieldAlert,
   };
 }
@@ -83,32 +83,32 @@ export function NotificationBanner({
     <div
       role="alert"
       className={cn(
-        "relative flex flex-col gap-4 rounded-xl border p-5 transition-all sm:flex-row sm:items-center sm:justify-between",
+        "relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4 transition-all",
         containerClass,
         className
       )}
       {...props}
     >
       <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-white/70 p-2 shrink-0 mt-0.5 shadow-sm ring-1 ring-black/5">
+        <div className="rounded-full bg-black/10 p-1.5 shrink-0 mt-0.5">
           <Icon className={cn("h-5 w-5", iconClass)} aria-hidden="true" />
         </div>
 
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold uppercase tracking-[0.14em] text-[10px]">
+            <span className="font-extrabold uppercase tracking-wider text-xs bg-black/20 px-2 py-0.5 rounded">
               {data.severity} WARNING
             </span>
             {data.sourceType === "official" ? (
-              <Badge variant="official">
+              <Badge variant="official" className="bg-white/20 text-white border-transparent">
                 OFFICIAL ALERT
               </Badge>
             ) : data.sourceType === "manual-admin" ? (
-              <Badge variant="simulation">
+              <Badge variant="simulation" className="bg-white/20 text-white border-transparent">
                 SIMULATION / DEMO
               </Badge>
             ) : (
-              <Badge variant="calculated">
+              <Badge variant="calculated" className="bg-white/20 text-white border-transparent">
                 CALCULATED RISK
               </Badge>
             )}
@@ -120,16 +120,16 @@ export function NotificationBanner({
             )}
           </div>
 
-          <h4 className="text-sm sm:text-base font-semibold leading-tight">
+          <h4 className="text-sm sm:text-base font-bold leading-tight">
             {data.title}
           </h4>
 
-          <p className="text-xs opacity-75 line-clamp-2 max-w-3xl leading-5">
+          <p className="text-xs opacity-90 line-clamp-2 max-w-3xl">
             {data.message}
           </p>
 
           {data.precautions && (
-            <p className="text-[11px] opacity-80">
+            <p className="text-[11px] opacity-95 bg-black/10 px-2 py-1 rounded inline-block">
               <span className="font-bold">Precautions: </span>
               {data.precautions}
             </p>
@@ -153,7 +153,7 @@ export function NotificationBanner({
           <button
             type="button"
             onClick={() => onDismiss(data.id)}
-            className="rounded-md p-1.5 hover:bg-black/5 transition-colors"
+            className="rounded p-1 hover:bg-black/20 transition-colors"
             title="Dismiss notification"
             aria-label="Dismiss notification"
           >

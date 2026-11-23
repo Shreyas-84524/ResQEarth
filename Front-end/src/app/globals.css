@@ -4,40 +4,41 @@
 
 @layer base {
   :root {
-    --green-primary: #0f766e;
-    --green-dark: #115e59;
-    --green-brand: #0f766e;
-    --green-light: #99f6e4;
-    --green-pale: #f0fdfa;
+    /* ResQEarth Design System Brand Tokens (design.md) */
+    --green-primary: #0B8F2F;
+    --green-dark: #08752A;
+    --green-brand: #137D43;
+    --green-light: #BDF58E;
+    --green-pale: #E8FAD9;
 
     --white: #FFFFFF;
-    --off-white: #f6f8fa;
-    --text-primary: #101828;
-    --text-secondary: #475467;
-    --border-color: #e4e7ec;
-    --card-border: #e8ebef;
+    --off-white: #FAFBFA;
+    --text-primary: #0A0A0A;
+    --text-secondary: #4D514F;
+    --border-color: #E7EAE7;
+    --card-border: #EEF1EE;
 
     /* Base theme tokens */
-    --background: 210 25% 98%;
-    --foreground: 220 43% 11%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 4%;
-    --primary: 174 72% 30%;
+    --primary: 137 86% 31%; /* #0B8F2F */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 220 43% 11%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 218 17% 35%;
-    --accent: 174 55% 94%;
-    --accent-foreground: 174 72% 24%;
+    --secondary: 130 15% 98%;
+    --secondary-foreground: 140 10% 20%;
+    --muted: 130 15% 96%;
+    --muted-foreground: 150 4% 31%;
+    --accent: 92 84% 92%; /* #E8FAD9 */
+    --accent-foreground: 140 74% 28%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 216 18% 88%;
-    --input: 216 18% 88%;
-    --ring: 174 72% 30%;
-    --radius: 0.625rem;
+    --border: 120 7% 91%; /* #E7EAE7 */
+    --input: 120 7% 91%;
+    --ring: 137 86% 31%;
+    --radius: 0.875rem; /* 14px */
 
     /* Status Tokens */
     --success: 137 86% 31%;
@@ -110,19 +111,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background-image:
-      radial-gradient(circle at 10% 0%, rgba(15, 118, 110, 0.055), transparent 24rem),
-      linear-gradient(180deg, #ffffff 0, #f7f9fb 28rem, #f7f9fb 100%);
-    background-attachment: fixed;
-  }
-
-  h1, h2, h3, h4 {
-    text-wrap: balance;
-  }
-
-  p {
-    text-wrap: pretty;
   }
   
   /* Focus visible accessibility styling */
@@ -144,9 +132,9 @@
   /* ResQEarth Design System Utilities */
   .card-resq {
     background: #FFFFFF;
-    border: 1px solid #e8ebef;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    border: 1px solid #EEF1EE;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
   }
 
   .btn-pill-primary {
@@ -190,16 +178,5 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--green-brand);
-  }
-
-  .surface-grid {
-    background-image:
-      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-    background-size: 32px 32px;
-  }
-
-  .section-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-primary;
   }
 }

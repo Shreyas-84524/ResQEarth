@@ -127,7 +127,10 @@ export function RiskOverviewCard({
         <div className="pt-1">
           <CardTitle className="text-base font-bold flex items-center justify-between">
             <span>{disasterType || "Multi-Hazard Assessment"}</span>
-            <span className="text-xs font-normal text-muted-foreground font-mono">
+            <span
+              className="text-xs font-normal text-muted-foreground font-mono"
+              suppressHydrationWarning
+            >
               {new Intl.DateTimeFormat("en-IN", {
                 hour: "2-digit",
                 minute: "2-digit",

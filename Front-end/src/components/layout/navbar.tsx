@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   Shield,
   ChevronDown,
-  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -73,31 +72,30 @@ export function Navbar({
         Skip to main content
       </a>
 
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80">
-        <div className="mx-auto flex h-[72px] max-w-screen-2xl items-center justify-between px-5 sm:px-8 lg:px-10">
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand Logo */}
           <Link
             href="/"
-            className="group flex items-center gap-3"
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
             aria-label="ResQEarth Home"
           >
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm transition-transform group-hover:-translate-y-0.5">
-              <ShieldAlert className="h-[19px] w-[19px]" aria-hidden="true" />
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-teal-400" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <ShieldAlert className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[17px] font-semibold tracking-[-0.025em] text-slate-950 leading-none">
+              <span className="text-lg font-bold tracking-tight text-foreground leading-none">
                 ResQEarth
               </span>
-              <span className="mt-1 text-[9px] font-semibold text-slate-500 tracking-[0.16em] uppercase">
-                Public safety intelligence
+              <span className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">
+                Disaster Intelligence
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
           <nav
-            className="hidden md:flex items-center gap-0.5 rounded-xl border border-slate-200/80 bg-slate-50/80 p-1"
+            className="hidden md:flex items-center gap-1 lg:gap-2"
             aria-label="Main Navigation"
           >
             {publicNavLinks.map((link) => {
@@ -111,10 +109,10 @@ export function Navbar({
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "px-3 py-2 rounded-lg text-[13px] font-medium transition-colors",
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70"
-                      : "text-slate-500 hover:bg-white/70 hover:text-slate-900"
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -174,18 +172,14 @@ export function Navbar({
           </nav>
 
           {/* Desktop Auth / User Action Buttons */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2.5">
             {!isAuthenticated ? (
               <>
-                <div className="mr-2 hidden items-center gap-1.5 text-[11px] font-medium text-slate-500 xl:flex">
-                  <Radio className="h-3.5 w-3.5 text-teal-600" />
-                  Live monitoring
-                </div>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Log In</Link>
                 </Button>
-                <Button variant="brand" size="sm" asChild>
-                  <Link href="/signup">Create account</Link>
+                <Button size="sm" asChild>
+                  <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
             ) : (

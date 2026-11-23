@@ -90,7 +90,7 @@ export function DisasterCard({
   return (
     <Card
       className={cn(
-        "group flex flex-col justify-between overflow-hidden border-slate-200 bg-white text-slate-950 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_12px_30px_rgba(16,24,40,.08)]",
+        "flex flex-col justify-between overflow-hidden rounded-[14px] border border-[#EEF1EE] bg-white text-[#0A0A0A] shadow-[0_6px_24px_rgba(0,0,0,0.04)] transition-all duration-[180ms] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:-translate-y-0.5",
         className
       )}
       {...props}
@@ -98,14 +98,14 @@ export function DisasterCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors group-hover:bg-teal-50 group-hover:text-teal-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8FAD9] text-[#0B8F2F]">
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-teal-700">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#137D43]">
                 {data.type}
               </span>
-              <CardTitle className="mt-1 text-base font-semibold leading-5 text-slate-950 line-clamp-2">
+              <CardTitle className="text-base font-bold text-[#0A0A0A] line-clamp-1">
                 {data.title}
               </CardTitle>
             </div>
@@ -124,7 +124,7 @@ export function DisasterCard({
       </CardHeader>
 
       <CardContent className="pb-3 text-xs">
-        <p className="text-slate-600 leading-5 line-clamp-2 mb-4">
+        <p className="text-muted-foreground line-clamp-2 mb-3">
           {data.description}
         </p>
 
@@ -143,7 +143,7 @@ export function DisasterCard({
 
           <div className="flex items-center gap-1.5">
             <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span>
+            <span suppressHydrationWarning>
               {new Date(data.occurredAt).toLocaleDateString("en-IN", {
                 month: "short",
                 day: "numeric",
@@ -157,7 +157,7 @@ export function DisasterCard({
         </div>
       </CardContent>
 
-      <CardFooter className="pt-0 flex items-center justify-between border-t border-slate-100 py-3 bg-slate-50/50 text-xs">
+      <CardFooter className="pt-0 flex items-center justify-between border-t border-border/40 py-2.5 bg-muted/20 text-xs">
         {data.sourceUrl ? (
           <a
             href={data.sourceUrl}

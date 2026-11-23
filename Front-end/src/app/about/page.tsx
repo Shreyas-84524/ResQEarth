@@ -127,7 +127,7 @@ export default function AboutPage() {
             {disasterCycleStages.map((s, idx) => {
               const Icon = s.icon;
               return (
-                <Card key={idx} className="rounded-[14px] border border-[#EEF1EE] bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200">
+                <Card key={idx} className="rounded-[14px] border border-[#EEF1EE] bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-[180ms]">
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8FAD9] text-[#0B8F2F] shrink-0">

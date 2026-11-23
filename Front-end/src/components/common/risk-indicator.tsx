@@ -98,7 +98,7 @@ export function RiskIndicator({
               {data.modelVersion}
             </span>
           </div>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground" suppressHydrationWarning>
             {new Date(data.calculatedAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
