@@ -2,8 +2,6 @@
 
 import * as React from "react";
 import { RouteContainer } from "@/components/layout/route-container";
-import { PageHeader } from "@/components/ui/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapView, LocationProvider } from "@/features/map";
 import {
@@ -15,15 +13,12 @@ import {
   type UnifiedDisasterEvent,
   type MapGisDisplayMode,
 } from "@/features/disasters";
-import { RiskBadge, useDisasterRisk } from "@/features/risk";
 import {
   Compass,
   Layers,
   MapPin,
   ShieldAlert,
   Smartphone,
-  Sparkles,
-  ShieldCheck,
   Radio,
   Waves,
   Wind,
@@ -62,8 +57,6 @@ function MapPageContent() {
     isStale,
     refresh,
   } = useUnifiedDisasters();
-
-  const { assessment: riskAssessment } = useDisasterRisk();
 
   const handleSelectDisaster = React.useCallback(
     (disaster: UnifiedDisasterEvent | null) => {
@@ -124,47 +117,28 @@ function MapPageContent() {
   );
 
   return (
-    <RouteContainer size="lg" className="space-y-6 pb-12">
-      {/* 1. Page Header */}
-      <PageHeader
-        title="Interactive GIS Multi-Hazard Disaster Map"
-        description="High-performance MapLibre vector GIS engine combining live USGS earthquakes, NASA EONET events, Open-Meteo severe weather, and Indian statutory NDMA SACHET / IMD alerts."
-        badge={
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              <Sparkles className="h-3 w-3 mr-1" />
-              MapLibre GL JS 5.2
-            </Badge>
-            <RiskBadge
-              score={riskAssessment.score}
-              level={riskAssessment.level}
-              size="sm"
-            />
-            <Badge variant="secondary" className="font-mono text-[10px]">
-              <Radio className="h-3 w-3 mr-1 text-primary animate-pulse" />
-              {disasters.length} Monitored Hazards
-            </Badge>
-            {officialCount > 0 && (
-              <Badge variant="destructive" className="font-mono text-[10px]">
-                <ShieldCheck className="h-3 w-3 mr-1" />
-                {officialCount} Official Indian Alerts
-              </Badge>
-            )}
-            {criticalCount > 0 && (
-              <Badge variant="destructive" className="font-mono text-[10px] bg-red-600">
-                {criticalCount} Critical
-              </Badge>
-            )}
+    <RouteContainer size="lg" className="space-y-7 pb-12">
+      <section className="flex flex-col gap-6 border-b border-slate-200 pb-7 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-700">
+            <Radio className="h-3.5 w-3.5" /> Live geospatial workspace
           </div>
-        }
-      />
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl">Multi-hazard map</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">A unified operational view of active hazards from verified global and Indian public sources.</p>
+        </div>
+        <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <MapStat label="Signals" value={disasters.length} />
+          <MapStat label="Official" value={officialCount} />
+          <MapStat label="Critical" value={criticalCount} alert={criticalCount > 0} />
+        </div>
+      </section>
 
       {/* 2. Interactive Map & Live Unified Feed Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 gap-5 items-start lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Interactive MapLibre GIS Container (2 Columns on Large Screens) */}
-        <div className="relative lg:col-span-2">
+        <div className="relative overflow-hidden rounded-2xl bg-slate-950 shadow-[0_16px_50px_rgba(15,23,42,.12)]">
           <MapView
-            className="h-[540px] sm:h-[600px] lg:h-[660px] w-full rounded-xl overflow-hidden border border-border/80 shadow-sm"
+            className="h-[540px] sm:h-[600px] lg:h-[680px] w-full rounded-none overflow-hidden border-0 shadow-none"
             showFilterChips={true}
             filterOptions={mapFilterOptions}
             selectedFilter={currentMapFilterId}
@@ -204,7 +178,7 @@ function MapPageContent() {
         </div>
 
         {/* Live Surveillance Panel (1 Column on Large Screens) */}
-        <div className="h-[540px] sm:h-[600px] lg:h-[660px] flex flex-col">
+        <div className="h-[540px] sm:h-[600px] lg:h-[680px] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <UnifiedDisasterListPanel
             disasters={filteredDisasters}
             isLoading={isLoading}
@@ -232,8 +206,8 @@ function MapPageContent() {
       </div>
 
       {/* 3. GIS Engine Capabilities & Metadata Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-        <Card className="border-border/80">
+      <div className="grid grid-cols-1 border-y border-slate-200 py-8 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-none border-0 bg-transparent shadow-none lg:border-r lg:border-slate-200">
           <CardContent className="p-4 flex items-start gap-3">
             <div className="h-9 w-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <Compass className="h-5 w-5" />
@@ -247,7 +221,7 @@ function MapPageContent() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/80">
+        <Card className="rounded-none border-0 bg-transparent shadow-none lg:border-r lg:border-slate-200">
           <CardContent className="p-4 flex items-start gap-3">
             <div className="h-9 w-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <MapPin className="h-5 w-5" />
@@ -261,7 +235,7 @@ function MapPageContent() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/80">
+        <Card className="rounded-none border-0 bg-transparent shadow-none lg:border-r lg:border-slate-200">
           <CardContent className="p-4 flex items-start gap-3">
             <div className="h-9 w-9 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
               <Layers className="h-5 w-5" />
@@ -275,7 +249,7 @@ function MapPageContent() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/80">
+        <Card className="rounded-none border-0 bg-transparent shadow-none">
           <CardContent className="p-4 flex items-start gap-3">
             <div className="h-9 w-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <Smartphone className="h-5 w-5" />
@@ -312,6 +286,15 @@ function MapPageContent() {
         </div>
       </div>
     </RouteContainer>
+  );
+}
+
+function MapStat({ label, value, alert = false }: { label: string; value: number; alert?: boolean }) {
+  return (
+    <div className="min-w-[92px] border-r border-slate-200 px-4 py-3 text-center last:border-r-0">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className={alert ? "mt-1 font-mono text-xl font-semibold text-red-600" : "mt-1 font-mono text-xl font-semibold text-slate-950"}>{value}</p>
+    </div>
   );
 }
 

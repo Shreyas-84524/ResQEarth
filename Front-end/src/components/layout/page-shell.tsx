@@ -28,7 +28,7 @@ export function PageShell({
   const resolvedOnLogout = onLogout ?? auth.logout;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground antialiased selection:bg-primary/20">
+    <div className="flex min-h-screen flex-col text-foreground antialiased selection:bg-teal-200 selection:text-slate-950">
       <Navbar
         isAuthenticated={resolvedIsAuthenticated}
         userRole={resolvedUserRole}

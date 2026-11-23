@@ -4,21 +4,21 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-[180ms] ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:translate-y-px",
   {
     variants: {
       variant: {
-        default: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
-        brand: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
+        default: "bg-slate-950 text-white shadow-sm hover:bg-slate-800",
+        brand: "bg-primary text-white shadow-sm hover:bg-teal-800",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:-translate-y-0.5",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border-[1.5px] border-[#0A0A0A] bg-white text-[#0A0A0A] hover:bg-[#FAFBFA] hover:-translate-y-0.5",
+          "border border-slate-300 bg-white text-slate-800 shadow-sm hover:border-slate-400 hover:bg-slate-50",
         secondary:
-          "bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] hover:bg-[#E8FAD9]/50 hover:-translate-y-0.5",
-        ghost: "hover:bg-[#E8FAD9]/60 hover:text-[#0B8F2F]",
-        link: "text-[#0B8F2F] underline-offset-4 hover:underline rounded-none p-0 h-auto",
-        success: "bg-[#0B8F2F] text-white shadow-sm hover:bg-[#08752A] hover:-translate-y-0.5",
+          "bg-slate-100 text-slate-800 border border-transparent hover:bg-slate-200",
+        ghost: "hover:bg-slate-100 hover:text-slate-950",
+        link: "text-primary underline-offset-4 hover:underline rounded-none p-0 h-auto",
+        success: "bg-primary text-white shadow-sm hover:bg-teal-800",
         warning: "bg-warning text-warning-foreground shadow hover:bg-warning/90 hover:-translate-y-0.5",
         "risk-critical":
           "bg-risk-critical text-white shadow hover:bg-risk-critical/90 hover:-translate-y-0.5",
@@ -29,9 +29,9 @@ const buttonVariants = cva(
         "risk-low": "bg-[#0B8F2F] text-white shadow hover:bg-[#08752A] hover:-translate-y-0.5",
       },
       size: {
-        default: "h-10 px-5 py-2",
-        sm: "h-8 px-3.5 text-xs",
-        lg: "h-12 px-8 text-base",
+        default: "h-10 px-4 py-2",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-11 px-5 text-sm",
         icon: "h-10 w-10 p-0",
       },
     },

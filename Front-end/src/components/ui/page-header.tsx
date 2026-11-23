@@ -24,7 +24,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 border-b border-border/40 pb-6 pt-2 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-5 border-b border-slate-200 pb-7 pt-1 sm:flex-row sm:items-end sm:justify-between",
         className
       )}
       {...props}
@@ -40,14 +40,14 @@ export function PageHeader({
             {backLabel}
           </button>
         )}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-[-0.035em] text-slate-950">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
+          <p className="text-sm sm:text-base leading-7 text-slate-600 max-w-3xl">
             {description}
           </p>
         )}

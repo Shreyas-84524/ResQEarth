@@ -3,127 +3,74 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  ShieldCheck,
-  MapPin,
-  Map,
-  Flame,
-  Building2,
-  Waves,
-  Wind,
-  Activity,
-  Mountain,
-  SunMedium,
-  Biohazard,
-  CheckCircle2,
   ArrowRight,
-  Shield,
-  AlertTriangle,
-  Bell,
+  BellRing,
   BookOpen,
-  LayoutDashboard,
-  UserPlus,
+  Check,
+  Database,
+  Radio,
   RefreshCw,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
 import { RouteContainer } from "@/components/layout/route-container";
-import {
-  WeatherOverviewCard,
-  useWeather,
-} from "@/features/weather";
-import {
-  MapUnifiedDisasterLayer,
-  useUnifiedDisasters,
-} from "@/features/disasters";
-import {
-  DisasterCard,
-  type DisasterCardData,
-} from "@/components/common/disaster-card";
-import {
-  RiskOverviewCard,
-  PerHazardRiskGrid,
-  useDisasterRisk,
-} from "@/features/risk";
-import {
-  NotificationBanner,
-  type WarningBannerData,
-} from "@/components/common/notification-banner";
-import {
-  MapView,
-  LocationProvider,
-  LocationStatusCard,
-  useGeolocation,
-} from "@/features/map";
+import { WeatherOverviewCard, useWeather } from "@/features/weather";
+import { MapUnifiedDisasterLayer, useUnifiedDisasters } from "@/features/disasters";
+import { DisasterCard, type DisasterCardData } from "@/components/common/disaster-card";
+import { RiskOverviewCard, useDisasterRisk } from "@/features/risk";
+import { NotificationBanner, type WarningBannerData } from "@/components/common/notification-banner";
+import { MapView, LocationProvider, useGeolocation } from "@/features/map";
 import { useAuth } from "@/features/auth";
 
-// Sample disaster preview events for monitored hazards
-const SAMPLE_DISASTER_EVENTS: DisasterCardData[] = [
+const FALLBACK_EVENTS: DisasterCardData[] = [
   {
     id: "evt-001",
     type: "Cyclone",
-    title: "Deep Depression over East-Central Arabian Sea",
-    description:
-      "Severe weather system tracking north-northwestward with sustained surface winds of 55–65 km/h. Coastal fisherman advisories active.",
+    title: "Deep depression over the east-central Arabian Sea",
+    description: "Severe weather system tracking north-northwest with sustained winds of 55–65 km/h.",
     severity: "HIGH",
     sourceType: "official",
-    sourceName: "India Meteorological Department (IMD)",
+    sourceName: "India Meteorological Department",
     sourceUrl: "https://mausam.imd.gov.in",
     locationName: "Coastal Konkan, Maharashtra",
-    latitude: 18.9,
-    longitude: 72.8,
     distanceKm: 42,
-    occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    occurredAt: "2026-09-30T02:30:00.000Z",
     slug: "cyclone",
   },
   {
     id: "evt-002",
     type: "Flood",
-    title: "River Basin Discharge Warning",
-    description:
-      "Elevated river flow and localized surface water pooling observed in low-lying suburban drainage basins following intense overnight downpours.",
+    title: "River basin discharge advisory",
+    description: "Elevated flow and surface-water pooling observed in low-lying suburban drainage basins.",
     severity: "MODERATE",
     sourceType: "automatic",
-    sourceName: "ResQEarth Hydrological Risk Model",
-    locationName: "Thane & Raigad Basins",
-    latitude: 19.2,
-    longitude: 73.0,
+    sourceName: "ResQEarth risk model",
+    locationName: "Thane and Raigad basins",
     distanceKm: 18,
-    occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    occurredAt: "2026-09-29T23:30:00.000Z",
     slug: "flood",
   },
   {
     id: "evt-003",
     type: "Earthquake",
-    title: "M 4.1 Minor Seismic Event",
-    description:
-      "Focal depth of 10 km recorded in Koyna-Warna tectonic zone. No structural damage reported; monitored by regional seismic stations.",
+    title: "M 4.1 minor seismic event",
+    description: "A shallow event was recorded in the Koyna–Warna tectonic zone. No damage reported.",
     severity: "GUARDED",
     sourceType: "official",
     sourceName: "National Centre for Seismology / USGS",
     sourceUrl: "https://earthquake.usgs.gov",
     locationName: "Satara District, Maharashtra",
-    latitude: 17.4,
-    longitude: 73.7,
     distanceKm: 145,
-    occurredAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+    occurredAt: "2026-09-29T16:30:00.000Z",
     slug: "earthquake",
   },
 ];
 
-// Sample urgent notification banner
-const SAMPLE_WARNING_BANNER: WarningBannerData = {
+const ACTIVE_WARNING: WarningBannerData = {
   id: "alert-top-01",
-  title: "Monsoon Inundation & Coastal Weather Warning",
-  message:
-    "Heavy to very heavy rainfall expected across coastal belts during high tide. Avoid waterlogged subways and heed local municipal advisories.",
-  precautions: "Stay indoors during squally winds; keep emergency kit accessible.",
+  title: "Monsoon inundation and coastal weather warning",
+  message: "Heavy to very heavy rainfall may coincide with high tide across coastal districts.",
+  precautions: "Avoid waterlogged routes and follow local municipal advisories.",
   disasterType: "Flood",
   severity: "HIGH",
   sourceType: "official",
@@ -133,838 +80,191 @@ const SAMPLE_WARNING_BANNER: WarningBannerData = {
 };
 
 function HomePageContent() {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { location } = useGeolocation();
+  const { weather, isLoading: weatherLoading, error: weatherError, refresh: refreshWeather } = useWeather();
   const {
-    weather,
-    isLoading: isRefreshingWeather,
-    error: weatherError,
-    refresh: handleWeatherRefresh,
-  } = useWeather();
-  const {
-    disasters: unifiedDisasters,
-    geoJson: unifiedGeoJson,
+    disasters,
+    geoJson,
     selectedDisaster,
     setSelectedDisaster,
   } = useUnifiedDisasters();
-  const {
-    assessment: riskAssessment,
-    isLoading: isRiskLoading,
-    refresh: handleRiskRefresh,
-  } = useDisasterRisk();
-  const [activeNotificationDismissed, setActiveNotificationDismissed] =
-    React.useState(false);
+  const { assessment, isLoading: riskLoading, refresh: refreshRisk } = useDisasterRisk();
+  const [warningDismissed, setWarningDismissed] = React.useState(false);
 
-  // Live unified multi-hazard cards across USGS, NASA EONET, NDMA SACHET, IMD & Open-Meteo
-  const liveUnifiedCards: DisasterCardData[] = React.useMemo(() => {
-    return unifiedDisasters.slice(0, 3).map((d) => ({
-      id: d.id,
-      type: d.categoryTitle,
-      title: d.title,
-      description:
-        d.description ||
-        `${d.categoryTitle} monitored by ${d.sourceName}.${d.isOfficialAlert ? " Official statutory warning." : ""}`,
-      severity: d.severity,
-      sourceType: d.sourceType,
-      sourceName: d.sourceName,
-      sourceUrl: d.sourceUrl,
-      locationName: d.region,
-      latitude: d.latitude,
-      longitude: d.longitude,
-      distanceKm: d.distanceKm,
-      occurredAt: d.occurredAt,
-      slug:
-        d.disasterType === "flood" || d.disasterType === "urban-flood"
-          ? "flood"
-          : d.disasterType === "cyclone" || d.disasterType === "severe-storm" || d.disasterType === "high-wind"
-          ? "cyclone"
-          : d.disasterType === "earthquake"
-          ? "earthquake"
-          : d.disasterType === "landslide"
-          ? "landslide"
-          : d.disasterType === "heat-wave" || d.disasterType === "cold-wave"
-          ? "heat-wave"
-          : d.disasterType === "chemical-leak"
-          ? "chemical-leak"
-          : "earthquake",
+  const eventCards = React.useMemo<DisasterCardData[]>(() => {
+    if (!disasters.length) return FALLBACK_EVENTS;
+    return disasters.slice(0, 3).map((event) => ({
+      id: event.id,
+      type: event.categoryTitle,
+      title: event.title,
+      description: event.description || `${event.categoryTitle} monitored by ${event.sourceName}.`,
+      severity: event.severity,
+      sourceType: event.sourceType,
+      sourceName: event.sourceName,
+      sourceUrl: event.sourceUrl,
+      locationName: event.region,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      distanceKm: event.distanceKm,
+      occurredAt: event.occurredAt,
+      slug: toGuideSlug(event.disasterType),
     }));
-  }, [unifiedDisasters]);
+  }, [disasters]);
 
-  const displayDisasterEvents = React.useMemo(() => {
-    if (liveUnifiedCards.length === 0) return SAMPLE_DISASTER_EVENTS;
-    return liveUnifiedCards;
-  }, [liveUnifiedCards]);
+  const officialCount = React.useMemo(() => disasters.filter((item) => item.isOfficialAlert).length, [disasters]);
 
   return (
-    <div className="flex flex-col space-y-12 sm:space-y-16 lg:space-y-20 pb-16">
-        {/* 1. Emergency Helpline & Provenance Bar */}
-      <div className="border-b border-border/80 bg-muted/40 py-2.5 px-4 text-xs">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-foreground">
-              National Emergency Services:
-            </span>
-            <span className="font-mono font-bold text-destructive">112</span>
-            <span className="hidden sm:inline text-muted-foreground/60">|</span>
-            <span className="hidden sm:inline">
-              Police: <strong className="text-foreground">100</strong>
-            </span>
-            <span className="hidden sm:inline text-muted-foreground/60">|</span>
-            <span className="hidden sm:inline">
-              Fire: <strong className="text-foreground">101</strong>
-            </span>
-            <span className="hidden sm:inline text-muted-foreground/60">|</span>
-            <span className="hidden sm:inline">
-              Ambulance: <strong className="text-foreground">108</strong>
-            </span>
+    <div className="pb-8">
+      <div className="border-b border-slate-200 bg-slate-950 px-5 py-2.5 text-xs text-slate-300">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 sm:px-3">
+          <div className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-teal-400" />
+            <span>Monitoring services operational</span>
+            <span className="hidden text-slate-600 sm:inline">/</span>
+            <span className="hidden text-slate-400 sm:inline">USGS · NASA EONET · Open-Meteo · NDMA</span>
           </div>
-
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-background">
-              ESE Mini Project
-            </Badge>
-            <span>Educational Decision-Support System</span>
-          </div>
+          <div className="shrink-0 font-medium text-white">Emergency <span className="ml-1 font-mono text-red-300">112</span></div>
         </div>
       </div>
 
-      <RouteContainer className="space-y-12 sm:space-y-16 lg:space-y-20">
-        {/* 2. Urgent Notification Banner (Dismissible) */}
-        {!activeNotificationDismissed && (
-          <NotificationBanner
-            data={SAMPLE_WARNING_BANNER}
-            onDismiss={() => setActiveNotificationDismissed(true)}
-          />
+      <RouteContainer size="lg" className="space-y-20 lg:space-y-28">
+        <section className="surface-grid relative overflow-hidden rounded-2xl bg-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,.18)]">
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-teal-400/10 blur-3xl" />
+          <div className="grid lg:grid-cols-[1.2fr_.8fr]">
+            <div className="relative px-7 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
+              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-300">
+                <Radio className="h-3.5 w-3.5" /> Live regional intelligence
+              </div>
+              <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+                Know the risk.<br /><span className="text-slate-400">Act with confidence.</span>
+              </h1>
+              <p className="mt-7 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                Verified hazard feeds, transparent regional risk scoring and practical guidance—brought together in one calm operating picture.
+              </p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Button variant="brand" size="lg" asChild>
+                  <Link href="/map">Open live map <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                <Button size="lg" asChild className="border border-white/15 bg-white/10 text-white shadow-none hover:bg-white/15">
+                  <Link href="/disasters"><BookOpen className="mr-2 h-4 w-4" /> Preparedness guides</Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative border-t border-white/10 bg-white/[0.035] p-7 sm:p-10 lg:border-l lg:border-t-0 lg:p-12">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Regional overview</p>
+                <span className="rounded-md bg-teal-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-teal-300">Live</span>
+              </div>
+              <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/10">
+                <HeroMetric label="Monitored hazards" value={disasters.length || "—"} />
+                <HeroMetric label="Official alerts" value={officialCount || "—"} />
+                <HeroMetric label="Calculated risk" value={assessment.score} suffix="/100" />
+                <HeroMetric label="Risk band" value={assessment.level} compact />
+              </div>
+              <div className="mt-8 space-y-4 border-t border-white/10 pt-6 text-sm">
+                <SignalRow label="Region" value={location.city || location.locality || "Mumbai"} />
+                <SignalRow label="Weather" value={weather ? `${Math.round(weather.temperature)}°C · ${weather.conditionLabel}` : "Acquiring feed"} />
+                <SignalRow label="Model" value="Deterministic v1.0" />
+              </div>
+              <p className="mt-7 text-xs leading-5 text-slate-500">Decision support only. Official instructions from NDMA, IMD and local authorities always take precedence.</p>
+            </div>
+          </div>
+        </section>
+
+        {!warningDismissed && (
+          <NotificationBanner data={ACTIVE_WARNING} onDismiss={() => setWarningDismissed(true)} />
         )}
 
-        {/* 3. Hero Section (design.md Section 9, 10) */}
-        <section className="relative overflow-hidden rounded-[20px] border border-[#EEF1EE] bg-gradient-to-br from-[#FAFBFA] via-white to-[#E8FAD9]/30 p-8 sm:p-12 lg:p-16 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
-          {/* Subtle decorative background organic shape */}
-          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-[#E8FAD9]/50 blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-[#BDF58E]/20 blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 mx-auto max-w-4xl text-center space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#BDF58E] bg-[#E8FAD9] px-4 py-1.5 text-xs font-semibold text-[#137D43]">
-              <span>🌿</span>
-              <span className="tracking-wide">SMALL ACTIONS • BIG IMPACT</span>
-              <span>🌿</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#0A0A0A] leading-[1.05]">
-              Rescue Earth <span className="text-[#0B8F2F] font-extrabold block sm:inline">• Protect Life</span>
-            </h1>
-
-            <p className="text-base sm:text-lg text-[#4D514F] leading-relaxed max-w-2xl mx-auto">
-              Transparent disaster intelligence, real-time environmental observations, explainable 0–100 calculated risk, and community early warning.
-            </p>
-
-            {/* Hero CTAs per design.md Section 8 */}
-            <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
-              <Button size="lg" asChild className="bg-[#0B8F2F] text-white hover:bg-[#08752A] rounded-full px-7 py-3.5 text-base font-semibold shadow-sm hover:-translate-y-0.5 transition-all duration-[180ms]">
-                <Link href="/map" className="inline-flex items-center gap-2">
-                  <Map className="h-4 w-4" />
-                  Explore Live Disaster Map
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-
-              <Button size="lg" variant="outline" asChild className="bg-white text-[#0A0A0A] border-[1.5px] border-[#0A0A0A] hover:bg-[#FAFBFA] rounded-full px-7 py-3.5 text-base font-semibold hover:-translate-y-0.5 transition-all duration-[180ms]">
-                <Link href="/disasters" className="inline-flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-[#0B8F2F]" />
-                  Disaster Preparedness
-                </Link>
-              </Button>
-
-              {isAuthenticated ? (
-                <Button size="lg" variant="secondary" asChild className="bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] rounded-full px-6 py-3.5 hover:bg-[#E8FAD9]/50">
-                  <Link href="/dashboard" className="inline-flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4 text-[#0B8F2F]" />
-                    Citizen Dashboard
-                  </Link>
-                </Button>
-              ) : (
-                <Button size="lg" variant="secondary" asChild className="bg-[#FAFBFA] text-[#0A0A0A] border border-[#E7EAE7] rounded-full px-6 py-3.5 hover:bg-[#E8FAD9]/50">
-                  <Link href="/signup" className="inline-flex items-center gap-2">
-                    <UserPlus className="h-4 w-4 text-[#0B8F2F]" />
-                    Register for Alerts
-                  </Link>
-                </Button>
-              )}
-            </div>
-
-            {/* Engine & Pipeline Telemetry Chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-[#EEF1EE] text-left text-xs">
-              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
-                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
-                  Surveillance Nodes
-                </span>
-                <p className="font-semibold text-[#0A0A0A] mt-0.5">
-                  USGS • NASA • Open-Meteo
-                </p>
-              </div>
-
-              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
-                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
-                  Regional Anchor
-                </span>
-                <p className="font-semibold text-[#0A0A0A] mt-0.5 truncate">
-                  Western India (Mumbai)
-                </p>
-              </div>
-
-              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
-                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
-                  Risk Engine
-                </span>
-                <p className="font-bold text-[#0B8F2F] mt-0.5">
-                  Deterministic v1.0 (0–100)
-                </p>
-              </div>
-
-              <div className="rounded-[12px] bg-white/80 backdrop-blur-sm p-3 border border-[#EEF1EE]">
-                <span className="text-[10px] uppercase font-semibold text-[#4D514F]">
-                  User Clearance
-                </span>
-                <p className="font-semibold uppercase text-[#0A0A0A] mt-0.5">
-                  {isAuthenticated ? (role ?? "citizen") : "Public Visitor"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Impact Feature Strip per design.md Section 11 */}
-        <section className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:divide-x divide-[#EEF1EE] bg-white rounded-[16px] border border-[#EEF1EE] p-6 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
-            <div className="flex items-start gap-3.5 sm:px-3">
-              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#0A0A0A]">Cleaner Environment</h3>
-                <p className="text-xs text-[#4D514F] mt-0.5">Less pollution, healthier lives, multi-source telemetry.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 sm:px-3">
-              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
-                <Bell className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#0A0A0A]">Stronger Communities</h3>
-                <p className="text-xs text-[#4D514F] mt-0.5">People + Nature = Progress. Citizen alerts & SOS.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 sm:px-3">
-              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
-                <BookOpen className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#0A0A0A]">Sustainable Future</h3>
-                <p className="text-xs text-[#4D514F] mt-0.5">Reduce. Reuse. Recycle. 22 Disaster SOPs.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 sm:px-3">
-              <div className="h-11 w-11 shrink-0 rounded-full bg-[#E8FAD9] text-[#0B8F2F] flex items-center justify-center">
-                <Map className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#0A0A0A]">Global Impact</h3>
-                <p className="text-xs text-[#4D514F] mt-0.5">Local actions, worldwide change. GIS Surveillance.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Core Value Proposition Grid */}
-        <section className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <Badge variant="outline" className="text-xs uppercase tracking-wider font-semibold">
-              Mission Architecture
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Built for the Full Disaster Lifecycle
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Mitigation, preparedness, early warning, response support, and community recovery.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-border/80 transition-all hover:border-primary/40 hover:shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-2">
-                  <Map className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-base font-bold">
-                  Geospatial Surveillance
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  MapLibre GL JS vector rendering with multi-layer overlays for earthquakes, floods, and severe weather storms.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Interactive MapLibre Base Layer</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Dynamic proximity & cluster filtering</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/80 transition-all hover:border-primary/40 hover:shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-2">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-base font-bold">
-                  Explainable Risk Engine
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Deterministic 0–100 risk scoring with transparent factor weightings. No unexplainable black-box AI calculations.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Itemized point contributions</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Disclosed missing or stale inputs</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/80 transition-all hover:border-primary/40 hover:shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 mb-2">
-                  <Bell className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-base font-bold">
-                  Consented Citizen Alerts
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Multi-channel emergency broadcasts via browser push notifications (FCM) and two-part SMS warnings with deep links.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Two-part SMS with emergency contacts</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Strict privacy & consent controls</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/80 transition-all hover:border-primary/40 hover:shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 mb-2">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-base font-bold">
-                  Government Alignment
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Verified alignment with National Disaster Management Authority (NDMA), NDRF, IMD, and Central Water Commission.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Verified government portals</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span>Strict provenance labeling</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* 4.5. Real-Time Location Telemetry Card */}
-        <LocationStatusCard />
-
-        {/* 5. Live Surveillance & Local Risk Assessment Dashboard */}
-        <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/80 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs uppercase font-semibold">
-                  Live Surveillance
-                </Badge>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 text-primary" />
-                  Selected Region: <strong>{location.city || "Mumbai"}, {location.state || "Maharashtra"}</strong>
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
-                Regional Environmental & Risk Overview
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Near-live telemetry from Open-Meteo and explainable deterministic calculations.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleWeatherRefresh}
-                disabled={isRefreshingWeather}
-                className="gap-1.5 text-xs"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${
-                    isRefreshingWeather ? "animate-spin text-primary" : ""
-                  }`}
-                />
-                Refresh Telemetry
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* Live Open-Meteo WeatherOverviewCard Component */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">
-                  Ambient Weather Feed
-                </span>
-                <span className="font-mono text-[11px]">Source: Open-Meteo</span>
-              </div>
-              <WeatherOverviewCard
-                data={weather}
-                isLoading={isRefreshingWeather}
-                error={weatherError}
-                onRefresh={handleWeatherRefresh}
-              />
-            </div>
-
-            {/* Explainable Risk Overview Card */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">
-                  Deterministic Assessment
-                </span>
-                <span className="font-mono text-[11px]">ResQEarth v1.0</span>
-              </div>
-              <RiskOverviewCard
-                assessment={riskAssessment}
-                isLoading={isRiskLoading}
-                onRefresh={handleRiskRefresh}
-                showBreakdown={true}
-              />
-            </div>
-          </div>
-
-          {/* Per-Hazard Breakdown Grid */}
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-              <span className="font-semibold uppercase tracking-wider text-[11px]">
-                Multi-Hazard Readiness Matrix
-              </span>
-              <span className="font-mono text-[11px]">5-Dimension Surveillance</span>
-            </div>
-            <PerHazardRiskGrid hazardBreakdown={riskAssessment.hazardBreakdown} />
-          </div>
-        </section>
-
-        {/* 6. Live-Map Geospatial Hazard Surveillance Map */}
-        <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Geospatial Hazard Surveillance Map
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Interactive MapLibre GL JS engine with OpenStreetMap basemap, category filtering, and Mumbai anchor.
-              </p>
-            </div>
-
-            <Button asChild size="sm" className="gap-1.5 self-start sm:self-auto">
-              <Link href="/map">
-                <Map className="h-4 w-4" />
-                Launch Fullscreen Map
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+        <section>
+          <SectionIntro kicker="Operating picture" title="Your region, interpreted" description="Live environmental conditions and an explainable risk assessment for the selected location." action={
+            <Button variant="outline" size="sm" onClick={() => Promise.all([refreshWeather(), refreshRisk()])}>
+              <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh feeds
             </Button>
+          } />
+          <div className="mt-7 grid gap-5 xl:grid-cols-2">
+            <WeatherOverviewCard data={weather} isLoading={weatherLoading} error={weatherError} onRefresh={refreshWeather} />
+            <RiskOverviewCard assessment={assessment} isLoading={riskLoading} onRefresh={refreshRisk} showBreakdown />
           </div>
-
-          {/* Interactive MapLibre Container */}
-          <MapView
-            className="h-[380px] sm:h-[440px] w-full"
-            showFilterChips={true}
-            showLegend={true}
-            showFullscreenControl={true}
-            showScaleControl={true}
-            showZoomControls={true}
-          >
-            <MapUnifiedDisasterLayer
-              geoJson={unifiedGeoJson}
-              disasters={unifiedDisasters}
-              selectedDisaster={selectedDisaster}
-              onSelectDisaster={setSelectedDisaster}
-              visible={true}
-            />
-          </MapView>
         </section>
 
-        {/* 7. Active Regional Hazard Events Stream */}
-        <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-4">
+        <section>
+          <SectionIntro kicker="Geospatial intelligence" title="Hazards in context" description="Explore active events, proximity and severity on an interactive map." action={
+            <Button variant="outline" size="sm" asChild><Link href="/map">Full map workspace <ArrowRight className="ml-2 h-3.5 w-3.5" /></Link></Button>
+          } />
+          <div className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-[0_16px_50px_rgba(15,23,42,.12)]">
+            <MapView className="h-[440px] w-full rounded-none border-0 sm:h-[540px]" showFilterChips showLegend showFullscreenControl showScaleControl showZoomControls>
+              <MapUnifiedDisasterLayer geoJson={geoJson} disasters={disasters} selectedDisaster={selectedDisaster} onSelectDisaster={setSelectedDisaster} visible />
+            </MapView>
+          </div>
+        </section>
+
+        <section>
+          <SectionIntro kicker="Latest intelligence" title="Events requiring attention" description="A concise view of the highest-priority verified and calculated signals." action={
+            <Button variant="ghost" size="sm" asChild><Link href="/map">View all events <ArrowRight className="ml-2 h-3.5 w-3.5" /></Link></Button>
+          } />
+          <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {eventCards.map((event) => <DisasterCard key={event.id} data={event} />)}
+          </div>
+        </section>
+
+        <section className="grid gap-10 border-y border-slate-200 py-12 lg:grid-cols-[.8fr_1.2fr] lg:py-16">
+          <div>
+            <p className="section-kicker">Built for trust</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">Clear sources.<br />No black box.</h2>
+            <p className="mt-5 max-w-md text-sm leading-7 text-slate-600">Every signal keeps its provenance visible, and every calculated score exposes the factors that shaped it.</p>
+          </div>
+          <div className="grid gap-8 sm:grid-cols-3">
+            <TrustPoint icon={Database} title="Multi-source" text="USGS, NASA EONET, Open-Meteo and Indian statutory feeds." />
+            <TrustPoint icon={ShieldCheck} title="Explainable" text="Deterministic factors, thresholds and missing inputs are disclosed." />
+            <TrustPoint icon={BellRing} title="Actionable" text="Guidance connects monitoring signals to practical next steps." />
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl bg-teal-700 px-7 py-10 text-white sm:px-12 sm:py-12">
+          <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" className="text-xs uppercase font-semibold">
-                  Monitored Hazards
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {displayDisasterEvents.length} Active Feeds in Vicinity
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">
-                Recent Disaster Events & Advisories
-              </h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-200">Stay prepared</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">Make your local risk visible.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-teal-50/80">Save a location, follow regional alerts and keep the right preparedness guidance close at hand.</p>
             </div>
-
-            <Button variant="ghost" size="sm" asChild className="gap-1 text-xs self-start sm:self-auto">
-              <Link href="/disasters">
-                View All Hazards
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {displayDisasterEvents.map((event) => (
-              <DisasterCard
-                key={event.id}
-                data={event}
-                onSelect={() => {}}
-                onOpenGuide={() => {}}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* 8. Disaster Preparedness & Knowledge Portal Highlights */}
-        <section className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <Badge variant="outline" className="text-xs uppercase tracking-wider font-semibold">
-              Disaster Preparedness
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Educational Safety Guides & Protocols
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Essential precautions, emergency kit checklists, warning signs, and official response instructions.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link
-              href="/disasters/flood"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Waves className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Natural
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Urban & River Floods
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Precipitation thresholds, waterlogging survival tactics, electrical hazard precautions, and potable water safety.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Flood Safety Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-
-            <Link
-              href="/disasters/cyclone"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Wind className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Natural
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Tropical Cyclones
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Storm surge zones, window taping myths vs facts, high-wind anchoring, and post-storm shelter protocols.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Cyclone Safety Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-
-            <Link
-              href="/disasters/earthquake"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10 text-red-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Activity className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Natural
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Earthquakes
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Drop, Cover, and Hold On techniques, aftershock awareness, gas leak isolation, and building evacuation checklists.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Earthquake Safety Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-
-            <Link
-              href="/disasters/landslide"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Mountain className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Natural
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Landslides & Debris Flow
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Slope destabilization warning signs, retaining wall cracks, rapid hillside evacuation, and drainage maintenance.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Landslide Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-
-            <Link
-              href="/disasters/heat-wave"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <SunMedium className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Natural
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Extreme Heat Waves
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Wet-bulb temperature thresholds, heat stroke first aid, hydration protocols, and vulnerable population protection.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Heat Wave Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-
-            <Link
-              href="/disasters/chemical-leak"
-              className="group block rounded-xl border border-border/80 bg-card p-5 transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/10 text-yellow-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <Biohazard className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                  Man-Made
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                Industrial & Chemical Emergencies
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                Upwind evacuation principles, shelter-in-place sealing, eye protection, and hazardous gas inhalation first response.
-              </p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3">
-                Read Chemical Safety Guide <ArrowRight className="h-3 w-3" />
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        {/* 8.5. Environmental Impact Statistics Card per design.md Section 15 */}
-        <section className="relative overflow-hidden rounded-[20px] bg-gradient-to-r from-[#04411F] via-[#08752A] to-[#0B8F2F] text-white p-8 sm:p-12 lg:p-16 shadow-[0_10px_30px_rgba(4,65,31,0.15)]">
-          <div className="relative z-10 max-w-4xl mx-auto space-y-8 text-center">
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#BDF58E]">
-                OUR ENVIRONMENTAL IMPACT & COVERAGE
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-                Empowering Communities Through Science & Technology
-              </h2>
-              <p className="text-sm text-white/80 max-w-2xl mx-auto leading-relaxed">
-                Dedicated to reducing environmental vulnerability, enhancing hazard preparedness, and protecting lives through open disaster intelligence.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
-              <div className="space-y-1">
-                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">22</p>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Hazard Guides</p>
-                <p className="text-[11px] text-white/70">Natural & Man-Made</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">17</p>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Indian Case Studies</p>
-                <p className="text-[11px] text-white/70">1984–2024 Archive</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">11+</p>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Statutory Bodies</p>
-                <p className="text-[11px] text-white/70">NDMA, NDRF, IMD, CWC</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-3xl sm:text-5xl font-extrabold text-[#BDF58E]">100%</p>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wider">Explainable Risk</p>
-                <p className="text-[11px] text-white/70">Deterministic 0–100</p>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <Button asChild size="lg" className="bg-white text-[#04411F] hover:bg-[#FAFBFA] rounded-full px-8 py-3.5 font-bold shadow-md hover:-translate-y-0.5 transition-all duration-[180ms]">
-                <Link href="/about" className="inline-flex items-center gap-2">
-                  Get Involved & Learn More →
-                </Link>
-              </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" asChild className="bg-white text-slate-950 hover:bg-slate-100"><Link href={isAuthenticated ? "/dashboard" : "/signup"}>{isAuthenticated ? "Open dashboard" : "Create free account"}</Link></Button>
+              <Button size="lg" asChild className="border border-white/20 bg-transparent text-white shadow-none hover:bg-white/10"><Link href="/about">How it works</Link></Button>
             </div>
           </div>
-        </section>
-
-        {/* 9. Verified Government Response Directory Callout */}
-        <section className="rounded-[16px] border border-[#EEF1EE] bg-[#FAFBFA] p-6 sm:p-8 lg:p-10 shadow-[0_6px_24px_rgba(0,0,0,0.04)]">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <Badge variant="outline" className="text-xs uppercase font-semibold bg-background">
-                Institutional Directory
-              </Badge>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                Verified Indian Disaster Management Authorities
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                ResQEarth works in educational harmony with statutory institutions including the National Disaster Management Authority (NDMA), NDRF emergency rescue teams, IMD meteorological advisories, and the Central Water Commission (CWC).
-              </p>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <span className="rounded-md bg-background px-2.5 py-1 text-xs font-medium border border-border">
-                  NDMA (Disaster Policy)
-                </span>
-                <span className="rounded-md bg-background px-2.5 py-1 text-xs font-medium border border-border">
-                  NDRF (Search & Rescue)
-                </span>
-                <span className="rounded-md bg-background px-2.5 py-1 text-xs font-medium border border-border">
-                  IMD (Weather & Cyclones)
-                </span>
-                <span className="rounded-md bg-background px-2.5 py-1 text-xs font-medium border border-border">
-                  CWC (River & Flood Flow)
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-              <Button asChild className="gap-2 justify-center">
-                <Link href="/government-response">
-                  <Building2 className="h-4 w-4" />
-                  View Government Directory
-                </Link>
-              </Button>
-
-              <Button variant="outline" asChild className="gap-2 justify-center">
-                <Link href="/history">
-                  <BookOpen className="h-4 w-4" />
-                  Indian Disaster History
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* 10. Citizen Registration & Notification Callout */}
-        {!isAuthenticated && (
-          <section className="rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-10 text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Shield className="h-6 w-6" />
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Stay Alerted in Your District
-            </h2>
-
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Create a citizen account to save your local monitoring preferences, enable browser push notifications, and opt into SMS alerts.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <Button asChild size="lg" className="gap-2">
-                <Link href="/signup">
-                  <UserPlus className="h-4 w-4" />
-                  Create Free Citizen Profile
-                </Link>
-              </Button>
-
-              <Button variant="outline" asChild size="lg">
-                <Link href="/login">Citizen Login</Link>
-              </Button>
-            </div>
-          </section>
-        )}
-
-        {/* 11. Prominent Official-Source & Educational Disclaimer */}
-        <section className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-5 text-xs text-amber-900 dark:text-amber-200 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-sm text-amber-950 dark:text-amber-100">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>ResQEarth Academic Project Disclaimer & Official Directives</span>
-          </div>
-
-          <p className="leading-relaxed">
-            ResQEarth is an academic Second-Year Engineering Environmental Science (ESE) demonstration project designed for disaster awareness, hazard education, and decision support. It is <strong>NOT</strong> an official government warning authority. Internally calculated risk indices are labelled <strong>RESQEARTH CALCULATED RISK</strong> and do not replace official bulletins from NDMA, IMD, or local disaster management cells.
-          </p>
-
-          <p className="leading-relaxed text-[11px] opacity-90">
-            During any real natural or man-made disaster emergency, citizens must strictly adhere to instructions issued by local civil defense authorities, law enforcement, and verified national hotlines. Dial <strong>112</strong> for immediate life-safety assistance.
-          </p>
         </section>
       </RouteContainer>
     </div>
   );
 }
 
+function HeroMetric({ label, value, suffix, compact = false }: { label: string; value: React.ReactNode; suffix?: string; compact?: boolean }) {
+  return <div className="bg-slate-950/55 p-5"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p><p className={`mt-2 font-semibold text-white ${compact ? "text-lg" : "text-3xl tracking-[-0.04em]"}`}>{value}<span className="ml-1 text-sm font-normal text-slate-500">{suffix}</span></p></div>;
+}
+
+function SignalRow({ label, value }: { label: string; value: string }) {
+  return <div className="flex items-center justify-between gap-5"><span className="text-slate-500">{label}</span><span className="truncate font-medium text-slate-200">{value}</span></div>;
+}
+
+function SectionIntro({ kicker, title, description, action }: { kicker: string; title: string; description: string; action?: React.ReactNode }) {
+  return <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="section-kicker">{kicker}</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">{title}</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{description}</p></div>{action}</div>;
+}
+
+function TrustPoint({ icon: Icon, title, text }: { icon: React.ComponentType<{ className?: string }>; title: string; text: string }) {
+  return <div><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700"><Icon className="h-5 w-5" /></span><h3 className="mt-4 font-semibold text-slate-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{text}</p><div className="mt-4 flex items-center gap-2 text-xs font-medium text-teal-700"><Check className="h-3.5 w-3.5" /> Visible by design</div></div>;
+}
+
+function toGuideSlug(type: string) {
+  if (type.includes("flood")) return "flood";
+  if (type.includes("cyclone") || type.includes("storm") || type.includes("wind")) return "cyclone";
+  if (type.includes("landslide")) return "landslide";
+  if (type.includes("heat") || type.includes("cold")) return "heat-wave";
+  if (type.includes("chemical")) return "chemical-leak";
+  return "earthquake";
+}
+
 export default function HomePage() {
-  return (
-    <LocationProvider>
-      <HomePageContent />
-    </LocationProvider>
-  );
+  return <LocationProvider><HomePageContent /></LocationProvider>;
 }
